@@ -1,0 +1,20 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 2012
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PRI-KATALOGOWANIE-PLIKÓW", "PRI-KATALOGOWANIE-PLIKÓW\PRI-KATALOGOWANIE-PLIKÓW.csproj", "{D507B0D5-C336-40F2-96F1-1898A03517FC}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{D507B0D5-C336-40F2-96F1-1898A03517FC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D507B0D5-C336-40F2-96F1-1898A03517FC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D507B0D5-C336-40F2-96F1-1898A03517FC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D507B0D5-C336-40F2-96F1-1898A03517FC}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
