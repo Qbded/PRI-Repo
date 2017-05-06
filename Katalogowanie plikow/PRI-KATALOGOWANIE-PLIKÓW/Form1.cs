@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -31,6 +31,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
         List<string> metadata;
 
         string program_path = null;
+        string xml_path = null;
         string txt_path = null;
         string database_path = null;
 
@@ -71,9 +72,11 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                 target_directory = directory_grabber.Parent.FullName.ToString();
             }
 
-            this.program_path = target_directory + @"\metadata.xml"; // XML'ka Janka,
+            this.program_path = target_directory;
+            this.xml_path = target_directory + @"\metadata.xml"; // XML'ka Janka,
             this.txt_path = target_directory + @"$$$.txt"; // Plik testowy Janka,
             this.database_path = target_directory + @"\db\catalog.fdb"; // Lokacja katalogu tworzonego przez program
+            this.TB_path_displayer.Text = program_path;
         }
 
         public Form1()
@@ -205,7 +208,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
 
         private void BT_test_database_click(object sender, EventArgs e)
         {
-            if(File.Exists(database_path))
+            if (File.Exists(database_path))
             {
                 using (var connection = new FbConnection(@"ServerType=0;User=SYSDBA;Password=;Database=" + database_path)) // w Password= wpisac hasło użytkownika SYSDBA
                 {
@@ -218,14 +221,22 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             } else {
                 MessageBox.Show("Nie znalazłem bazy, tworze nową w katalogu:\n" + database_path);
 
+                if (!Directory.Exists(program_path + @"\db")) {
+                    //DEBUG MessageBox.Show("Tworze katalog db!");
+                    Directory.CreateDirectory(program_path + @"\db");
+                }
+
                 FbConnectionStringBuilder builder = new FbConnectionStringBuilder();
                 builder.DataSource = "localhost"; //identyfikator sieciowy - do kogo sie laczymy. Moze byc postaci adres IP+Port.
                 builder.UserID = "SYSDBA"; //defaultowy uzytkownik z najwyzszymi uprawnieniami do systemu bazodanowego, tworzony podczas instalacji
                 builder.Password = ""; //haslo nadane podczas instalacji Firebird'a użytkownikowi SYSDBA, uzupełnić w zależności u kogo jest jakie
-                builder.Database = database_path;
+                //builder.Database = database_path;
+                builder.Database = @"C:\Roboczy\PRI-KATALOGOWANIE-PLIKÓW\db\catalog.fdb";
                 builder.ServerType = FbServerType.Default;
 
                 FbConnection.CreateDatabase(builder.ConnectionString);
+
+                //Dalej instrukcje tworzenia tabel itp. itd.
 
                 /*
                 FileInfo temp = new FileInfo(@"C:\PRI-KATALOGOWANIE-PLIKÓW\PRI-KATALOGOWANIE-PLIKÓW\db\catalog.fdb");
@@ -404,7 +415,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             List<XmlNode> node = new List<XmlNode>();
             char randChar = (char)rand.Next(65, 90);
             XmlDocument xDoc = new XmlDocument();
-            xDoc.Load(program_path);
+            xDoc.Load(xml_path);
             XmlElement _metadata = xDoc.CreateElement("metadata");
 
             string strMachineUserName = Environment.MachineName + "_" + Environment.UserName + "_" + DateTime.Now.ToString("yyyyMMddHHmmssffff");
@@ -438,7 +449,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                 _metadata.AppendChild(n);
 
             xDoc.DocumentElement.AppendChild(_metadata);
-            xDoc.Save(program_path);
+            xDoc.Save(xml_path);
 
             File.SetAttributes(txt_path, FileAttributes.ReadOnly | FileAttributes.Hidden);
         }
@@ -512,7 +523,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
         private void button1_Click_1(object sender, EventArgs e)
         {
             //MessageBox.Show(this.Decrypt("vlnsYsM7p0Ay16aH5m3IkzmvWncbGmC/mbUTzUity0h7y92SW6GONLYsqLYnDNKW", true).Substring(8));
-            var extractor = new TikaOnDotNet.TextExtraction.TextExtractor().Extract(program_path);
+            var extractor = new TikaOnDotNet.TextExtraction.TextExtractor().Extract(xml_path);
             string xmlNoSpaces = Regex.Replace(extractor.Text, @"\s+", string.Empty);
 
             Regex rx = new Regex("(<.*?>)", RegexOptions.IgnoreCase);
@@ -535,7 +546,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
 
             line = Regex.Replace(reader.ReadLine(), @"\$(.+)", String.Empty);
             
-            XDocument xDoc = XDocument.Load(program_path);
+            XDocument xDoc = XDocument.Load(xml_path);
             var query = xDoc.Descendants("Metadata")
                             .Where(parent => parent.Elements("metadata")
                             .Any(child => (string)child.Attribute(line).Value == Regex.Replace(subgroup, @">$", string.Empty).TrimEnd('"')));
