@@ -230,8 +230,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                 builder.DataSource = "localhost"; //identyfikator sieciowy - do kogo sie laczymy. Moze byc postaci adres IP+Port.
                 builder.UserID = "SYSDBA"; //defaultowy uzytkownik z najwyzszymi uprawnieniami do systemu bazodanowego, tworzony podczas instalacji
                 builder.Password = ""; //haslo nadane podczas instalacji Firebird'a użytkownikowi SYSDBA, uzupełnić w zależności u kogo jest jakie
-                //builder.Database = database_path;
-                builder.Database = @"C:\Roboczy\PRI-KATALOGOWANIE-PLIKÓW\db\catalog.fdb";
+                builder.Database = database_path;
                 builder.ServerType = FbServerType.Default;
 
                 FbConnection.CreateDatabase(builder.ConnectionString);
@@ -239,7 +238,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                 //Dalej instrukcje tworzenia tabel itp. itd.
 
                 /*
-                FileInfo temp = new FileInfo(@"C:\PRI-KATALOGOWANIE-PLIKÓW\PRI-KATALOGOWANIE-PLIKÓW\db\catalog.fdb");
+                FileInfo temp = new FileInfo(sciezka_do_pliku_analizowanego);
                 temp.Name
                 //path mamy z parsera
                 temp.Length;
