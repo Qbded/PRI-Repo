@@ -20,7 +20,8 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
 {
     public partial class Form1 : Form
     {
-        public static string[] extends = { "txt", "csv", "doc", "docx", "odt", "ods", "odp", "xls", "xlsx", "pdf", "ppt", "pptx", "pps", "fb2", "htm", "html", "tsv", "xml", "jpg", "jpeg", "tiff", "bmp", "mp4", "avi", "mp3", "wav"};
+        public List<string> metadata { get; set; }
+        public string[] extends = { ".txt", ".csv", ".doc", ".docx", ".odt", ".ods", ".odp", ".xls", ".xlsx", ".pdf", ".ppt", ".pptx", ".pps", ".fb2", ".htm", ".html", ".tsv", ".xml", ".jpg", ".jpeg", ".tiff", ".bmp", ".mp4", ".avi", ".mp3", ".wav"};
         private string regex = @"((u|s|wy){0,1}(tw((órz)|(orzyć)|(orzenie))))(\s)(etykiet(y|ę){0,1})(\s)((<[a-ząęśćżźół\#]+\$>)+)(\s)((dla){0,1})(\s)((każde){0,1}((go)|j){0,1})(\s){0,1}((grupy){0,1})(\s){0,1}((((plik)|(obiekt))(u|ów))|(lokacji))(\s)(((\*{0,1})\.{0,1}[a-z0-9]{3,4}\s{0,1})+)";
         private string regexCreate = @"(create)(\s)(label)(\s)((<[a-ząęśćżźół\#]+\$>)+)(\s)((for){0,1})(\s)((every)|(all)|(each){0,1})(\s){0,1}((group of files)|(files' group){0,1})(\s)(((\*{0,1})\.{0,1}[a-z0-9]{3,4}\s{0,1})+)";
         private string[] exampleCommands = { "utwórz etykietę <x$> dla pliku *.mp3", "utwórz etykietę <x$> dla obiektu *.mp3", "utwórz etykietę <x$> dla lokacji *.mp3", "utwórz etykiety <x$><y$> dla grupy plików *.mp3 *wav", "utwórz etykiety <x$><y$> dla plików *.mp3 *wav", "utwórz etykiety <x$><y$> plików *.mp3 *wav", "utwórz etykiety <x$><y$> dla obiektów *.mp3 *wav", "utwórz etykiety <x$><y$> dla lokacji *.mp3 *wav" };
@@ -28,9 +29,9 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
         int randResult = 0;
         int randResultCreate = 0;
         List<string> excludedMetadata;
-        List<string> metadata;
 
         string program_path = null;
+        string xml_path = null;
         string txt_path = null;
         string database_path = null;
 
@@ -71,8 +72,9 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                 target_directory = directory_grabber.Parent.FullName.ToString();
             }
 
-            this.program_path = target_directory + @"\metadata.xml"; // XML'ka Janka,
-            this.txt_path = target_directory + @"$$$.txt"; // Plik testowy Janka,
+            this.program_path = target_directory;
+            this.xml_path = target_directory + @"\metadata.xml"; // XML'ka Janka,
+            this.txt_path = target_directory + @"\$$$.txt"; // Plik testowy Janka,
             this.database_path = target_directory + @"\db\catalog.fdb"; // Lokacja katalogu tworzonego przez program
         }
 
@@ -89,6 +91,63 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
 
             excludedMetadata = new List<string>();
             metadata = new List<string>();
+        }
+
+        /* Zmiana rozmiaru okna głównego
+         * 
+        *  Zakładam minimalny rozmiar okna na poziomie tego, co zrobił na początku Janek
+        *  
+        *  Gdy zmieniamy rozmiar okna głównego niektóre elementy powinny zmienić swój rozmiar lub pozycję, są to:
+        *  - tabpage tabPage1 (Kryteria katalogowania) - rozmiar
+        *  - groupbox groupBox1 (Użyj polecenie) - rozmiar
+        *       - textbox txtCommand (za Polecenie:) - rozmiar
+        *       - button BT_text_database (Test bazy) - pozycja
+        *       - button BT_extract_metadata (Kataloguj) - pozycja
+        *  - groupbox z metadanymi - rozmiar
+        *       - checkedlistbox chkMetadata - rozmiar 
+        *  
+        *  I tyle, reszta w kodzie.
+        *  
+        */
+
+        private void Form1_Resize(object sender, EventArgs e)
+        {
+            // Ustawiamy rozdzielczosc minimalna na poziomie tego, co zrobił Janek
+            this.MinimumSize = new Size(471, 465);
+
+            // A jezeli jest wieksza, to reskalujemy
+            if (this.Size.Width >= 471 && this.Size.Height >= 465)
+            {
+                // Najpierw TabPage tabPage1:
+                tabPage1.Width = this.Size.Width - 24;
+                tabPage1.Height = this.Size.Height - 71;
+
+                // Przechodzimy do jego subkomponentów:
+                    // Groupbox użyj opcje:
+                    groupBox1.Width = tabPage1.Width - 9;
+                    // Dla niego zostawiamy wysokość stałą, jako ze pod nim jeszcze cos jest.
+                    // Przechodzimy do jego subkomponentów (nie wszystkie wymagaja skalowania)
+                        // Textbox txtCommand:
+                        txtCommand.Width = tabPage1.Width - 126;
+
+                        // Button BT_test_database:
+                        BT_test_database.Location = new Point(groupBox1.Width - 135, 99);
+                        // Tez zostawiamy wysokość stałą, jego rodzic nie zmienia swojej wysokosci.
+
+                        // Button BT_extract_metadata:
+                        BT_extract_metadata.Location = new Point(groupBox1.Width - 135, 138);
+                        // Tez zostawiamy wysokość stałą, jego rodzic nie zmienia swojej wysokosci.
+                    // Groupbox metadane:
+                    groupBox2.Width = tabPage1.Width - 13;
+                    groupBox2.Height = tabPage1.Height - groupBox1.Height - 15;
+                        // CheckedListBox chkMetadata:
+                            chkMetadata.Width = groupBox2.Width - 12;
+                            chkMetadata.Height = groupBox2.Height - 51;
+                // I to na tyle, jak bedzie przybywalo komponentów trzeba bedzie je tutaj dodawać
+                // Liczby do odejmowania obliczam biorąc za podstawę okno w rozmiarze minimalnym,
+                // odejmuje od rozmiaru kontenera macierzystego albo rozmiar jego subkomponentu
+                // (jezeli chcemy go skalowac) lub jego lokację (jeżeli chcemy zmienić pozycję)
+            }
         }
 
         private void Form1_KeyDown(object sender, KeyEventArgs e)
@@ -185,38 +244,46 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             return groups;
         }
 
-       /*    Sprawdzanie czy istnieje baza danych (i jej walidacja jeżeli istnieje)
-        *    
-        *    Pierwsze polecenie przemieszcza nas do whereever\PRI-KATALOGOWANIE-PLIKÓW\PRI-KATALOGOWANIE-PLIKÓW\bin\Debug\ do katalogu nadrzedzego,
-        *    drugie przemieszcza nas do whereever\PRI-KATALOGOWANIE-PLIKÓW\PRI-KATALOGOWANIE-PLIKÓW\bin do katalogu nadrzedzego.
-        *    
-        *    Efektem czego jestesmy w whereever\PRI-KATALOGOWANIE-PLIKÓW\PRI-KATALOGOWANIE-PLIKÓW\ do katalogu nadrzedzego, co poki co stanowi nasz
-        *    folder działania (mamy tutaj .xml'ke, tekstowke itp. itd.)
-        *    
-        *    Wynikowo struktura programu ma wygladac w ten desen:
-        *    bin\ - tutaj żyja nasze .dll'ki i .exe'c aplikacji
-        *    db\ - tutaj żyje nasz katalog, w pliku catalog.fdb
-        *    
-        *    Tutaj zakladam ze program jest schowany glebiej przez Visual Studio, stad potrzebne są nam dodatkowe skoki. Przepisanie tej procedury na czysto
-        *    nie jest problemem.
-        *    
-        *    UWAGA: Moze wygenerowac IOException jeżeli coś innego czyta nasze katalogi!
-        */
+        /*    Sprawdzanie czy istnieje baza danych (i jej walidacja jeżeli istnieje)
+         *    
+         *    Pierwsze polecenie przemieszcza nas do whereever\PRI-KATALOGOWANIE-PLIKÓW\PRI-KATALOGOWANIE-PLIKÓW\bin\Debug\ do katalogu nadrzedzego,
+         *    drugie przemieszcza nas do whereever\PRI-KATALOGOWANIE-PLIKÓW\PRI-KATALOGOWANIE-PLIKÓW\bin do katalogu nadrzedzego.
+         *    
+         *    Efektem czego jestesmy w whereever\PRI-KATALOGOWANIE-PLIKÓW\PRI-KATALOGOWANIE-PLIKÓW\ do katalogu nadrzedzego, co poki co stanowi nasz
+         *    folder działania (mamy tutaj .xml'ke, tekstowke itp. itd.)
+         *    
+         *    Wynikowo struktura programu ma wygladac w ten desen:
+         *    bin\ - tutaj żyja nasze .dll'ki i .exe'c aplikacji
+         *    db\ - tutaj żyje nasz katalog, w pliku catalog.fdb
+         *    
+         *    Tutaj zakladam ze program jest schowany glebiej przez Visual Studio, stad potrzebne są nam dodatkowe skoki. Przepisanie tej procedury na czysto
+         *    nie jest problemem.
+         *    
+         *    UWAGA: Moze wygenerowac IOException jeżeli coś innego czyta nasze katalogi!
+         */
 
         private void BT_test_database_click(object sender, EventArgs e)
         {
-            if(File.Exists(database_path))
+            if (File.Exists(database_path))
             {
                 using (var connection = new FbConnection(@"ServerType=0;User=SYSDBA;Password=;Database=" + database_path)) // w Password= wpisac hasło użytkownika SYSDBA
                 {
                     MessageBox.Show("Znalazłem istniejącą bazę!");
 
                     connection.Open();
-                    // House-keepingu, zarwanie połączenia zaraz po jego nawiązaniu.
+                    // House-keeping, zarwanie połączenia zaraz po jego nawiązaniu.
                     connection.Close();
                 }
-            } else {
+            }
+            else
+            {
                 MessageBox.Show("Nie znalazłem bazy, tworze nową w katalogu:\n" + database_path);
+
+                if (!Directory.Exists(program_path + @"\db"))
+                {
+                    //DEBUG MessageBox.Show("Tworze katalog db!");
+                    Directory.CreateDirectory(program_path + @"\db");
+                }
 
                 FbConnectionStringBuilder builder = new FbConnectionStringBuilder();
                 builder.DataSource = "localhost"; //identyfikator sieciowy - do kogo sie laczymy. Moze byc postaci adres IP+Port.
@@ -227,16 +294,31 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
 
                 FbConnection.CreateDatabase(builder.ConnectionString);
 
-                /*
-                FileInfo temp = new FileInfo(@"C:\PRI-KATALOGOWANIE-PLIKÓW\PRI-KATALOGOWANIE-PLIKÓW\db\catalog.fdb");
-                temp.Name
-                //path mamy z parsera
-                temp.Length;
-                temp.CreationTime;
-                temp.LastAccessTime;
-                temp.LastWriteTime;
-                //Content-Encoding mamy z parsera
-                */
+                //Dalej instrukcje tworzenia tabel itp. itd.
+
+            }
+        }
+        
+        /*  Ekstracja metadanych - wywołanie okna odpowiedzialnego za jej obsługę
+         *  
+         *  Informacje o tym jak robimy ekstrakcję metadanych znajdują się w formularzu Metadata_extractor.cs
+         * 
+         */
+
+        private void BT_extract_metadata_click(object sender, EventArgs e)
+        {
+            using (FolderBrowserDialog open = new FolderBrowserDialog())
+            {
+                if (open.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+                {
+                    DirectoryInfo selected_directory = new DirectoryInfo(open.SelectedPath);
+
+                    Metadata_extractor metadata_extractor_window = new Metadata_extractor();
+                    metadata_extractor_window.Owner = this;
+                    metadata_extractor_window.extends = extends;
+                    metadata_extractor_window.target_directory = selected_directory;
+                    metadata_extractor_window.Show();
+                }
             }
         }
 
@@ -256,6 +338,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                 this.toolTip1.SetToolTip(txtCommand, text);
             }
         }
+
         List<string> _group = new List<string>();
         private void chkUseCreteRule_CheckedChanged(object sender, EventArgs e)
         {
@@ -336,47 +419,22 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
         {
             if (this.chkExcludeMetadata.Checked)
             {
-                List<string> names = new List<string>();
                 this.chkMetadata.Enabled = true;
-                string nameSafe = String.Empty;
-                //Dictionary<string, string> names = new Dictionary<string, string>();
-                string filter = String.Empty;
-                using (FolderBrowserDialog open = new FolderBrowserDialog())
+                for(int i = 0; i < metadata.Count(); i++)
                 {
-                    for (int i = 0; i < extends.Length; i++)
-                        filter += "Plik " + extends[i].ToUpperInvariant() + " (*." + extends[i] + ")|*." + extends[i] + "|";
-
-                    if (open.ShowDialog() == System.Windows.Forms.DialogResult.OK)
-                    {
-                        var files = Directory.GetFiles(open.SelectedPath, "*", SearchOption.AllDirectories);
-                        foreach (var file in files)
-                            names.Add(file);
-                        if (names.Count == 0) MessageBox.Show("Katalog " + open.SelectedPath + " jest pusty", "Grupa rozszerzeń", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
-                    }
+                    this.chkMetadata.Items.Add(metadata[i]);
                 }
+                FileInfo txt_dump = new FileInfo(txt_path);
+                if (txt_dump.Exists)
+                {
+                    StreamWriter txt_dumper = new StreamWriter(txt_path);
 
-                /*
-                 * Tworzy listę metadanych wyszystkich plików znajdujących się w wybranym katalogu
-                 */
-                var extractors = new List<TikaOnDotNet.TextExtraction.TextExtractor>();
-                foreach (var name in names)
-                    extractors.Add(new TikaOnDotNet.TextExtraction.TextExtractor());
-                foreach (var ext in extractors)
-                    foreach (var name in names)
+                    for(int i = 0; i < metadata.Count(); i++)
                     {
-                        try
-                        {
-                            var ex = ext.Extract(name);
-                            foreach (var _e in ex.Metadata)
-                            {
-                                this.chkMetadata.Items.Add(_e.Key + "=" + _e.Value + " [w] " + name);
-                                metadata.Add(_e.Key + "=" + _e.Value + " [w] " + name);
-                            }
-                        }
-                        catch (Exception) { }
+                        txt_dumper.WriteLine(metadata[i]);
                     }
-
-
+                    txt_dumper.Close();
+                }
             }
             else
             {
@@ -404,7 +462,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             List<XmlNode> node = new List<XmlNode>();
             char randChar = (char)rand.Next(65, 90);
             XmlDocument xDoc = new XmlDocument();
-            xDoc.Load(program_path);
+            xDoc.Load(xml_path);
             XmlElement _metadata = xDoc.CreateElement("metadata");
 
             string strMachineUserName = Environment.MachineName + "_" + Environment.UserName + "_" + DateTime.Now.ToString("yyyyMMddHHmmssffff");
@@ -438,7 +496,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                 _metadata.AppendChild(n);
 
             xDoc.DocumentElement.AppendChild(_metadata);
-            xDoc.Save(program_path);
+            xDoc.Save(xml_path);
 
             File.SetAttributes(txt_path, FileAttributes.ReadOnly | FileAttributes.Hidden);
         }
@@ -512,7 +570,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
         private void button1_Click_1(object sender, EventArgs e)
         {
             //MessageBox.Show(this.Decrypt("vlnsYsM7p0Ay16aH5m3IkzmvWncbGmC/mbUTzUity0h7y92SW6GONLYsqLYnDNKW", true).Substring(8));
-            var extractor = new TikaOnDotNet.TextExtraction.TextExtractor().Extract(program_path);
+            var extractor = new TikaOnDotNet.TextExtraction.TextExtractor().Extract(xml_path);
             string xmlNoSpaces = Regex.Replace(extractor.Text, @"\s+", string.Empty);
 
             Regex rx = new Regex("(<.*?>)", RegexOptions.IgnoreCase);
@@ -535,7 +593,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
 
             line = Regex.Replace(reader.ReadLine(), @"\$(.+)", String.Empty);
             
-            XDocument xDoc = XDocument.Load(program_path);
+            XDocument xDoc = XDocument.Load(xml_path);
             var query = xDoc.Descendants("Metadata")
                             .Where(parent => parent.Elements("metadata")
                             .Any(child => (string)child.Attribute(line).Value == Regex.Replace(subgroup, @">$", string.Empty).TrimEnd('"')));

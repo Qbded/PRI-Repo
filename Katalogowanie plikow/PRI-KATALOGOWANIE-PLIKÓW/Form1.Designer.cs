@@ -29,7 +29,7 @@
         private void InitializeComponent()
         {
             this.components = new System.ComponentModel.Container();
-            System.Windows.Forms.ListViewGroup listViewGroup1 = new System.Windows.Forms.ListViewGroup("Plik", System.Windows.Forms.HorizontalAlignment.Left);
+            System.Windows.Forms.ListViewGroup listViewGroup3 = new System.Windows.Forms.ListViewGroup("Plik", System.Windows.Forms.HorizontalAlignment.Left);
             this.tabPage1 = new System.Windows.Forms.TabPage();
             this.groupBox2 = new System.Windows.Forms.GroupBox();
             this.chkSelectAllListPositions = new System.Windows.Forms.CheckBox();
@@ -64,7 +64,6 @@
             this.columnHeader8 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.columnHeader9 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.toolTip1 = new System.Windows.Forms.ToolTip(this.components);
-            this.TB_path_displayer = new System.Windows.Forms.TextBox();
             this.tabPage1.SuspendLayout();
             this.groupBox2.SuspendLayout();
             this.groupBox1.SuspendLayout();
@@ -93,10 +92,11 @@
             this.groupBox2.Controls.Add(this.chkMetadata);
             this.groupBox2.Location = new System.Drawing.Point(5, 178);
             this.groupBox2.Name = "groupBox2";
-            this.groupBox2.Size = new System.Drawing.Size(434, 216);
+            this.groupBox2.Size = new System.Drawing.Size(434, 208);
             this.groupBox2.TabIndex = 1;
             this.groupBox2.TabStop = false;
             this.groupBox2.Text = "Metadane";
+            this.groupBox2.Resize += new System.EventHandler(this.Form1_Resize);
             // 
             // chkSelectAllListPositions
             // 
@@ -159,12 +159,13 @@
             this.BT_extract_metadata.TabIndex = 6;
             this.BT_extract_metadata.Text = "Kataloguj";
             this.BT_extract_metadata.UseVisualStyleBackColor = true;
+            this.BT_extract_metadata.Click += new System.EventHandler(this.BT_extract_metadata_click);
             // 
             // BT_test_database
             // 
-            this.BT_test_database.Location = new System.Drawing.Point(299, 108);
+            this.BT_test_database.Location = new System.Drawing.Point(299, 99);
             this.BT_test_database.Name = "BT_test_database";
-            this.BT_test_database.Size = new System.Drawing.Size(122, 24);
+            this.BT_test_database.Size = new System.Drawing.Size(122, 33);
             this.BT_test_database.TabIndex = 1;
             this.BT_test_database.Text = "Test bazy";
             this.BT_test_database.UseVisualStyleBackColor = true;
@@ -307,10 +308,10 @@
             this.columnHeader7,
             this.columnHeader8,
             this.columnHeader9});
-            listViewGroup1.Header = "Plik";
-            listViewGroup1.Name = "listViewGroup1";
+            listViewGroup3.Header = "Plik";
+            listViewGroup3.Name = "listViewGroup1";
             this.listView1.Groups.AddRange(new System.Windows.Forms.ListViewGroup[] {
-            listViewGroup1});
+            listViewGroup3});
             this.listView1.Location = new System.Drawing.Point(10, 5);
             this.listView1.Name = "listView1";
             this.listView1.Size = new System.Drawing.Size(429, 266);
@@ -366,24 +367,18 @@
             // 
             this.columnHeader9.Text = "Odchylenie kwartylne";
             // 
-            // TB_path_displayer
-            // 
-            this.TB_path_displayer.Location = new System.Drawing.Point(228, 0);
-            this.TB_path_displayer.Name = "TB_path_displayer";
-            this.TB_path_displayer.Size = new System.Drawing.Size(223, 20);
-            this.TB_path_displayer.TabIndex = 1;
-            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(455, 427);
-            this.Controls.Add(this.TB_path_displayer);
             this.Controls.Add(this.tabControl1);
             this.KeyPreview = true;
             this.Margin = new System.Windows.Forms.Padding(2);
+            this.MinimumSize = new System.Drawing.Size(471, 465);
             this.Name = "Form1";
             this.Text = "Katalogowanie plików";
+            this.Resize += new System.EventHandler(this.Form1_Resize);
             this.tabPage1.ResumeLayout(false);
             this.groupBox2.ResumeLayout(false);
             this.groupBox2.PerformLayout();
@@ -393,7 +388,6 @@
             this.tabPage2.ResumeLayout(false);
             this.contextMenuStrip1.ResumeLayout(false);
             this.ResumeLayout(false);
-            this.PerformLayout();
 
         }
 
@@ -431,7 +425,6 @@
         private System.Windows.Forms.ToolStripMenuItem toolStripMenuItem2;
         private System.Windows.Forms.CheckBox chkSelectAllListPositions;
         private System.Windows.Forms.Button BT_test_database;
-        private System.Windows.Forms.TextBox TB_path_displayer;
         private System.Windows.Forms.Button BT_extract_metadata;
     }
 }
