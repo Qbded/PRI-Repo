@@ -1,0 +1,17 @@
+c:\users\karol\documents\visual studio 2015\Projects\TesseractTest\TesseractTest\bin\Debug\TesseractTest.exe.config
+c:\users\karol\documents\visual studio 2015\Projects\TesseractTest\TesseractTest\bin\Debug\TesseractTest.exe
+c:\users\karol\documents\visual studio 2015\Projects\TesseractTest\TesseractTest\bin\Debug\TesseractTest.pdb
+c:\users\karol\documents\visual studio 2015\Projects\TesseractTest\TesseractTest\obj\Debug\TesseractTest.csprojResolveAssemblyReference.cache
+c:\users\karol\documents\visual studio 2015\Projects\TesseractTest\TesseractTest\obj\Debug\TesseractTest.Form1.resources
+c:\users\karol\documents\visual studio 2015\Projects\TesseractTest\TesseractTest\obj\Debug\TesseractTest.Properties.Resources.resources
+c:\users\karol\documents\visual studio 2015\Projects\TesseractTest\TesseractTest\obj\Debug\TesseractTest.csproj.GenerateResource.Cache
+c:\users\karol\documents\visual studio 2015\Projects\TesseractTest\TesseractTest\obj\Debug\TesseractTest.exe
+c:\users\karol\documents\visual studio 2015\Projects\TesseractTest\TesseractTest\obj\Debug\TesseractTest.pdb
+c:\users\karol\documents\visual studio 2015\Projects\TesseractTest\TesseractTest\bin\Debug\GhostscriptSharp.dll
+c:\users\karol\documents\visual studio 2015\Projects\TesseractTest\TesseractTest\bin\Debug\x64\liblept172.dll
+c:\users\karol\documents\visual studio 2015\Projects\TesseractTest\TesseractTest\bin\Debug\x64\libtesseract304.dll
+c:\users\karol\documents\visual studio 2015\Projects\TesseractTest\TesseractTest\bin\Debug\x86\liblept172.dll
+c:\users\karol\documents\visual studio 2015\Projects\TesseractTest\TesseractTest\bin\Debug\x86\libtesseract304.dll
+c:\users\karol\documents\visual studio 2015\Projects\TesseractTest\TesseractTest\bin\Debug\Tesseract.dll
+c:\users\karol\documents\visual studio 2015\Projects\TesseractTest\TesseractTest\bin\Debug\Tesseract.xml
+C:\Users\Karol\Documents\Visual Studio 2015\Projects\TesseractTest\TesseractTest\bin\Debug\Program.cs
