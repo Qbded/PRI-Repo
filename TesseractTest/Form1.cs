@@ -24,6 +24,59 @@ namespace TesseractTest
       extractedText = new List<string>();
     }
 
+
+    private HashSet<string> extractTags(string filePath)
+    {
+      HashSet<string> tags = new HashSet<string>();
+      try
+      {
+        using (var engine = new TesseractEngine(@"../../tessdata", "eng", EngineMode.TesseractAndCube))
+        {
+          using (var img = Pix.LoadFromFile(filePath))
+          {
+            using (var page = engine.Process(img))
+            {
+              var text = page.GetText();
+              char[] delimiters = { ',', '.', '/', '<' , '>',
+                                    '?', ';', '\'', '\\', ':',
+                                    '"', '|', '[', ']', '{',
+                                    '}', '-', '=', '_', '+',
+                                    '!', '@', '#', '$', '%',
+                                    '^', '&', '*', '(', ')',
+                                    ' ', '`', '~', '’', '—',
+                                    '“', '‘', '”', '„', '›',
+                                    '0', '1', '2', '3', '4',
+                                    '5', '6', '7', '8', '9',
+                                    '\n', '\t', '\r' };
+              string[] unprocessedTags = text.Split(delimiters);
+              unprocessedTags = unprocessedTags.Select(s => s.ToLower()).ToArray();
+              tags = new HashSet<string>(unprocessedTags);
+              //System.IO.File.WriteAllText("./" + Path.GetFileNameWithoutExtension(filePath) + "_tags", tags);
+
+              outputTextBox.AppendText("Mean confidence: " + page.GetMeanConfidence() + Environment.NewLine);
+
+              foreach (var t in tags)
+              {
+                //outputTextBox.AppendText(t + Environment.NewLine);
+                outputTextBox.AppendText("[" + t + "] ");
+              }
+              outputTextBox.AppendText(Environment.NewLine);
+            }
+          }
+        }
+      }
+      catch (Exception e2)
+      {
+        Trace.TraceError(e2.ToString());
+        outputTextBox.AppendText("Unexpected Error: " + e2.Message + Environment.NewLine);
+        outputTextBox.AppendText("Details: ");
+        outputTextBox.AppendText(e2.ToString() + Environment.NewLine);
+      }
+
+      return tags;
+    }
+
+
     private void Form1_Load(object sender, EventArgs e)
     {
 
@@ -39,6 +92,7 @@ namespace TesseractTest
       Stream myStream = null;
       OpenFileDialog openFileDialog1 = new OpenFileDialog();
       //VideoFileReader vidReader = new VideoFileReader();
+      outputTextBox.Text = "";
 
       if (string.IsNullOrWhiteSpace(outputTextBox.Text))
       {
@@ -72,43 +126,8 @@ namespace TesseractTest
                 outputTextBox.AppendText(f + @";" + Environment.NewLine);
 
                 //var image = new Bitmap(f);
-                try
-                {
-                  using (var engine = new TesseractEngine(@"../../tessdata", "eng", EngineMode.Default))
-                  {
-                    using (var img = Pix.LoadFromFile(f))
-                    {
-                      using (var page = engine.Process(img))
-                      {
-                        var text = page.GetText();
-                        char[] delimiters = { ',', '.', '/', '<' , '>',
-                                              '?', ';', '\'', '\\', ':',
-                                              '"', '|', '[', ']', '{',
-                                              '}', '-', '=', '_', '+',
-                                              '!', '@', '#', '$', '%',
-                                              '^', '&', '*', '(', ')',
-                                              ' ', '`', '~', '’', '—',
-                                              '“', '‘', '”', '„', '›' };
-                        string[] unprocessedTags = text.Split(delimiters);
-                        tags = new HashSet<string>(unprocessedTags);
-
-                        outputTextBox.AppendText("Mean confidence: " + page.GetMeanConfidence() + Environment.NewLine);
-
-                        foreach(var t in tags)
-                        {
-                          outputTextBox.AppendText(t + Environment.NewLine);
-                        }
-                      }
-                    }
-                  }
-                }
-                catch (Exception e2)
-                {
-                  Trace.TraceError(e.ToString());
-                  outputTextBox.AppendText("Unexpected Error: " + e2.Message + Environment.NewLine);
-                  outputTextBox.AppendText("Details: ");
-                  outputTextBox.AppendText(e.ToString() + Environment.NewLine);
-                }
+                extractTags(f);
+                outputTextBox.AppendText("Done!" + Environment.NewLine);
               }
             }
           }
