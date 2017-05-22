@@ -15,3 +15,20 @@ c:\users\karol\documents\visual studio 2015\Projects\TesseractTest\TesseractTest
 c:\users\karol\documents\visual studio 2015\Projects\TesseractTest\TesseractTest\bin\Debug\Tesseract.dll
 c:\users\karol\documents\visual studio 2015\Projects\TesseractTest\TesseractTest\bin\Debug\Tesseract.xml
 C:\Users\Karol\Documents\Visual Studio 2015\Projects\TesseractTest\TesseractTest\bin\Debug\Program.cs
+j:\Desktop\PRI-Repo-master\TesseractTest\obj\Debug\TesseractTest.exe
+j:\Desktop\PRI-Repo-master\TesseractTest\obj\Debug\TesseractTest.pdb
+j:\Desktop\PRI-Repo-master\TesseractTest\bin\Debug\TesseractTest.exe.config
+j:\Desktop\PRI-Repo-master\TesseractTest\bin\Debug\x64\liblept172.dll
+j:\Desktop\PRI-Repo-master\TesseractTest\bin\Debug\x64\libtesseract304.dll
+j:\Desktop\PRI-Repo-master\TesseractTest\bin\Debug\x86\liblept172.dll
+j:\Desktop\PRI-Repo-master\TesseractTest\bin\Debug\x86\libtesseract304.dll
+j:\Desktop\PRI-Repo-master\TesseractTest\bin\Debug\Program.cs
+j:\Desktop\PRI-Repo-master\TesseractTest\bin\Debug\TesseractTest.exe
+j:\Desktop\PRI-Repo-master\TesseractTest\bin\Debug\TesseractTest.pdb
+j:\Desktop\PRI-Repo-master\TesseractTest\bin\Debug\GhostscriptSharp.dll
+j:\Desktop\PRI-Repo-master\TesseractTest\bin\Debug\Tesseract.dll
+j:\Desktop\PRI-Repo-master\TesseractTest\bin\Debug\Tesseract.xml
+j:\Desktop\PRI-Repo-master\TesseractTest\obj\Debug\TesseractTest.csprojResolveAssemblyReference.cache
+j:\Desktop\PRI-Repo-master\TesseractTest\obj\Debug\TesseractTest.Form1.resources
+j:\Desktop\PRI-Repo-master\TesseractTest\obj\Debug\TesseractTest.Properties.Resources.resources
+j:\Desktop\PRI-Repo-master\TesseractTest\obj\Debug\TesseractTest.csproj.GenerateResource.Cache
