@@ -33,9 +33,7 @@
       this.colorDialog1 = new System.Windows.Forms.ColorDialog();
       this.outputTextBox = new System.Windows.Forms.TextBox();
       this.outputTextBoxLabel = new System.Windows.Forms.Label();
-      this.samplingFrequencyInputLabel = new System.Windows.Forms.Label();
-      this.samplingFrequencyInput = new System.Windows.Forms.NumericUpDown();
-      ((System.ComponentModel.ISupportInitialize)(this.samplingFrequencyInput)).BeginInit();
+      this.processFilesButton = new System.Windows.Forms.Button();
       this.SuspendLayout();
       // 
       // button1
@@ -45,7 +43,7 @@
       this.button1.Size = new System.Drawing.Size(219, 33);
       this.button1.TabIndex = 0;
       this.button1.Text = "Wybierz plik(i)";
-      this.button1.Click += new System.EventHandler(this.button1_Click);
+      this.button1.Click += new System.EventHandler(this.openFileSelect);
       // 
       // openFileDialog1
       // 
@@ -60,10 +58,9 @@
       this.outputTextBox.Name = "outputTextBox";
       this.outputTextBox.ReadOnly = true;
       this.outputTextBox.ScrollBars = System.Windows.Forms.ScrollBars.Both;
-      this.outputTextBox.Size = new System.Drawing.Size(219, 204);
+      this.outputTextBox.Size = new System.Drawing.Size(219, 256);
       this.outputTextBox.TabIndex = 1;
       this.outputTextBox.TabStop = false;
-      this.outputTextBox.TextChanged += new System.EventHandler(this.OutputTextBox_TextChanged);
       // 
       // outputTextBoxLabel
       // 
@@ -74,42 +71,15 @@
       this.outputTextBoxLabel.TabIndex = 2;
       this.outputTextBoxLabel.Text = "Wybrane pliki";
       // 
-      // samplingFrequencyInputLabel
+      // processFilesButton
       // 
-      this.samplingFrequencyInputLabel.AutoSize = true;
-      this.samplingFrequencyInputLabel.Location = new System.Drawing.Point(296, 22);
-      this.samplingFrequencyInputLabel.Name = "samplingFrequencyInputLabel";
-      this.samplingFrequencyInputLabel.Size = new System.Drawing.Size(107, 13);
-      this.samplingFrequencyInputLabel.TabIndex = 4;
-      this.samplingFrequencyInputLabel.Text = "Próbkuj co (1s - 0.1s)";
-      // 
-      // samplingFrequencyInput
-      // 
-      this.samplingFrequencyInput.DecimalPlaces = 1;
-      this.samplingFrequencyInput.Increment = new decimal(new int[] {
-            1,
-            0,
-            0,
-            65536});
-      this.samplingFrequencyInput.Location = new System.Drawing.Point(409, 19);
-      this.samplingFrequencyInput.Maximum = new decimal(new int[] {
-            1,
-            0,
-            0,
-            0});
-      this.samplingFrequencyInput.Minimum = new decimal(new int[] {
-            1,
-            0,
-            0,
-            65536});
-      this.samplingFrequencyInput.Name = "samplingFrequencyInput";
-      this.samplingFrequencyInput.Size = new System.Drawing.Size(62, 20);
-      this.samplingFrequencyInput.TabIndex = 5;
-      this.samplingFrequencyInput.Value = new decimal(new int[] {
-            5,
-            0,
-            0,
-            65536});
+      this.processFilesButton.Location = new System.Drawing.Point(281, 12);
+      this.processFilesButton.Name = "processFilesButton";
+      this.processFilesButton.Size = new System.Drawing.Size(210, 337);
+      this.processFilesButton.TabIndex = 3;
+      this.processFilesButton.Text = "GO!";
+      this.processFilesButton.UseVisualStyleBackColor = true;
+      this.processFilesButton.Click += new System.EventHandler(this.processVideoFiles);
       // 
       // Form1
       // 
@@ -117,8 +87,7 @@
       this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
       this.AutoSize = true;
       this.ClientSize = new System.Drawing.Size(516, 361);
-      this.Controls.Add(this.samplingFrequencyInput);
-      this.Controls.Add(this.samplingFrequencyInputLabel);
+      this.Controls.Add(this.processFilesButton);
       this.Controls.Add(this.outputTextBoxLabel);
       this.Controls.Add(this.outputTextBox);
       this.Controls.Add(this.button1);
@@ -126,7 +95,6 @@
       this.Name = "Form1";
       this.Text = "Tesseract test";
       this.Load += new System.EventHandler(this.Form1_Load);
-      ((System.ComponentModel.ISupportInitialize)(this.samplingFrequencyInput)).EndInit();
       this.ResumeLayout(false);
       this.PerformLayout();
 
@@ -139,8 +107,7 @@
     private System.Windows.Forms.ColorDialog colorDialog1;
     private System.Windows.Forms.TextBox outputTextBox;
     private System.Windows.Forms.Label outputTextBoxLabel;
-    private System.Windows.Forms.Label samplingFrequencyInputLabel;
-    private System.Windows.Forms.NumericUpDown samplingFrequencyInput;
+    private System.Windows.Forms.Button processFilesButton;
   }
 }
 

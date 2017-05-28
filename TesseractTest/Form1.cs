@@ -10,27 +10,87 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using Tesseract;
+using MediaToolkit.Model;
+using MediaToolkit;
+using MediaToolkit.Options;
 
 namespace TesseractTest
 {
   public partial class Form1 : Form
   {
-    List<string> extractedText;
+    List<string> filenames;
+
+    class VideoFile
+    {
+      private string language;
+      private string filePath;
+      private HashSet<string> tags;
+      
+      private double fps;
+      private TimeSpan time;
+
+      // Getters
+      public double getFps()
+      {
+        return fps;
+      }
+
+      public string getLanguage()
+      {
+        return language;
+      }
+
+      public string getFilePath()
+      {
+        return filePath;
+      }
+
+      public HashSet<string> getTags()
+      {
+        return tags;
+      }
+
+      // Constructors
+      public VideoFile(string filePath, double fps, TimeSpan time, string language = "eng")
+      {
+        this.filePath = filePath;
+        this.fps = fps;
+        this.time = time;
+        this.language = language;
+        tags = new HashSet<string>();
+      }
+
+
+      public void addTags(HashSet<string> newTags)
+      {
+        tags.Concat(newTags);
+      }
+
+
+      public double getFramesInTimeSpan()
+      {
+        return fps * time.Seconds;
+      }
+      public double getFramesInTimeSpan(TimeSpan timeSpan)
+      {
+        return fps * timeSpan.Seconds;
+      }
+    }
+    
 
     public Form1()
     {
       InitializeComponent();
-
-      extractedText = new List<string>();
+      filenames = new List<string>();
     }
 
 
-    private HashSet<string> extractTags(string filePath)
+    private HashSet<string> extractTagsFromFrame(string filePath, string language)
     {
       HashSet<string> tags = new HashSet<string>();
       try
       {
-        using (var engine = new TesseractEngine(@"../../tessdata", "eng", EngineMode.TesseractAndCube))
+        using (var engine = new TesseractEngine(@"../../tessdata", "pol", EngineMode.Default))
         {
           using (var img = Pix.LoadFromFile(filePath))
           {
@@ -53,7 +113,7 @@ namespace TesseractTest
               tags = new HashSet<string>(unprocessedTags);
               //System.IO.File.WriteAllText("./" + Path.GetFileNameWithoutExtension(filePath) + "_tags", tags);
 
-              outputTextBox.AppendText("Mean confidence: " + page.GetMeanConfidence() + Environment.NewLine);
+              //outputTextBox.AppendText("Mean confidence: " + page.GetMeanConfidence() + Environment.NewLine);
 
               foreach (var t in tags)
               {
@@ -77,22 +137,89 @@ namespace TesseractTest
     }
 
 
+    private void extractTagsFromFile(VideoFile file)
+    {
+      String frameDirectory = Directory.GetCurrentDirectory() + @"\temp";
+      if (!Directory.Exists(frameDirectory))
+      {
+        Directory.CreateDirectory(frameDirectory);
+      }
+      String framePath = frameDirectory + @"\img.png";
+      
+      var inputFile = new MediaFile { Filename = file.getFilePath() };
+      var outputFile = new MediaFile { Filename = framePath };
+
+      using (var engine = new Engine())
+      {
+        engine.GetMetadata(inputFile);
+
+        // Saves the frame located on the x-th second of the video.
+        var options = new ConversionOptions { Seek = TimeSpan.FromSeconds(7) };
+        engine.GetThumbnail(inputFile, outputFile, options);
+      }
+      file.addTags(extractTagsFromFrame(framePath, file.getLanguage()));
+
+      outputTextBox.AppendText("Done!" + Environment.NewLine);
+    }
+
+
+    private void ShowExtractionOptions(VideoFile file, MediaFile input)
+    {
+      Form2 form2 = new Form2(input);
+      form2.ShowDialog();
+    }
+
+
     private void Form1_Load(object sender, EventArgs e)
     {
 
     }
+
 
     private void openFileDialog1_FileOk(object sender, CancelEventArgs e)
     {
 
     }
 
-    private void button1_Click(object sender, System.EventArgs e)
+
+    private void processVideoFiles(object sender, System.EventArgs e)
+    {
+      if (filenames.Count > 0)
+      {
+        foreach (string f in filenames)
+        {
+          var input = new MediaFile { Filename = f };
+          using (var engine = new Engine())
+          {
+            engine.GetMetadata(input);
+          }
+          Console.WriteLine(input.Metadata.VideoData.Fps);
+          try {
+            double fps = input.Metadata.VideoData.Fps;
+            TimeSpan time = input.Metadata.Duration;
+            VideoFile file = new VideoFile(f, fps, time);
+            ShowExtractionOptions(file, input);
+
+            extractTagsFromFile(file);
+            HashSet<string> gottenTags = file.getTags();
+            foreach(var tag in gottenTags)
+            {
+              outputTextBox.AppendText("[" + tag + "]");
+            }
+          }
+          catch(Exception exc)
+          {
+            Console.WriteLine(exc.Message);
+          }
+        }
+      }
+    }
+
+
+    private void openFileSelect(object sender, System.EventArgs e)
     {
       Stream myStream = null;
       OpenFileDialog openFileDialog1 = new OpenFileDialog();
-      //VideoFileReader vidReader = new VideoFileReader();
-      outputTextBox.Text = "";
 
       if (string.IsNullOrWhiteSpace(outputTextBox.Text))
       {
@@ -102,12 +229,10 @@ namespace TesseractTest
       string userFolderDirectory = Environment.GetFolderPath(Environment.SpecialFolder.CommonVideos);
       if (userFolderDirectory == "") { userFolderDirectory = @"C:\"; }
       openFileDialog1.InitialDirectory = userFolderDirectory;
-      openFileDialog1.Filter = @"Pliki wideo (*.avi;*.wmv)|*.avi; *.wmv|Wszystie pliki (*.*)|*.*";
+      openFileDialog1.Filter = @"Pliki wideo (*.avi;*.wmv)|*.avi; *.wmv";
       openFileDialog1.FilterIndex = 2;
       openFileDialog1.RestoreDirectory = true;
       openFileDialog1.Multiselect = true;
-
-      HashSet<string> tags;
 
       if (openFileDialog1.ShowDialog() == DialogResult.OK)
       {
@@ -118,30 +243,22 @@ namespace TesseractTest
             using (myStream)
             {
               // Insert code to read the stream here.
-              string[] filenames = openFileDialog1.FileNames;
-              int totalFrames = 0;
-              //outputTextBox.AppendText(Directory.GetCurrentDirectory());
-              foreach (string f in filenames)
+              foreach(string name in openFileDialog1.FileNames)
               {
-                outputTextBox.AppendText(f + @";" + Environment.NewLine);
-
-                //var image = new Bitmap(f);
-                extractTags(f);
-                outputTextBox.AppendText("Done!" + Environment.NewLine);
-              }
+                if (!filenames.Contains(name))
+                {
+                  filenames.Add(name);
+                  outputTextBox.AppendText(name + @";" + Environment.NewLine);
+                }
+              }              
             }
           }
         }
         catch (Exception ex)
         {
-          MessageBox.Show("Error: Could not read file from disk. Original error: " + ex.Message + Environment.NewLine);
+          MessageBox.Show("Error: Could not read image file from disk. Original error: " + ex.Message + Environment.NewLine);
         }
       }
-    }
-
-    private void OutputTextBox_TextChanged(object sender, EventArgs e)
-    {
-
     }
 
   }

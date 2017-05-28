@@ -14,3 +14,21 @@ C:\Users\Karol\Documents\Visual Studio 2015\Projects\TesseractTest\TesseractTest
 C:\Users\Karol\Documents\Visual Studio 2015\Projects\TesseractTest\TesseractTest\obj\Release\TesseractTest.exe
 C:\Users\Karol\Documents\Visual Studio 2015\Projects\TesseractTest\TesseractTest\obj\Release\TesseractTest.pdb
 C:\Users\Karol\Documents\Visual Studio 2015\Projects\TesseractTest\TesseractTest\bin\Release\Program.cs
+C:\Users\Karol\Documents\GitHub\PRI-Repo\TesseractTest\bin\Release\TesseractTest.exe.config
+C:\Users\Karol\Documents\GitHub\PRI-Repo\TesseractTest\obj\Release\TesseractTest.exe
+C:\Users\Karol\Documents\GitHub\PRI-Repo\TesseractTest\obj\Release\TesseractTest.pdb
+C:\Users\Karol\Documents\GitHub\PRI-Repo\TesseractTest\bin\Release\x64\liblept172.dll
+C:\Users\Karol\Documents\GitHub\PRI-Repo\TesseractTest\bin\Release\x64\libtesseract304.dll
+C:\Users\Karol\Documents\GitHub\PRI-Repo\TesseractTest\bin\Release\x86\liblept172.dll
+C:\Users\Karol\Documents\GitHub\PRI-Repo\TesseractTest\bin\Release\x86\libtesseract304.dll
+C:\Users\Karol\Documents\GitHub\PRI-Repo\TesseractTest\bin\Release\Program.cs
+C:\Users\Karol\Documents\GitHub\PRI-Repo\TesseractTest\bin\Release\TesseractTest.exe
+C:\Users\Karol\Documents\GitHub\PRI-Repo\TesseractTest\bin\Release\TesseractTest.pdb
+C:\Users\Karol\Documents\GitHub\PRI-Repo\TesseractTest\bin\Release\GhostscriptSharp.dll
+C:\Users\Karol\Documents\GitHub\PRI-Repo\TesseractTest\bin\Release\MediaToolkit.dll
+C:\Users\Karol\Documents\GitHub\PRI-Repo\TesseractTest\bin\Release\Tesseract.dll
+C:\Users\Karol\Documents\GitHub\PRI-Repo\TesseractTest\bin\Release\Tesseract.xml
+C:\Users\Karol\Documents\GitHub\PRI-Repo\TesseractTest\obj\Release\TesseractTest.Form1.resources
+C:\Users\Karol\Documents\GitHub\PRI-Repo\TesseractTest\obj\Release\TesseractTest.Form2.resources
+C:\Users\Karol\Documents\GitHub\PRI-Repo\TesseractTest\obj\Release\TesseractTest.Properties.Resources.resources
+C:\Users\Karol\Documents\GitHub\PRI-Repo\TesseractTest\obj\Release\TesseractTest.csproj.GenerateResource.Cache
