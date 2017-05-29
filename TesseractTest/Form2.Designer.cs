@@ -53,7 +53,7 @@
             65536});
       this.samplingFrequencyInput.Location = new System.Drawing.Point(616, 46);
       this.samplingFrequencyInput.Maximum = new decimal(new int[] {
-            1,
+            2,
             0,
             0,
             0});
@@ -79,7 +79,7 @@
       this.samplingFrequencyInputLabel.Name = "samplingFrequencyInputLabel";
       this.samplingFrequencyInputLabel.Size = new System.Drawing.Size(107, 13);
       this.samplingFrequencyInputLabel.TabIndex = 6;
-      this.samplingFrequencyInputLabel.Text = "Próbkuj co (1s - 0.1s)";
+      this.samplingFrequencyInputLabel.Text = "Próbkuj co (2s - 0.1s)";
       // 
       // languageComboBox
       // 

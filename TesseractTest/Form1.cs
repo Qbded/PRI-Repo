@@ -58,11 +58,11 @@ namespace TesseractTest
 
               //outputTextBox.AppendText("Mean confidence: " + page.GetMeanConfidence() + Environment.NewLine);
 
-              foreach (var t in tags)
-              {
-                outputTextBox.AppendText("[" + t + "] ");
-              }
-              outputTextBox.AppendText(Environment.NewLine);
+              //foreach (var t in tags)
+              //{
+              //  outputTextBox.AppendText("[" + t + "] ");
+              //}
+              //outputTextBox.AppendText(Environment.NewLine);
             }
           }
         }
@@ -79,7 +79,7 @@ namespace TesseractTest
     }
 
 
-    private void extractTagsFromFile(ref VideoFile file, ref MediaFile input)
+    private void extractTagsFromFile(ref VideoFile file, ref MediaFile input, ref ExtractionOptions extractionOptions)
     {
       string frameDirectory = Directory.GetCurrentDirectory() + @"\temp";
       if (!Directory.Exists(frameDirectory))
@@ -87,31 +87,40 @@ namespace TesseractTest
         Directory.CreateDirectory(frameDirectory);
       }
       string framePath = frameDirectory + @"\img.png";
+
+      TimeSpan timePointer = new TimeSpan(0);
+      TimeSpan timeStep = new TimeSpan((long)(10000000 * extractionOptions.getSamplingFrequency()));
       
       var outputFile = new MediaFile { Filename = framePath };
-
       using (var engine = new Engine())
       {
         engine.GetMetadata(input);
-
         // Saves the frame located on the x-th second of the video.
-        var options = new ConversionOptions { Seek = TimeSpan.FromSeconds(7) };
-        engine.GetThumbnail(input, outputFile, options);
+        //while (timePointer.CompareTo(input.Metadata.Duration) < 0)
+        while (timePointer.CompareTo(new TimeSpan(0, 0, 10)) < 0)
+        {
+          var options = new ConversionOptions { Seek = TimeSpan.FromMilliseconds(timePointer.TotalMilliseconds) };
+          engine.GetThumbnail(input, outputFile, options);
+          file.addTags(extractTagsFromFrame(framePath, file.getLanguage()));
+          timePointer = timePointer.Add(timeStep);
+          //outputTextBox.AppendText("Time step: " + timeStep.Hours + ":" + timeStep.Minutes + ":" + timeStep.Seconds + "." + timeStep.Milliseconds + "/" + Environment.NewLine);
+          //outputTextBox.AppendText("" + timePointer.Hours + ":" + timePointer.Minutes + ":" + timePointer.Seconds + "." + timePointer.Milliseconds + "/" + Environment.NewLine);
+        }
       }
-      file.addTags(extractTagsFromFrame(framePath, file.getLanguage()));
 
       outputTextBox.AppendText("Done!" + Environment.NewLine);
     }
 
 
-    private void ShowExtractionOptions(ref VideoFile file, ref MediaFile input)
+    private void GetExtractionOptions(ref VideoFile file, ref MediaFile input)
     {
-      Form2 form2 = new Form2(ref file, ref input);
+      ExtractionOptions extractionOptions = new ExtractionOptions();
+      Form2 form2 = new Form2(ref file, ref input, ref extractionOptions);
       form2.ShowDialog();
       System.IO.File.Delete(Directory.GetCurrentDirectory() + @"\temp\thumbnail.png");
       Console.WriteLine("Ticked so far");
 
-      extractTagsFromFile(ref file, ref input);
+      extractTagsFromFile(ref file, ref input, ref extractionOptions);
       System.IO.File.Delete(Directory.GetCurrentDirectory() + @"\temp\img.png");
     }
 
@@ -144,7 +153,7 @@ namespace TesseractTest
             double fps = input.Metadata.VideoData.Fps;
             TimeSpan time = input.Metadata.Duration;
             VideoFile file = new VideoFile(f, fps, time);
-            ShowExtractionOptions(ref file, ref input);
+            GetExtractionOptions(ref file, ref input);
 
             HashSet<string> gottenTags = file.getTags();
             if (gottenTags.Count() > 0)

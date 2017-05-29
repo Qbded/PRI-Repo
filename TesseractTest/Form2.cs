@@ -43,13 +43,15 @@ namespace TesseractTest
     MediaFile inputFile;
     MediaFile thumbnailFile;
     Engine engine;
+    ExtractionOptions extractionOptions;
     
 
-    public Form2(ref VideoFile videoFile, ref MediaFile inputFile)
+    public Form2(ref VideoFile videoFile, ref MediaFile inputFile, ref ExtractionOptions extractionOptions)
     {
       this.videoFile = videoFile;
       this.inputFile = inputFile;
       this.engine = new Engine();
+      this.extractionOptions = extractionOptions;
       InitializeComponent();
 
       setThumbnail();
@@ -113,6 +115,8 @@ namespace TesseractTest
     private void okButton_Click(object sender, EventArgs e)
     {
       videoFile.setLanguage(getLanguage());
+      extractionOptions.setSamplingFrequency(getSamplingFrequency());
+      extractionOptions.setLanguage(getLanguage());
 
       this.Close();
       this.Dispose();
