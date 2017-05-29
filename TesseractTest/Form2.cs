@@ -39,16 +39,20 @@ namespace TesseractTest
       }
     }
 
+    VideoFile videoFile;
     MediaFile inputFile;
     MediaFile thumbnailFile;
     Engine engine;
     
 
-    public Form2(MediaFile inputFile)
+    public Form2(ref VideoFile videoFile, ref MediaFile inputFile)
     {
+      this.videoFile = videoFile;
       this.inputFile = inputFile;
       this.engine = new Engine();
       InitializeComponent();
+
+      setThumbnail();
     }
 
 
@@ -60,7 +64,28 @@ namespace TesseractTest
 
     public string getLanguage()
     {
-      return ((ComboBoxLanguage)this.languageComboBox.SelectedValue).getValue();
+      string value = "";
+      try {
+        value = ((ComboBoxLanguage)this.languageComboBox.SelectedValue).getValue();
+      }
+      catch(Exception e)
+      {
+        Console.WriteLine("Exception caught at getLanguage(): " + e.ToString());
+      }
+      if(value == "") { value = "eng"; }
+      return value;
+    }
+
+
+    public List<Tuple<TimeSpan, TimeSpan>> getTimeRange()
+    {
+      //if (this.analyzeWholeFileSwitch.Checked || )
+      //{
+      Tuple<TimeSpan, TimeSpan> t = new Tuple<TimeSpan, TimeSpan>(new TimeSpan(0), inputFile.Metadata.Duration);
+      List<Tuple<TimeSpan, TimeSpan>> list = new List<Tuple<TimeSpan, TimeSpan>>();
+      list.Add(t);
+      return list;
+      //}
     }
 
 
@@ -70,13 +95,27 @@ namespace TesseractTest
       var options = new ConversionOptions { Seek = TimeSpan.FromSeconds(inputFile.Metadata.Duration.Seconds / 10) };
       thumbnailFile = new MediaFile(thumbnailPath);
       engine.GetThumbnail(inputFile, thumbnailFile, options);
-      this.videoThumbnail.ImageLocation = thumbnailPath;
+      this.videoThumbnail.ImageLocation = Path.GetFullPath(thumbnailPath);
+      this.videoThumbnail.Load();
+
+      this.thumbnailLabel.Text = Path.GetFileName(inputFile.Filename);
+    }
+
+
+    private void getFramesToAnalyze(object sender, EventArgs e)
+    {
+      decimal freq = getSamplingFrequency();
+      long framesToAnalyze = (long)(videoFile.getFramesInTimeSpan() / freq);
+      this.framesToAnalyzeDisplay.Text = framesToAnalyze.ToString();
     }
 
 
     private void okButton_Click(object sender, EventArgs e)
     {
+      videoFile.setLanguage(getLanguage());
+
       this.Close();
+      this.Dispose();
     }
   }
 }

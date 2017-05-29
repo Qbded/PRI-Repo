@@ -19,63 +19,6 @@ namespace TesseractTest
   public partial class Form1 : Form
   {
     List<string> filenames;
-
-    class VideoFile
-    {
-      private string language;
-      private string filePath;
-      private HashSet<string> tags;
-      
-      private double fps;
-      private TimeSpan time;
-
-      // Getters
-      public double getFps()
-      {
-        return fps;
-      }
-
-      public string getLanguage()
-      {
-        return language;
-      }
-
-      public string getFilePath()
-      {
-        return filePath;
-      }
-
-      public HashSet<string> getTags()
-      {
-        return tags;
-      }
-
-      // Constructors
-      public VideoFile(string filePath, double fps, TimeSpan time, string language = "eng")
-      {
-        this.filePath = filePath;
-        this.fps = fps;
-        this.time = time;
-        this.language = language;
-        tags = new HashSet<string>();
-      }
-
-
-      public void addTags(HashSet<string> newTags)
-      {
-        tags.Concat(newTags);
-      }
-
-
-      public double getFramesInTimeSpan()
-      {
-        return fps * time.Seconds;
-      }
-      public double getFramesInTimeSpan(TimeSpan timeSpan)
-      {
-        return fps * timeSpan.Seconds;
-      }
-    }
     
 
     public Form1()
@@ -117,7 +60,6 @@ namespace TesseractTest
 
               foreach (var t in tags)
               {
-                //outputTextBox.AppendText(t + Environment.NewLine);
                 outputTextBox.AppendText("[" + t + "] ");
               }
               outputTextBox.AppendText(Environment.NewLine);
@@ -137,25 +79,24 @@ namespace TesseractTest
     }
 
 
-    private void extractTagsFromFile(VideoFile file)
+    private void extractTagsFromFile(ref VideoFile file, ref MediaFile input)
     {
-      String frameDirectory = Directory.GetCurrentDirectory() + @"\temp";
+      string frameDirectory = Directory.GetCurrentDirectory() + @"\temp";
       if (!Directory.Exists(frameDirectory))
       {
         Directory.CreateDirectory(frameDirectory);
       }
-      String framePath = frameDirectory + @"\img.png";
+      string framePath = frameDirectory + @"\img.png";
       
-      var inputFile = new MediaFile { Filename = file.getFilePath() };
       var outputFile = new MediaFile { Filename = framePath };
 
       using (var engine = new Engine())
       {
-        engine.GetMetadata(inputFile);
+        engine.GetMetadata(input);
 
         // Saves the frame located on the x-th second of the video.
         var options = new ConversionOptions { Seek = TimeSpan.FromSeconds(7) };
-        engine.GetThumbnail(inputFile, outputFile, options);
+        engine.GetThumbnail(input, outputFile, options);
       }
       file.addTags(extractTagsFromFrame(framePath, file.getLanguage()));
 
@@ -163,10 +104,15 @@ namespace TesseractTest
     }
 
 
-    private void ShowExtractionOptions(VideoFile file, MediaFile input)
+    private void ShowExtractionOptions(ref VideoFile file, ref MediaFile input)
     {
-      Form2 form2 = new Form2(input);
+      Form2 form2 = new Form2(ref file, ref input);
       form2.ShowDialog();
+      System.IO.File.Delete(Directory.GetCurrentDirectory() + @"\temp\thumbnail.png");
+      Console.WriteLine("Ticked so far");
+
+      extractTagsFromFile(ref file, ref input);
+      System.IO.File.Delete(Directory.GetCurrentDirectory() + @"\temp\img.png");
     }
 
 
@@ -198,13 +144,19 @@ namespace TesseractTest
             double fps = input.Metadata.VideoData.Fps;
             TimeSpan time = input.Metadata.Duration;
             VideoFile file = new VideoFile(f, fps, time);
-            ShowExtractionOptions(file, input);
+            ShowExtractionOptions(ref file, ref input);
 
-            extractTagsFromFile(file);
             HashSet<string> gottenTags = file.getTags();
-            foreach(var tag in gottenTags)
+            if (gottenTags.Count() > 0)
             {
-              outputTextBox.AppendText("[" + tag + "]");
+              foreach (var tag in gottenTags)
+              {
+                outputTextBox.AppendText("[" + tag + "]");
+              }
+            }
+            else
+            {
+              outputTextBox.AppendText("No tags were gotten" + Environment.NewLine);
             }
           }
           catch(Exception exc)
@@ -212,6 +164,7 @@ namespace TesseractTest
             Console.WriteLine(exc.Message);
           }
         }
+        filenames.Clear();
       }
     }
 

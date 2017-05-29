@@ -35,8 +35,10 @@
       this.label2 = new System.Windows.Forms.Label();
       this.analyzeWholeFileSwitch = new System.Windows.Forms.CheckBox();
       this.videoThumbnail = new System.Windows.Forms.PictureBox();
-      this.thumbnailLabel = new System.Windows.Forms.Label();
       this.okButton = new System.Windows.Forms.Button();
+      this.thumbnailLabel = new System.Windows.Forms.TextBox();
+      this.framesToAnalyzeDisplay = new System.Windows.Forms.TextBox();
+      this.label1 = new System.Windows.Forms.Label();
       ((System.ComponentModel.ISupportInitialize)(this.samplingFrequencyInput)).BeginInit();
       ((System.ComponentModel.ISupportInitialize)(this.videoThumbnail)).BeginInit();
       this.SuspendLayout();
@@ -49,7 +51,7 @@
             0,
             0,
             65536});
-      this.samplingFrequencyInput.Location = new System.Drawing.Point(632, 46);
+      this.samplingFrequencyInput.Location = new System.Drawing.Point(616, 46);
       this.samplingFrequencyInput.Maximum = new decimal(new int[] {
             1,
             0,
@@ -61,18 +63,19 @@
             0,
             65536});
       this.samplingFrequencyInput.Name = "samplingFrequencyInput";
-      this.samplingFrequencyInput.Size = new System.Drawing.Size(62, 20);
+      this.samplingFrequencyInput.Size = new System.Drawing.Size(78, 20);
       this.samplingFrequencyInput.TabIndex = 9;
       this.samplingFrequencyInput.Value = new decimal(new int[] {
             5,
             0,
             0,
             65536});
+      this.samplingFrequencyInput.ValueChanged += new System.EventHandler(this.getFramesToAnalyze);
       // 
       // samplingFrequencyInputLabel
       // 
       this.samplingFrequencyInputLabel.AutoSize = true;
-      this.samplingFrequencyInputLabel.Location = new System.Drawing.Point(519, 49);
+      this.samplingFrequencyInputLabel.Location = new System.Drawing.Point(503, 49);
       this.samplingFrequencyInputLabel.Name = "samplingFrequencyInputLabel";
       this.samplingFrequencyInputLabel.Size = new System.Drawing.Size(107, 13);
       this.samplingFrequencyInputLabel.TabIndex = 6;
@@ -81,15 +84,20 @@
       // languageComboBox
       // 
       this.languageComboBox.FormattingEnabled = true;
-      this.languageComboBox.Location = new System.Drawing.Point(573, 19);
+      this.languageComboBox.Location = new System.Drawing.Point(557, 19);
       this.languageComboBox.Name = "languageComboBox";
-      this.languageComboBox.Size = new System.Drawing.Size(121, 21);
+      this.languageComboBox.Size = new System.Drawing.Size(137, 21);
       this.languageComboBox.TabIndex = 8;
+      this.languageComboBox.Items.AddRange(new object[]
+      {
+        new ComboBoxLanguage("Angielski", "eng"),
+        new ComboBoxLanguage("Polski", "pol")
+      });
       // 
       // languageComboBoxLabel
       // 
       this.languageComboBoxLabel.AutoSize = true;
-      this.languageComboBoxLabel.Location = new System.Drawing.Point(498, 22);
+      this.languageComboBoxLabel.Location = new System.Drawing.Point(482, 22);
       this.languageComboBoxLabel.Name = "languageComboBoxLabel";
       this.languageComboBoxLabel.Size = new System.Drawing.Size(69, 13);
       this.languageComboBoxLabel.TabIndex = 9;
@@ -107,6 +115,8 @@
       // analyzeWholeFileSwitch
       // 
       this.analyzeWholeFileSwitch.AutoSize = true;
+      this.analyzeWholeFileSwitch.Checked = true;
+      this.analyzeWholeFileSwitch.CheckState = System.Windows.Forms.CheckState.Checked;
       this.analyzeWholeFileSwitch.Location = new System.Drawing.Point(235, 21);
       this.analyzeWholeFileSwitch.Name = "analyzeWholeFileSwitch";
       this.analyzeWholeFileSwitch.Size = new System.Drawing.Size(105, 17);
@@ -119,19 +129,9 @@
       this.videoThumbnail.Location = new System.Drawing.Point(12, 49);
       this.videoThumbnail.Name = "videoThumbnail";
       this.videoThumbnail.Size = new System.Drawing.Size(191, 138);
+      this.videoThumbnail.SizeMode = System.Windows.Forms.PictureBoxSizeMode.Zoom;
       this.videoThumbnail.TabIndex = 12;
       this.videoThumbnail.TabStop = false;
-      // 
-      // thumbnailLabel
-      // 
-      this.thumbnailLabel.Anchor = System.Windows.Forms.AnchorStyles.Bottom;
-      this.thumbnailLabel.AutoSize = true;
-      this.thumbnailLabel.Location = new System.Drawing.Point(91, 27);
-      this.thumbnailLabel.Name = "thumbnailLabel";
-      this.thumbnailLabel.Size = new System.Drawing.Size(32, 13);
-      this.thumbnailLabel.TabIndex = 13;
-      this.thumbnailLabel.Text = "Tytuł";
-      this.thumbnailLabel.TextAlign = System.Drawing.ContentAlignment.TopCenter;
       // 
       // okButton
       // 
@@ -143,13 +143,42 @@
       this.okButton.UseVisualStyleBackColor = true;
       this.okButton.Click += new System.EventHandler(this.okButton_Click);
       // 
+      // thumbnailLabel
+      // 
+      this.thumbnailLabel.Location = new System.Drawing.Point(12, 23);
+      this.thumbnailLabel.Name = "thumbnailLabel";
+      this.thumbnailLabel.ReadOnly = true;
+      this.thumbnailLabel.Size = new System.Drawing.Size(191, 20);
+      this.thumbnailLabel.TabIndex = 101;
+      this.thumbnailLabel.TabStop = false;
+      this.thumbnailLabel.WordWrap = false;
+      // 
+      // framesToAnalyzeDisplay
+      // 
+      this.framesToAnalyzeDisplay.Location = new System.Drawing.Point(485, 90);
+      this.framesToAnalyzeDisplay.Name = "framesToAnalyzeDisplay";
+      this.framesToAnalyzeDisplay.ReadOnly = true;
+      this.framesToAnalyzeDisplay.Size = new System.Drawing.Size(209, 20);
+      this.framesToAnalyzeDisplay.TabIndex = 102;
+      // 
+      // label1
+      // 
+      this.label1.AutoSize = true;
+      this.label1.Location = new System.Drawing.Point(482, 74);
+      this.label1.Name = "label1";
+      this.label1.Size = new System.Drawing.Size(218, 13);
+      this.label1.TabIndex = 103;
+      this.label1.Text = "Szacowana ilość klatek do przeanalizowania";
+      // 
       // Form2
       // 
       this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
       this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
       this.ClientSize = new System.Drawing.Size(716, 230);
-      this.Controls.Add(this.okButton);
+      this.Controls.Add(this.label1);
+      this.Controls.Add(this.framesToAnalyzeDisplay);
       this.Controls.Add(this.thumbnailLabel);
+      this.Controls.Add(this.okButton);
       this.Controls.Add(this.videoThumbnail);
       this.Controls.Add(this.analyzeWholeFileSwitch);
       this.Controls.Add(this.label2);
@@ -176,7 +205,9 @@
     private System.Windows.Forms.Label label2;
     private System.Windows.Forms.CheckBox analyzeWholeFileSwitch;
     private System.Windows.Forms.PictureBox videoThumbnail;
-    private System.Windows.Forms.Label thumbnailLabel;
     private System.Windows.Forms.Button okButton;
+    private System.Windows.Forms.TextBox thumbnailLabel;
+    private System.Windows.Forms.TextBox framesToAnalyzeDisplay;
+    private System.Windows.Forms.Label label1;
   }
 }
