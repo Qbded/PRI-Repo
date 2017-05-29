@@ -95,9 +95,10 @@ namespace TesseractTest
       using (var engine = new Engine())
       {
         engine.GetMetadata(input);
+        
         // Saves the frame located on the x-th second of the video.
-        //while (timePointer.CompareTo(input.Metadata.Duration) < 0)
-        while (timePointer.CompareTo(new TimeSpan(0, 0, 10)) < 0)
+        while (timePointer.CompareTo(input.Metadata.Duration) < 0)
+        //while (timePointer.CompareTo(new TimeSpan(0, 0, 10)) < 0)
         {
           var options = new ConversionOptions { Seek = TimeSpan.FromMilliseconds(timePointer.TotalMilliseconds) };
           engine.GetThumbnail(input, outputFile, options);
