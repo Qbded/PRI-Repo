@@ -39,6 +39,9 @@
       this.thumbnailLabel = new System.Windows.Forms.TextBox();
       this.framesToAnalyzeDisplay = new System.Windows.Forms.TextBox();
       this.label1 = new System.Windows.Forms.Label();
+      this.timeRangeListbox = new System.Windows.Forms.ListBox();
+      this.cancelButton = new System.Windows.Forms.Button();
+      this.addTimeRangeButton = new System.Windows.Forms.Button();
       ((System.ComponentModel.ISupportInitialize)(this.samplingFrequencyInput)).BeginInit();
       ((System.ComponentModel.ISupportInitialize)(this.videoThumbnail)).BeginInit();
       this.SuspendLayout();
@@ -88,11 +91,6 @@
       this.languageComboBox.Name = "languageComboBox";
       this.languageComboBox.Size = new System.Drawing.Size(137, 21);
       this.languageComboBox.TabIndex = 8;
-      this.languageComboBox.Items.AddRange(new object[]
-      {
-        new ComboBoxLanguage("Angielski", "eng"),
-        new ComboBoxLanguage("Polski", "pol")
-      });
       // 
       // languageComboBoxLabel
       // 
@@ -123,6 +121,7 @@
       this.analyzeWholeFileSwitch.TabIndex = 1;
       this.analyzeWholeFileSwitch.Text = "Analizuj cały plik";
       this.analyzeWholeFileSwitch.UseVisualStyleBackColor = true;
+      this.analyzeWholeFileSwitch.Click += new System.EventHandler(this.analyzeWholeFileSwitch_Click);
       // 
       // videoThumbnail
       // 
@@ -170,11 +169,42 @@
       this.label1.TabIndex = 103;
       this.label1.Text = "Szacowana ilość klatek do przeanalizowania";
       // 
+      // timeRangeListbox
+      // 
+      this.timeRangeListbox.Enabled = false;
+      this.timeRangeListbox.FormattingEnabled = true;
+      this.timeRangeListbox.Location = new System.Drawing.Point(220, 74);
+      this.timeRangeListbox.Name = "timeRangeListbox";
+      this.timeRangeListbox.Size = new System.Drawing.Size(192, 108);
+      this.timeRangeListbox.TabIndex = 104;
+      // 
+      // cancelButton
+      // 
+      this.cancelButton.Location = new System.Drawing.Point(475, 163);
+      this.cancelButton.Name = "cancelButton";
+      this.cancelButton.Size = new System.Drawing.Size(104, 41);
+      this.cancelButton.TabIndex = 105;
+      this.cancelButton.Text = "Anuluj";
+      this.cancelButton.UseVisualStyleBackColor = true;
+      // 
+      // addTimeRangeButton
+      // 
+      this.addTimeRangeButton.Enabled = false;
+      this.addTimeRangeButton.Location = new System.Drawing.Point(293, 188);
+      this.addTimeRangeButton.Name = "addTimeRangeButton";
+      this.addTimeRangeButton.Size = new System.Drawing.Size(47, 30);
+      this.addTimeRangeButton.TabIndex = 106;
+      this.addTimeRangeButton.Text = "+";
+      this.addTimeRangeButton.UseVisualStyleBackColor = true;
+      // 
       // Form2
       // 
       this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
       this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
       this.ClientSize = new System.Drawing.Size(716, 230);
+      this.Controls.Add(this.addTimeRangeButton);
+      this.Controls.Add(this.cancelButton);
+      this.Controls.Add(this.timeRangeListbox);
       this.Controls.Add(this.label1);
       this.Controls.Add(this.framesToAnalyzeDisplay);
       this.Controls.Add(this.thumbnailLabel);
@@ -209,5 +239,8 @@
     private System.Windows.Forms.TextBox thumbnailLabel;
     private System.Windows.Forms.TextBox framesToAnalyzeDisplay;
     private System.Windows.Forms.Label label1;
+    private System.Windows.Forms.ListBox timeRangeListbox;
+    private System.Windows.Forms.Button cancelButton;
+    private System.Windows.Forms.Button addTimeRangeButton;
   }
 }

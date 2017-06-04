@@ -61,7 +61,7 @@ namespace TesseractTest
 
     public long getFramesInTimeSpan()
     {
-      return (long)fps * time.Seconds;
+      return (long)(fps * time.TotalSeconds);
     }
     public long getFramesInTimeSpan(TimeSpan timeSpan)
     {

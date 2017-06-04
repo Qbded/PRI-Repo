@@ -54,7 +54,15 @@ namespace TesseractTest
       this.extractionOptions = extractionOptions;
       InitializeComponent();
 
+      this.languageComboBox.Items.AddRange(new object[]
+      {
+        new ComboBoxLanguage("Angielski", "eng"),
+        new ComboBoxLanguage("Polski", "pol"),
+        new ComboBoxLanguage("Niemiecki", "ger")
+      });
+
       setThumbnail();
+      getFramesToAnalyze(this, new EventArgs());
     }
 
 
@@ -120,6 +128,13 @@ namespace TesseractTest
 
       this.Close();
       this.Dispose();
+    }
+
+
+    private void analyzeWholeFileSwitch_Click(object sender, EventArgs e)
+    {
+      timeRangeListbox.Enabled = !analyzeWholeFileSwitch.Checked;
+      addTimeRangeButton.Enabled = !analyzeWholeFileSwitch.Checked;
     }
   }
 }

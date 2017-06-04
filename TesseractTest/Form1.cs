@@ -19,12 +19,56 @@ namespace TesseractTest
   public partial class Form1 : Form
   {
     List<string> filenames;
+    BackgroundWorker bgwFileProcessor;
     
 
     public Form1()
     {
       InitializeComponent();
       filenames = new List<string>();
+
+      bgwFileProcessor = new BackgroundWorker();
+      bgwFileProcessor.WorkerReportsProgress = true;
+      bgwFileProcessor.WorkerSupportsCancellation = true;
+      bgwFileProcessor.DoWork += new DoWorkEventHandler(bgwFileProcessor_DoWork);
+      bgwFileProcessor.RunWorkerCompleted += new RunWorkerCompletedEventHandler(enableFormButtons);
+      bgwFileProcessor.ProgressChanged += new ProgressChangedEventHandler(bgwFileProcessor_ReportProgress);
+    }
+
+
+    public void bgwFileProcessor_DoWork(object sender, DoWorkEventArgs e)
+    {
+      //BackgroundWorker bgw = sender as BackgroundWorker;
+      List<object> args = e.Argument as List<object>;
+      VideoFile file = args.ElementAt(0) as VideoFile;
+      MediaFile input = args.ElementAt(1) as MediaFile;
+      ExtractionOptions extractionOptions = args.ElementAt(2) as ExtractionOptions;
+
+      extractTagsFromFile(ref file, ref input, ref extractionOptions, ref e);
+    }
+
+
+    void bgwFileProcessor_ReportProgress(object sender, ProgressChangedEventArgs e)
+    {
+      framesCountProgress.Value = e.ProgressPercentage;
+      framesCountProgress.Refresh();
+    }
+
+
+    void enableFormButtons(object sender, RunWorkerCompletedEventArgs e)
+    {
+      processFilesButton.Enabled = true;
+      openFileDialogButton.Enabled = true;
+      cancelFileProcessingButton.Enabled = false;
+    }
+
+
+    void cancelFileProcessing(object sender, EventArgs e)
+    {
+      if(bgwFileProcessor.WorkerSupportsCancellation == true)
+      {
+        bgwFileProcessor.CancelAsync();
+      }
     }
 
 
@@ -79,7 +123,7 @@ namespace TesseractTest
     }
 
 
-    private void extractTagsFromFile(ref VideoFile file, ref MediaFile input, ref ExtractionOptions extractionOptions)
+    private void extractTagsFromFile(ref VideoFile file, ref MediaFile input, ref ExtractionOptions extractionOptions, ref DoWorkEventArgs e)
     {
       string frameDirectory = Directory.GetCurrentDirectory() + @"\temp";
       if (!Directory.Exists(frameDirectory))
@@ -98,18 +142,34 @@ namespace TesseractTest
         
         // Saves the frame located on the x-th second of the video.
         while (timePointer.CompareTo(input.Metadata.Duration) < 0)
-        //while (timePointer.CompareTo(new TimeSpan(0, 0, 10)) < 0)
         {
+          if(bgwFileProcessor.CancellationPending == true)
+          {
+            e.Cancel = true;
+          }
           var options = new ConversionOptions { Seek = TimeSpan.FromMilliseconds(timePointer.TotalMilliseconds) };
           engine.GetThumbnail(input, outputFile, options);
           file.addTags(extractTagsFromFrame(framePath, file.getLanguage()));
           timePointer = timePointer.Add(timeStep);
+
+          bgwFileProcessor.ReportProgress((int)(Math.Floor(100 * (timePointer.TotalSeconds / input.Metadata.Duration.TotalSeconds))));
+          //Console.WriteLine("Progress at " + (int)(Math.Floor(100 * (timePointer.TotalSeconds / input.Metadata.Duration.TotalSeconds))) + "% (" + timePointer.TotalSeconds / input.Metadata.Duration.TotalSeconds + "%)");
           //outputTextBox.AppendText("Time step: " + timeStep.Hours + ":" + timeStep.Minutes + ":" + timeStep.Seconds + "." + timeStep.Milliseconds + "/" + Environment.NewLine);
           //outputTextBox.AppendText("" + timePointer.Hours + ":" + timePointer.Minutes + ":" + timePointer.Seconds + "." + timePointer.Milliseconds + "/" + Environment.NewLine);
         }
       }
-
-      outputTextBox.AppendText("Done!" + Environment.NewLine);
+      string resultDirectory = Directory.GetCurrentDirectory() + @"\result\";
+      if (!Directory.Exists(resultDirectory)){
+        Directory.CreateDirectory(resultDirectory);
+      }
+      StreamWriter sw = new StreamWriter(resultDirectory + Path.GetFileNameWithoutExtension(file.getFilePath()) + @"_tags.txt");
+      foreach(string tag in file.getTags())
+      {
+        Console.WriteLine(tag);
+        sw.WriteLineAsync(tag);
+        sw.Flush();
+      }
+      //outputTextBox.AppendText("Done!" + Environment.NewLine);
     }
 
 
@@ -119,62 +179,66 @@ namespace TesseractTest
       Form2 form2 = new Form2(ref file, ref input, ref extractionOptions);
       form2.ShowDialog();
       System.IO.File.Delete(Directory.GetCurrentDirectory() + @"\temp\thumbnail.png");
-      Console.WriteLine("Ticked so far");
 
-      extractTagsFromFile(ref file, ref input, ref extractionOptions);
-      System.IO.File.Delete(Directory.GetCurrentDirectory() + @"\temp\img.png");
-    }
-
-
-    private void Form1_Load(object sender, EventArgs e)
-    {
-
-    }
-
-
-    private void openFileDialog1_FileOk(object sender, CancelEventArgs e)
-    {
-
+      List<object> bgwArgs = new List<object>();
+      bgwArgs.Add(file);
+      bgwArgs.Add(input);
+      bgwArgs.Add(extractionOptions);
+      bgwFileProcessor.RunWorkerAsync(bgwArgs);
+      //extractTagsFromFile(ref file, ref input, ref extractionOptions);
+      //System.IO.File.Delete(Directory.GetCurrentDirectory() + @"\temp\img.png");
     }
 
 
     private void processVideoFiles(object sender, System.EventArgs e)
     {
-      if (filenames.Count > 0)
+      if (!(filenames.Count == 0))
       {
-        foreach (string f in filenames)
-        {
-          var input = new MediaFile { Filename = f };
-          using (var engine = new Engine())
-          {
-            engine.GetMetadata(input);
-          }
-          Console.WriteLine(input.Metadata.VideoData.Fps);
-          try {
-            double fps = input.Metadata.VideoData.Fps;
-            TimeSpan time = input.Metadata.Duration;
-            VideoFile file = new VideoFile(f, fps, time);
-            GetExtractionOptions(ref file, ref input);
+        processFilesButton.Enabled = false;
+        openFileDialogButton.Enabled = false;
+        cancelFileProcessingButton.Enabled = true;
+        fileCountProgress.Maximum = filenames.Count;
 
-            HashSet<string> gottenTags = file.getTags();
-            if (gottenTags.Count() > 0)
-            {
-              foreach (var tag in gottenTags)
-              {
-                outputTextBox.AppendText("[" + tag + "]");
-              }
-            }
-            else
-            {
-              outputTextBox.AppendText("No tags were gotten" + Environment.NewLine);
-            }
-          }
-          catch(Exception exc)
+        fileCountProgress.Value = 0;
+        framesCountProgress.Value = 0;
+
+        if (filenames.Count > 0)
+        {
+          foreach (string f in filenames)
           {
-            Console.WriteLine(exc.Message);
+            var input = new MediaFile { Filename = f };
+            using (var engine = new Engine())
+            {
+              engine.GetMetadata(input);
+            }
+            Console.WriteLine(input.Metadata.VideoData.Fps);
+            try
+            {
+              double fps = input.Metadata.VideoData.Fps;
+              TimeSpan time = input.Metadata.Duration;
+              VideoFile file = new VideoFile(f, fps, time);
+              GetExtractionOptions(ref file, ref input);
+
+              HashSet<string> gottenTags = file.getTags();
+              //if (gottenTags.Count() > 0)
+              //{
+              //  foreach (var tag in gottenTags)
+              //  {
+              //    outputTextBox.AppendText("[" + tag + "]");
+              //  }
+              //}
+              //else
+              //{
+              //  outputTextBox.AppendText("No tags were gotten" + Environment.NewLine);
+              //}
+            }
+            catch (Exception exc)
+            {
+              Console.WriteLine(exc.Message);
+            }
           }
+          filenames.Clear();
         }
-        filenames.Clear();
       }
     }
 
@@ -186,7 +250,7 @@ namespace TesseractTest
 
       if (string.IsNullOrWhiteSpace(outputTextBox.Text))
       {
-        outputTextBox.AppendText("Opened files:" + Environment.NewLine);
+        outputTextBox.AppendText("Wybrane pliki:" + Environment.NewLine);
       }
 
       string userFolderDirectory = Environment.GetFolderPath(Environment.SpecialFolder.CommonVideos);
@@ -222,6 +286,18 @@ namespace TesseractTest
           MessageBox.Show("Error: Could not read image file from disk. Original error: " + ex.Message + Environment.NewLine);
         }
       }
+    }
+
+
+    private void Form1_Load(object sender, EventArgs e)
+    {
+
+    }
+
+
+    private void openFileDialog1_FileOk(object sender, CancelEventArgs e)
+    {
+
     }
 
   }
