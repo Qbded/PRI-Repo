@@ -31,6 +31,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
         public Metadata_extractor()
         {
             InitializeComponent();
+
             // Debug - najlepiej byłoby to przesyłać w trakcie startu Metadata_extractora z Form1, które brałoby je z jakiegoś pliku konfiguracyjnego/definicyjnego
             text_ordering_set = new List<Tuple<int, int, string>>();
             document_ordering_set = new List<Tuple<int, int, string>>();
@@ -39,6 +40,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             multimedia_ordering_set = new List<Tuple<int, int, string>>();
             load_ordering_sets();
             // \Debug
+
             BGW_metadata_extractor.WorkerReportsProgress = true;
             BGW_metadata_extractor.WorkerSupportsCancellation = true;
             max_file_size_bytes = (64 * 1024 * 1024); // Maksymalny rozmiar w bajtach pliku poddawanego katalogowaniu, na razie ustaliłem na sztywno 64 MB.
@@ -100,7 +102,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
 
 
                             // Podstawowe i uniwersalne metadane:
-                            extracted_metadata_container.Add(file.Name);
+                            extracted_metadata_container.Add(Path.GetFileNameWithoutExtension(file.Name));
                             extracted_metadata_container.Add(file.Extension);
                             extracted_metadata_container.Add(file.FullName);
                             extracted_metadata_container.Add("" + file.Length);
@@ -337,8 +339,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
          * 6. Wybieramy jako ostateczną tą wartość metadanej, która powtórzyła się w największej ilości aliasów (z pominięciem wartości NULL, ta często jest najczęstsza).
          * 7. Dodajemy ją do kontenera i usuwamy z resolvera wszystkie tuple o ID które właśnie analizowaliśmy.
          * 8. Kontynuujemy kroki 6 i 7 az lista zostaje opróżniona - od teraz wszystkie dane które wyekstrahował ekstraktor mamy już w kontenerze.
-         * 9. Przenosimy zawartość kontenera indeks po indeksie do stringa wynikowego.
-         * 10. Zwracamy stringa wynikowego.
+         * 9. Zwracamy kontener stringów.
          * 
          * Dane w tej postaci są już gotowe do wgrania do bazy danych, ale to robi Form1 - tylko on ma połączenie z bazą!
         */
@@ -536,7 +537,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                 this.document_ordering_set.Add(new Tuple<int, int, string>(21, 2, "extended-properties:AppVersion"));
             }
 
-            //Work in progress
+            //Work in progress, niekompletne
             if (this.complex_ordering_set.Count == 0)
             {
                 this.complex_ordering_set.Clear();
@@ -551,7 +552,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                 //Trzeba jakoś zrobić łapanie 64 pierwszych metadanych, na razie nie beda brane pod uwage podczas katalogowania.
             }
 
-            //Work in progress
+            //Work in progress, niekompletne
             if (this.image_ordering_set.Count == 0)
             {
                 this.image_ordering_set.Clear();
@@ -566,7 +567,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                 
             }
 
-            //Work in progress
+            //Work in progress, niekompletne
             if (this.multimedia_ordering_set.Count == 0)
             {
                 this.multimedia_ordering_set.Clear();
