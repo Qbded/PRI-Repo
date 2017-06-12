@@ -284,7 +284,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             else
             {
                 this.LB_metadata_count_container.Text = metadata_extracted.Count().ToString();
-                Form1 parent = (Form1)this.Owner;
+                Main_form parent = (Main_form)this.Owner;
                 parent.metadata = metadata_extracted;
                 MessageBox.Show("Ekstrakcja metadanych zakonczona!");
                 this.Close();
