@@ -47,6 +47,14 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="AForge, Version=2.2.5.0, Culture=neutral, PublicKeyToken=c1db6ff4eaa06aeb, processorArchitecture=MSIL">
+      <HintPath>..\packages\AForge.2.2.5\lib\AForge.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="AForge.Math, Version=2.2.5.0, Culture=neutral, PublicKeyToken=abba2e25397ee8c9, processorArchitecture=MSIL">
+      <HintPath>..\packages\AForge.Math.2.2.5\lib\AForge.Math.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="FirebirdSql.Data.FirebirdClient, Version=5.9.1.0, Culture=neutral, PublicKeyToken=3750abcc3150b00c, processorArchitecture=MSIL">
       <HintPath>..\packages\FirebirdSql.Data.FirebirdClient.5.9.1\lib\net452\FirebirdSql.Data.FirebirdClient.dll</HintPath>
       <Private>True</Private>
@@ -169,6 +177,10 @@
     <Reference Include="MediaToolkit">
       <HintPath>..\packages\MediaToolkit.1.1.0.1\lib\net40\MediaToolkit.dll</HintPath>
     </Reference>
+    <Reference Include="NAudio, Version=1.8.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\NAudio.1.8.0\lib\net35\NAudio.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Configuration" />
     <Reference Include="System.Core" />
@@ -195,7 +207,16 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="classes\ExtractionOptions.cs" />
+    <Compile Include="classes\Mp3ToWavConverter.cs" />
+    <Compile Include="classes\Statistics.cs" />
     <Compile Include="classes\VideoFile.cs" />
+    <Compile Include="classes\Wave.cs" />
+    <Compile Include="Janek_main.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Janek_main.designer.cs">
+      <DependentUpon>Janek_main.cs</DependentUpon>
+    </Compile>
     <Compile Include="Karol_main.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -228,6 +249,9 @@
     </Compile>
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <EmbeddedResource Include="Janek_main.resx">
+      <DependentUpon>Janek_main.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="Karol_progress.resx">
       <DependentUpon>Karol_progress.cs</DependentUpon>
     </EmbeddedResource>

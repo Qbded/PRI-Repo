@@ -96,6 +96,8 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
         // Zmienne przesyłacza do opcji specialnych:
         private List<Tuple<string,string>> files_to_work_on;
 
+        private Special_function_window special_option_selector;
+
         /*   Oduzależnienie programu od statycznych stringów - pobieranie lokacji programu
          *    
          *    Na początku tworzymy grabber dający nam obiekt DirectoryInfo zawiarajacy lokacje fizyczna programu na dysku twardym.
@@ -684,6 +686,59 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             database_virtual_folder_make("Pliki multimedialne", 1, false);
         }
 
+        // Pobranie indeksu, folderu macierzystego, nazwy, typu (z której tabeli pochodzi) i rozszerzenia każdego pliku w zadanym folderze
+        private List<Tuple<int, int, string, string, string>> database_virtual_folder_get_all_files (int id)
+        {
+            List<Tuple<int, int, string, string, string>> results = new List<Tuple<int, int, string, string, string>>();
+
+            DataTable subfolders_container = new DataTable();
+            FbDataAdapter subfolders_grabber = new FbDataAdapter("SELECT ID " +
+                                                                 "FROM " + database_tables[0].Item2 + " " +
+                                                                 "WHERE DIR_ID = " + id + ";"
+                                                                 ,
+                                                                 new FbConnection(database_connection_string_builder.ConnectionString));
+
+            subfolders_grabber.Fill(subfolders_container);
+
+            // Uwaga - wywołanie rekurencyjne dla każdego znalezionego podfolderu!
+            if(subfolders_container.Rows.Count >= 1)
+            {
+                for(int i = 0; i < subfolders_container.Rows.Count; i++)
+                {
+                    results.AddRange(database_virtual_folder_get_all_files((int)subfolders_container.Rows[i].ItemArray[0]));
+                }
+            }
+
+            // Teraz pobieramy wszystkie pliki obecne w folderze
+            for(int i = 1; i < database_tables.Count; i++)
+            {
+                DataTable files_container = new DataTable();
+                FbDataAdapter files_grabber = new FbDataAdapter("SELECT ID,DIR_ID,NAME,EXTENSION " +
+                                                                "FROM " + database_tables[i].Item2 + " " +
+                                                                "WHERE DIR_ID = " + id + ";"
+                                                                ,
+                                                                new FbConnection(database_connection_string_builder.ConnectionString));
+
+                files_container.Clear();
+                files_grabber.Fill(files_container);
+
+                if(files_container.Rows.Count >= 1)
+                {
+                    for(int j = 0; j < files_container.Rows.Count; j++)
+                    {
+                        results.Add(new Tuple<int, int, string, string, string>((int)files_container.Rows[j].ItemArray[0],
+                                                                (int)files_container.Rows[j].ItemArray[1],
+                                                                (string)files_container.Rows[j].ItemArray[2],
+                                                                database_tables[i].Item2,
+                                                                (string)files_container.Rows[j].ItemArray[3]
+                                                                ));
+                    }
+                }
+            }
+            
+            return results;
+        }
+
         // Wstawianie pojedynczej tabeli do bazy danych - jeżeli wykryjemy jej brak!
         private void database_table_insert(string database_connection_string, int missing_table_index)
         {
@@ -1182,9 +1237,9 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
 
             // Sprawdzamy czy folder do którego kopiujemy nie ma już pliku o tej samej nazwie
             DataTable file_exists_container = new DataTable();
-            FbDataAdapter file_exists_checker = new FbDataAdapter("SELECT NAME,DIR_ID" +
+            FbDataAdapter file_exists_checker = new FbDataAdapter("SELECT NAME,DIR_ID " +
                                                                     "FROM " + type + " " +
-                                                                    "WHERE NAME = " + name_new +
+                                                                    "WHERE NAME = '" + name_new + "' " +
                                                                     "AND DIR_ID = " + destination_folder_id + ";"
                                                                     ,
                                                                     new FbConnection(database_connection_string_builder.ConnectionString));
@@ -1198,9 +1253,9 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             }
 
             DataTable file_content_container = new DataTable();
-            FbDataAdapter file_content_grabber = new FbDataAdapter("SELECT *" +
+            FbDataAdapter file_content_grabber = new FbDataAdapter("SELECT * " +
                                                                     "FROM " + type + " " +
-                                                                    "WHERE NAME = " + name_new +
+                                                                    "WHERE NAME = '" + name_new + "' " +
                                                                     "AND DIR_ID = " + source_folder_id + ";"
                                                                     ,
                                                                     new FbConnection(database_connection_string_builder.ConnectionString));
@@ -1209,7 +1264,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             if(file_content_container.Rows.Count == 1)
             {
                 for (int i = 1; i < file_content_container.Rows[0].ItemArray.Count(); i++)
-                    passed_data.Add((string)file_content_container.Rows[0].ItemArray[i]);
+                    passed_data.Add("" + file_content_container.Rows[0].ItemArray[i]);
             }
 
             database_virtual_item_make(destination_folder_id, type, passed_data);
@@ -1642,13 +1697,87 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             else MessageBox.Show("Jestem już w folderze głównym.");
         }
 
-    // Obsługa opcji specjalnych:
+        // Obsługa opcji specjalnych:
+
+        void Special_function_window_OnDataAvalible(object sender, EventArgs e)
+        {
+            // Obsługa zdarzenia powrotu z wyboru opcji specjalnych - używana przez zarówno kod Janka jak i kod Karola, głównie zajmują się dodawaniem
+            // wyniku do bazy danych w odpowiedni sposób.
+
+            int operation_index = 0;
+            List <Tuple<int, string>> audio_sorter_folders_to_add;
+            List<Tuple<int, string>> audio_sorter_files_to_add;
+            List<Tuple<string, string>> extractor_text_to_add;
+            List<Tuple<int, int, string, string, string>> all_files_selected = new List<Tuple<int, int, string, string, string>>();
+
+            var folders_in_selection = LV_catalog_display_item_selection.Where(x => x.SubItems[1].Text.Equals("Folder"));
+            for (int i = 0; i < folders_in_selection.Count(); i++)
+            {
+                all_files_selected.AddRange(database_virtual_folder_get_all_files(int.Parse(folders_in_selection.ElementAt(i).Name)));
+            }
+
+            operation_index = special_option_selector.return_index;
+            switch (operation_index)
+            {
+                case 1:
+
+
+                    break;
+                case 2:
+                    audio_sorter_folders_to_add = new List<Tuple<int, string>>();
+                    audio_sorter_files_to_add = new List<Tuple<int, string>>();
+
+                    audio_sorter_folders_to_add = special_option_selector.audio_sorter_folders_returned;
+                    audio_sorter_files_to_add = special_option_selector.audio_sorter_files_returned;
+
+                    foreach (Tuple<int, string> folder in audio_sorter_folders_to_add)
+                    {
+                        int new_id = 0;
+                        database_virtual_folder_make(folder.Item2, catalog_folder_id_list.Last(), true);
+                        DataTable new_folder_ID_container = new DataTable();
+                        FbDataAdapter new_folder_ID_grabber = new FbDataAdapter("SELECT ID " +
+                                                                                "FROM " + database_tables[0].Item2 + " " +
+                                                                                "WHERE NAME = '" + folder.Item2 + "';"
+                                                                                ,
+                                                                                new FbConnection(database_connection_string_builder.ConnectionString));
+
+                        new_folder_ID_grabber.Fill(new_folder_ID_container);
+                        if(new_folder_ID_container.Rows.Count == 1)
+                        {
+                            new_id = (int)new_folder_ID_container.Rows[0].ItemArray[0];
+                        }
+
+                        foreach (Tuple<int, string> file in audio_sorter_files_to_add.Where(x => x.Item1.Equals(folder.Item1)))
+                        {
+                            ListViewItem file_from_container = LV_catalog_display_item_selection.Find(x => x.Text.Equals(file.Item2));
+
+                            if(file_from_container != null)
+                            {
+                                // Plik był bezpośrednio zaznaczony
+                            }
+                            else
+                            {
+                                Tuple<int, int, string, string, string> found_file = all_files_selected.Find(x => (x.Item3+x.Item5).Equals(file.Item2));
+                                database_virtual_file_copy(found_file.Item2, new_id, found_file.Item4, found_file.Item3);
+                            }
+                        }
+                    }
+                    LV_catalog_display_folder_content_display(catalog_folder_id_list.Last());
+                    break;
+                case 3:
+
+
+                    break;
+                default:
+                    break;
+            }
+        }
 
         // Wejscie do podokna wyboru opcji specjalnych.
         private void BT_specials_Click(object sender, EventArgs e)
         {
             // Wywołujemy nowego Forma w którym mamy wybór poszczególnych opcji specjalnych i przekazujemy do niego listę naszych wybranych obiektów.
-            Special_function_window special_option_selector = new Special_function_window();
+            special_option_selector = new Special_function_window();
             special_option_selector.Owner = this;
             // Z data to manipulate wyciagamy wszystkie pliki - potrzebujemy ich nazwy, rozszerzenia i ścieżki fizyczne.
             special_option_selector.DB_connection_string = database_connection_string_builder.ConnectionString;
@@ -1656,6 +1785,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             special_option_selector.items_to_work_on = LV_catalog_display_item_selection;
             special_option_selector.working_directory = catalog_folder_id_list.Last();
             special_option_selector.program_path = program_path;
+            special_option_selector.OnDataAvalible += new EventHandler(Special_function_window_OnDataAvalible);
             special_option_selector.Show();
         }
 

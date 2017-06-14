@@ -54,6 +54,7 @@
             // BT_extract_from_images
             // 
             this.BT_extract_from_images.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.BT_extract_from_images.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F);
             this.BT_extract_from_images.Location = new System.Drawing.Point(3, 3);
             this.BT_extract_from_images.Name = "BT_extract_from_images";
             this.BT_extract_from_images.Size = new System.Drawing.Size(254, 72);
@@ -65,6 +66,7 @@
             // BT_compare_audio_files
             // 
             this.BT_compare_audio_files.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.BT_compare_audio_files.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.BT_compare_audio_files.Location = new System.Drawing.Point(3, 81);
             this.BT_compare_audio_files.Name = "BT_compare_audio_files";
             this.BT_compare_audio_files.Size = new System.Drawing.Size(254, 72);
@@ -76,6 +78,7 @@
             // BT_search_catalog
             // 
             this.BT_search_catalog.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.BT_search_catalog.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.BT_search_catalog.Location = new System.Drawing.Point(3, 159);
             this.BT_search_catalog.Name = "BT_search_catalog";
             this.BT_search_catalog.Size = new System.Drawing.Size(254, 76);

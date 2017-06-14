@@ -197,7 +197,7 @@
             this.addTimeRangeButton.Text = "+";
             this.addTimeRangeButton.UseVisualStyleBackColor = true;
             // 
-            // Form2
+            // Karol_progress
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
@@ -216,8 +216,8 @@
             this.Controls.Add(this.languageComboBox);
             this.Controls.Add(this.samplingFrequencyInput);
             this.Controls.Add(this.samplingFrequencyInputLabel);
-            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.None;
-            this.Name = "Form2";
+            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedDialog;
+            this.Name = "Karol_progress";
             this.Text = "Wybierz opcje ekstrakcji danych";
             ((System.ComponentModel.ISupportInitialize)(this.samplingFrequencyInput)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.videoThumbnail)).EndInit();

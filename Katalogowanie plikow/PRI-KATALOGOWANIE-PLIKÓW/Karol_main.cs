@@ -19,9 +19,12 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
 {
     public partial class Karol_main : Form
     {
+        public event EventHandler OnDataAvalible;
         public List<string> filenames;
         public string program_path;
         BackgroundWorker bgwFileProcessor;
+
+        public List<Tuple<string, string>> text_extraction_results;
 
 
         public Karol_main()
@@ -46,8 +49,8 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             VideoFile file = args.ElementAt(0) as VideoFile;
             MediaFile input = args.ElementAt(1) as MediaFile;
             ExtractionOptions extractionOptions = args.ElementAt(2) as ExtractionOptions;
-
-            extractTagsFromFile(ref file, ref input, ref extractionOptions, ref e);
+            
+            e.Result = extractTagsFromFile(ref file, ref input, ref extractionOptions, ref e);
         }
 
 
@@ -64,6 +67,11 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             processFilesButton.Enabled = true;
             //openFileDialogButton.Enabled = true;
             cancelFileProcessingButton.Enabled = false;
+
+            text_extraction_results = new List<Tuple<string, string>>();
+            text_extraction_results.Add((Tuple<string, string>)e.Result);
+            OnDataAvalible(this, EventArgs.Empty);
+
             this.Close();
         }
 
@@ -129,8 +137,9 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
         }
 
 
-        private void extractTagsFromFile(ref VideoFile file, ref MediaFile input, ref ExtractionOptions extractionOptions, ref DoWorkEventArgs e)
+        private Tuple<string,string> extractTagsFromFile(ref VideoFile file, ref MediaFile input, ref ExtractionOptions extractionOptions, ref DoWorkEventArgs e)
         {
+            Tuple<string, string> result = new Tuple<string, string>(string.Empty,string.Empty);
             string frameDirectory = program_path + @"\temp";
             if (!Directory.Exists(frameDirectory))
             {
@@ -164,18 +173,33 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                     //outputTextBox.AppendText("" + timePointer.Hours + ":" + timePointer.Minutes + ":" + timePointer.Seconds + "." + timePointer.Milliseconds + "/" + Environment.NewLine);
                 }
             }
+
+            /* Stara logika tworzenia folderu do którego wrzucamy plik z zapisanymi tagami
             string resultDirectory = program_path + @"\result\";
             if (!Directory.Exists(resultDirectory))
             {
                 Directory.CreateDirectory(resultDirectory);
             }
             StreamWriter sw = new StreamWriter(resultDirectory + Path.GetFileNameWithoutExtension(file.getFilePath()) + @"_tags.txt");
+            
             foreach (string tag in file.getTags())
             {
                 Console.WriteLine(tag);
                 sw.WriteLineAsync(tag);
                 sw.Flush();
             }
+            */
+            string tag_container = string.Empty;
+            foreach (string tag in file.getTags())
+            {
+                tag_container += tag + Environment.NewLine;
+            }
+
+            Tuple<string, string> file_extract = new Tuple<string, string>(
+                file.getFilePath(),
+                tag_container);
+
+            return file_extract;
             //outputTextBox.AppendText("Done!" + Environment.NewLine);
         }
 

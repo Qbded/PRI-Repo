@@ -13,11 +13,60 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
 {
     public partial class Special_function_window : Form
     {
+        public event EventHandler OnDataAvalible;
+
+        private Karol_main extractor_window;
+        private Janek_main audio_sorter_window;
+
+        // Dane wejściowe do podprogramów
         public List<ListViewItem> items_to_work_on;
         public List<Tuple<int,string>> database_tables;
         public string DB_connection_string;
         public string program_path;
         public int working_directory;
+
+        // Przechowywanie danych wyjściowych z podprogramów.
+        public List<Tuple<int, string>> audio_sorter_folders_returned;
+        public List<Tuple<int, string>> audio_sorter_files_returned;
+        public List<Tuple<string, string>> extractor_texts_returned;
+
+        // Parametr informujący o tym co zwracamy do programu głównego.
+        public int return_index = 0;
+
+        void Janek_main_OnDataAvalible(object sender, EventArgs e)
+        {
+            // Obsługa zdarzenia powrotu z formu Janka - dostajemy listę Tuple<int,string> zawierającą ID przydzielone nowemu folderowi (w celach porządkowych)
+            // i jego nową nazwę, jak i listę Tuple<int,string> zawierającą indeks do którego przydzielamy plik i jego ścieżkę.
+            audio_sorter_folders_returned = new List<Tuple<int, string>>();
+            audio_sorter_files_returned = new List<Tuple<int, string>>();
+
+            audio_sorter_folders_returned = audio_sorter_window.result_directories.ToList();
+            audio_sorter_files_returned = audio_sorter_window.result_files.ToList();
+
+            return_index = 2;
+
+            // Informujemy Main_form o tym że któraś z opcji zwróciła wynik.
+            OnDataAvalible(this, EventArgs.Empty);
+            this.Close();
+        }
+
+        void Karol_main_OnDataAvalible(object sender, EventArgs e)
+        {
+            // Obsługa zdarzenia powrotu z formu Karola - dostajemy listę Tuple<string,string> zawierającą nazwę pliku dla którego przeprowadzaliśmy analizę i
+            // tekst wyekstrachowany z filmu przydzielony plikowi.
+
+            extractor_texts_returned = new List<Tuple<string, string>>();
+
+            extractor_texts_returned = extractor_window.text_extraction_results.ToList();
+
+            return_index = 1;
+
+            // Informujemy Main_form o tym że któraś z opcji zwróciła wynik.
+            OnDataAvalible(this, EventArgs.Empty);
+            this.Close();
+        }
+
+        
 
         public Special_function_window()
         {
@@ -37,7 +86,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             }
         }
 
-        private List<string> prepare_data_for_multimedia_extraction()
+        private List<string> prepare_data(List<string> extensions)
         {
             List<string> result = new List<string>();
             List<ListViewItem> file_list = new List<ListViewItem>();
@@ -50,7 +99,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             {
                 ListViewItem current = file_list.First();
 
-                if (current.SubItems[1].Text.Equals(".avi") || current.SubItems[1].Text.Equals(".wmv"))
+                if (extensions.Exists(x => x.Equals(current.SubItems[1].Text)))
                 {
                     DataTable file_path_container = new DataTable();
                     FbDataAdapter file_path_grabber = new FbDataAdapter("SELECT PATH " +
@@ -115,8 +164,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
 
                     for (int j = 0; j < database_folder_content.Rows.Count; j++)
                     {
-                        if(database_folder_content.Rows[j].ItemArray[1].Equals(".avi") ||
-                           database_folder_content.Rows[j].ItemArray[1].Equals(".wmv"))
+                        if(extensions.Exists(x => x.Equals(database_folder_content.Rows[j].ItemArray[1])))
                         result.Add((string)database_folder_content.Rows[j].ItemArray[0]);
                     }
                 }
@@ -128,23 +176,40 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
 
         private void BT_extract_from_images_Click(object sender, EventArgs e)
         {
+            // Wywołuje część Karola przekazując do niej odpowiednio przygotowaną listę argumentów z plików wybranych w katalogu.
             List<string> data_to_feed = new List<string>();
-            data_to_feed = prepare_data_for_multimedia_extraction();
+            List<string> extensions_to_extract = new List<string>();
+            extensions_to_extract.Add(".avi");
+            extensions_to_extract.Add(".wmv");
+            data_to_feed = prepare_data(extensions_to_extract);
             if (data_to_feed.Count == 0) MessageBox.Show("Wybrany zakres nie zawiera plików, które można poddawać tej analizie (tylko dla plików .avi)!");
             else
             {
-                Karol_main extractor_window = new Karol_main();
+                extractor_window = new Karol_main();
                 extractor_window.filenames = data_to_feed;
                 extractor_window.program_path = program_path;
                 extractor_window.refresh_display();
+                extractor_window.OnDataAvalible += new EventHandler(Karol_main_OnDataAvalible);
                 extractor_window.Show();
             }
-            // Wywołuje część Karola przekazując do niej odpowiednio przygotowaną listę argumentów z plików wybranych w katalogu.
         }
 
         private void BT_compare_audio_files_Click(object sender, EventArgs e)
         {
-
+            // Wywołuje część Janka, przekazując do niej odpowiednio przygotowaną listę argumentów z plików wybranych w katalogu.
+            List<string> data_to_feed = new List<string>();
+            List<string> extensions_to_extract = new List<string>();
+            extensions_to_extract.Add(".mp3");
+            extensions_to_extract.Add(".wav");
+            data_to_feed = prepare_data(extensions_to_extract);
+            if (data_to_feed.Count == 0) MessageBox.Show("Wybrany zakres nie zawiera plików, które można poddawać tej analizie (tylko dla plików .mp3 i .wav)!");
+            else
+            {
+                audio_sorter_window = new Janek_main();
+                audio_sorter_window.names = data_to_feed;
+                audio_sorter_window.OnDataAvalible += new EventHandler(Janek_main_OnDataAvalible);
+                audio_sorter_window.Show();
+            }
         }
 
         private void BT_search_catalog_Click(object sender, EventArgs e)
