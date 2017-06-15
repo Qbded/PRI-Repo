@@ -1704,17 +1704,35 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             // Obsługa zdarzenia powrotu z wyboru opcji specjalnych - używana przez zarówno kod Janka jak i kod Karola, głównie zajmują się dodawaniem
             // wyniku do bazy danych w odpowiedni sposób.
 
-            int operation_index = 0;
+            int operation_index = 0, counter = 0;
             List <Tuple<int, string>> audio_sorter_folders_to_add;
             List<Tuple<int, string>> audio_sorter_files_to_add;
             List<Tuple<string, string>> extractor_text_to_add;
             List<Tuple<int, int, string, string, string>> all_files_selected = new List<Tuple<int, int, string, string, string>>();
 
             var folders_in_selection = LV_catalog_display_item_selection.Where(x => x.SubItems[1].Text.Equals("Folder"));
+            var files_in_selection = LV_catalog_display_item_selection.Where(x => !x.SubItems[1].Text.Equals("Folder"));
             for (int i = 0; i < folders_in_selection.Count(); i++)
             {
                 all_files_selected.AddRange(database_virtual_folder_get_all_files(int.Parse(folders_in_selection.ElementAt(i).Name)));
+                counter++;
             }
+            for (int i = 0; i < files_in_selection.Count(); i++)
+            {
+                Tuple<int, int, string, string, string> tuple_to_add = 
+                new Tuple<int, int, string, string, string>(
+                    counter,
+                    catalog_folder_id_list.Last(),
+                    files_in_selection.ElementAt(i).Text,
+                    files_in_selection.ElementAt(i).ToolTipText,
+                    files_in_selection.ElementAt(i).SubItems[1].Text
+                    );
+                counter++;
+                
+                all_files_selected.Add(tuple_to_add);
+            }
+
+
 
             operation_index = special_option_selector.return_index;
             switch (operation_index)
@@ -1758,11 +1776,11 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                             else
                             {
                                 Tuple<int, int, string, string, string> found_file = all_files_selected.Find(x => (x.Item3+x.Item5).Equals(file.Item2));
-                                database_virtual_file_copy(found_file.Item2, new_id, found_file.Item4, found_file.Item3);
+                                if(found_file != null) database_virtual_file_copy(found_file.Item2, new_id, found_file.Item4, found_file.Item3);
                             }
                         }
                     }
-                    LV_catalog_display_folder_content_display(catalog_folder_id_list.Last());
+                    LV_catalog_display_folder_content_display(catalog_folder_id_list.Last());   
                     break;
                 case 3:
 
