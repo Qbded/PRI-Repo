@@ -51,3 +51,4 @@ C:\Users\Karol\Documents\GitHub\PRI-Repo\TesseractTest\bin\Debug\MediaToolkit.dl
 C:\Users\Karol\Documents\GitHub\PRI-Repo\TesseractTest\bin\Debug\Tesseract.dll
 C:\Users\Karol\Documents\GitHub\PRI-Repo\TesseractTest\bin\Debug\Tesseract.xml
 C:\Users\Karol\Documents\GitHub\PRI-Repo\TesseractTest\obj\Debug\TesseractTest.Form2.resources
+C:\Users\Karol\Documents\GitHub\PRI-Repo\TesseractTest\bin\Debug\Itenso.TimePeriod.dll

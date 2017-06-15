@@ -12,6 +12,7 @@ using MediaToolkit;
 using MediaToolkit.Model;
 using MediaToolkit.Options;
 using MediaToolkit.Util;
+using System.Globalization;
 
 namespace TesseractTest
 {
@@ -44,14 +45,16 @@ namespace TesseractTest
     MediaFile thumbnailFile;
     Engine engine;
     ExtractionOptions extractionOptions;
+    bool proceed;
     
 
-    public Form2(ref VideoFile videoFile, ref MediaFile inputFile, ref ExtractionOptions extractionOptions)
+    public Form2(ref VideoFile videoFile, ref MediaFile inputFile, ref ExtractionOptions extractionOptions, ref bool proceed)
     {
       this.videoFile = videoFile;
       this.inputFile = inputFile;
       this.engine = new Engine();
       this.extractionOptions = extractionOptions;
+      //this.proceed = proceed;
       InitializeComponent();
 
       this.languageComboBox.Items.AddRange(new object[]
@@ -60,9 +63,10 @@ namespace TesseractTest
         new ComboBoxLanguage("Polski", "pol"),
         new ComboBoxLanguage("Niemiecki", "ger")
       });
+      this.languageComboBox.SelectedIndex = 0;
 
       setThumbnail();
-      getFramesToAnalyze(this, new EventArgs());
+      getFramesToAnalyzeCount(this, new EventArgs());
     }
 
 
@@ -80,14 +84,14 @@ namespace TesseractTest
       }
       catch(Exception e)
       {
-        Console.WriteLine("Exception caught at getLanguage(): " + e.ToString());
+        Console.WriteLine("[This is considered normal] Exception caught at getLanguage(): " + e.ToString());
       }
       if(value == "") { value = "eng"; }
       return value;
     }
 
 
-    public List<Tuple<TimeSpan, TimeSpan>> getTimeRange()
+    /*public List<Tuple<TimeSpan, TimeSpan>> getTimeRange()
     {
       //if (this.analyzeWholeFileSwitch.Checked || )
       //{
@@ -96,7 +100,7 @@ namespace TesseractTest
       list.Add(t);
       return list;
       //}
-    }
+    }*/
 
 
     private void setThumbnail()
@@ -112,7 +116,7 @@ namespace TesseractTest
     }
 
 
-    private void getFramesToAnalyze(object sender, EventArgs e)
+    private void getFramesToAnalyzeCount(object sender, EventArgs e)
     {
       decimal freq = getSamplingFrequency();
       long framesToAnalyze = (long)(videoFile.getFramesInTimeSpan() / freq);
@@ -125,6 +129,17 @@ namespace TesseractTest
       videoFile.setLanguage(getLanguage());
       extractionOptions.setSamplingFrequency(getSamplingFrequency());
       extractionOptions.setLanguage(getLanguage());
+      //getTimeRanges();
+      proceed = true;
+
+      this.Close();
+      this.Dispose();
+    }
+
+
+    private void cancelButton_Click(object sender, EventArgs e)
+    {
+      proceed = false;
 
       this.Close();
       this.Dispose();
@@ -133,8 +148,80 @@ namespace TesseractTest
 
     private void analyzeWholeFileSwitch_Click(object sender, EventArgs e)
     {
-      timeRangeListbox.Enabled = !analyzeWholeFileSwitch.Checked;
+      timeRangeListview.Enabled = !analyzeWholeFileSwitch.Checked;
       addTimeRangeButton.Enabled = !analyzeWholeFileSwitch.Checked;
+      removeTimeRangeButton.Enabled = !analyzeWholeFileSwitch.Checked;
+      timeRangeInput1.Enabled = !analyzeWholeFileSwitch.Checked;
+      timeRangeInput2.Enabled = !analyzeWholeFileSwitch.Checked;
+
+      if(analyzeWholeFileSwitch.Checked == false && timeRangeListview.Items.Count == 0)
+      {
+        okButton.Enabled = false;
+      }
+      else if(analyzeWholeFileSwitch.Checked == true)
+      {
+        okButton.Enabled = true;
+      }
+    }
+
+
+    private void addTimeRangeButton_Click(object sender, EventArgs e)
+    {
+      if (timeRangeInput1.MaskCompleted && timeRangeInput2.MaskCompleted) { timeRangeListview.Items.Add(new ListViewItem(new[] { timeRangeInput1.Text , timeRangeInput2.Text })); }
+      if (timeRangeListview.Items.Count != 0 && okButton.Enabled == false) { okButton.Enabled = true; }
+    }
+
+
+    private void removeTimeRangeButton_Click(object sender, EventArgs e)
+    {
+      foreach (ListViewItem item in timeRangeListview.SelectedItems)
+      {
+        timeRangeListview.Items.Remove(item);
+      }
+      if (timeRangeListview.Items.Count == 0 && okButton.Enabled == true) { okButton.Enabled = false; }
+    }
+
+
+    private void validateTime(object sender, CancelEventArgs e)
+    {
+      DateTime dateTime;
+      CultureInfo cultureInfo = new CultureInfo("pl-PL");
+      var maskedTextBox = sender as MaskedTextBox;
+      if (!DateTime.TryParseExact(maskedTextBox.Text, "hh:mm:ss", cultureInfo, DateTimeStyles.None, out dateTime))
+      {
+        e.Cancel = true;
+      }
+    }
+
+
+    private void getTimeRanges()
+    {
+      if(analyzeWholeFileSwitch.Checked == true)
+      {
+        TimeSpan start = new TimeSpan(0, 0, 0);
+        TimeSpan finish = inputFile.Metadata.Duration;
+        //Console.WriteLine(start.ToString());
+        extractionOptions.addTimeRange(new Tuple<TimeSpan, TimeSpan>(start, finish));
+      }
+      else
+      {
+        ListView.ListViewItemCollection listItems = timeRangeListview.Items;
+        string format = @"hh\:mm\:ss";
+        CultureInfo cultureInfo = new CultureInfo("pl-PL");
+        foreach(ListViewItem tr in listItems)
+        {
+          try {
+            TimeSpan start = TimeSpan.ParseExact(tr.SubItems[0].ToString(), format, cultureInfo);
+            TimeSpan finish = TimeSpan.ParseExact(tr.SubItems[1].ToString(), format, cultureInfo);
+            Console.WriteLine(start.ToString());
+            extractionOptions.addTimeRange(new Tuple<TimeSpan, TimeSpan>(start, finish));
+          }
+          catch(Exception except)
+          {
+            Console.WriteLine("Ecxeption in getTimeRanges(), ", except.ToString());
+          }
+        }
+      }
     }
   }
 }

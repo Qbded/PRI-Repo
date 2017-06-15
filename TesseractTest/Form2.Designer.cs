@@ -28,6 +28,7 @@
     /// </summary>
     private void InitializeComponent()
     {
+      this.components = new System.ComponentModel.Container();
       this.samplingFrequencyInput = new System.Windows.Forms.NumericUpDown();
       this.samplingFrequencyInputLabel = new System.Windows.Forms.Label();
       this.languageComboBox = new System.Windows.Forms.ComboBox();
@@ -39,9 +40,16 @@
       this.thumbnailLabel = new System.Windows.Forms.TextBox();
       this.framesToAnalyzeDisplay = new System.Windows.Forms.TextBox();
       this.label1 = new System.Windows.Forms.Label();
-      this.timeRangeListbox = new System.Windows.Forms.ListBox();
       this.cancelButton = new System.Windows.Forms.Button();
       this.addTimeRangeButton = new System.Windows.Forms.Button();
+      this.timeRangeInput1 = new System.Windows.Forms.MaskedTextBox();
+      this.timeRangeInput2 = new System.Windows.Forms.MaskedTextBox();
+      this.label3 = new System.Windows.Forms.Label();
+      this.removeTimeRangeButton = new System.Windows.Forms.Button();
+      this.timeRangeListview = new System.Windows.Forms.ListView();
+      this.Od = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+      this.Do = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+      this.wrongTimeFromatTooltip = new System.Windows.Forms.ToolTip(this.components);
       ((System.ComponentModel.ISupportInitialize)(this.samplingFrequencyInput)).BeginInit();
       ((System.ComponentModel.ISupportInitialize)(this.videoThumbnail)).BeginInit();
       this.SuspendLayout();
@@ -73,7 +81,7 @@
             0,
             0,
             65536});
-      this.samplingFrequencyInput.ValueChanged += new System.EventHandler(this.getFramesToAnalyze);
+      this.samplingFrequencyInput.ValueChanged += new System.EventHandler(this.getFramesToAnalyzeCount);
       // 
       // samplingFrequencyInputLabel
       // 
@@ -169,15 +177,6 @@
       this.label1.TabIndex = 103;
       this.label1.Text = "Szacowana ilość klatek do przeanalizowania";
       // 
-      // timeRangeListbox
-      // 
-      this.timeRangeListbox.Enabled = false;
-      this.timeRangeListbox.FormattingEnabled = true;
-      this.timeRangeListbox.Location = new System.Drawing.Point(220, 74);
-      this.timeRangeListbox.Name = "timeRangeListbox";
-      this.timeRangeListbox.Size = new System.Drawing.Size(192, 108);
-      this.timeRangeListbox.TabIndex = 104;
-      // 
       // cancelButton
       // 
       this.cancelButton.Location = new System.Drawing.Point(475, 163);
@@ -186,25 +185,97 @@
       this.cancelButton.TabIndex = 105;
       this.cancelButton.Text = "Anuluj";
       this.cancelButton.UseVisualStyleBackColor = true;
+      this.cancelButton.Click += new System.EventHandler(this.cancelButton_Click);
       // 
       // addTimeRangeButton
       // 
       this.addTimeRangeButton.Enabled = false;
-      this.addTimeRangeButton.Location = new System.Drawing.Point(293, 188);
+      this.addTimeRangeButton.Location = new System.Drawing.Point(346, 188);
       this.addTimeRangeButton.Name = "addTimeRangeButton";
-      this.addTimeRangeButton.Size = new System.Drawing.Size(47, 30);
+      this.addTimeRangeButton.Size = new System.Drawing.Size(31, 30);
       this.addTimeRangeButton.TabIndex = 106;
       this.addTimeRangeButton.Text = "+";
       this.addTimeRangeButton.UseVisualStyleBackColor = true;
+      this.addTimeRangeButton.Click += new System.EventHandler(this.addTimeRangeButton_Click);
+      // 
+      // timeRangeInput1
+      // 
+      this.timeRangeInput1.Enabled = false;
+      this.timeRangeInput1.Location = new System.Drawing.Point(220, 194);
+      this.timeRangeInput1.Mask = "00:00:00";
+      this.timeRangeInput1.Name = "timeRangeInput1";
+      this.timeRangeInput1.Size = new System.Drawing.Size(51, 20);
+      this.timeRangeInput1.TabIndex = 108;
+      this.timeRangeInput1.Validating += new System.ComponentModel.CancelEventHandler(this.validateTime);
+      // 
+      // timeRangeInput2
+      // 
+      this.timeRangeInput2.Enabled = false;
+      this.timeRangeInput2.Location = new System.Drawing.Point(289, 194);
+      this.timeRangeInput2.Mask = "00:00:00";
+      this.timeRangeInput2.Name = "timeRangeInput2";
+      this.timeRangeInput2.Size = new System.Drawing.Size(51, 20);
+      this.timeRangeInput2.TabIndex = 109;
+      this.timeRangeInput2.Validating += new System.ComponentModel.CancelEventHandler(this.validateTime);
+      // 
+      // label3
+      // 
+      this.label3.AutoSize = true;
+      this.label3.Location = new System.Drawing.Point(277, 197);
+      this.label3.Name = "label3";
+      this.label3.Size = new System.Drawing.Size(10, 13);
+      this.label3.TabIndex = 110;
+      this.label3.Text = "-";
+      // 
+      // removeTimeRangeButton
+      // 
+      this.removeTimeRangeButton.Enabled = false;
+      this.removeTimeRangeButton.Location = new System.Drawing.Point(383, 188);
+      this.removeTimeRangeButton.Name = "removeTimeRangeButton";
+      this.removeTimeRangeButton.Size = new System.Drawing.Size(29, 30);
+      this.removeTimeRangeButton.TabIndex = 111;
+      this.removeTimeRangeButton.Text = "-";
+      this.removeTimeRangeButton.UseVisualStyleBackColor = true;
+      this.removeTimeRangeButton.Click += new System.EventHandler(this.removeTimeRangeButton_Click);
+      // 
+      // timeRangeListview
+      // 
+      this.timeRangeListview.Columns.AddRange(new System.Windows.Forms.ColumnHeader[] {
+            this.Od,
+            this.Do});
+      this.timeRangeListview.Enabled = false;
+      this.timeRangeListview.FullRowSelect = true;
+      this.timeRangeListview.GridLines = true;
+      this.timeRangeListview.Location = new System.Drawing.Point(220, 74);
+      this.timeRangeListview.MultiSelect = false;
+      this.timeRangeListview.Name = "timeRangeListview";
+      this.timeRangeListview.Size = new System.Drawing.Size(192, 94);
+      this.timeRangeListview.TabIndex = 112;
+      this.timeRangeListview.UseCompatibleStateImageBehavior = false;
+      this.timeRangeListview.View = System.Windows.Forms.View.Details;
+      // 
+      // Od
+      // 
+      this.Od.Text = "Od";
+      this.Od.Width = 96;
+      // 
+      // Do
+      // 
+      this.Do.Text = "Do";
+      this.Do.Width = 96;
       // 
       // Form2
       // 
       this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
       this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
       this.ClientSize = new System.Drawing.Size(716, 230);
+      this.Controls.Add(this.timeRangeListview);
+      this.Controls.Add(this.removeTimeRangeButton);
+      this.Controls.Add(this.label3);
+      this.Controls.Add(this.timeRangeInput2);
+      this.Controls.Add(this.timeRangeInput1);
       this.Controls.Add(this.addTimeRangeButton);
       this.Controls.Add(this.cancelButton);
-      this.Controls.Add(this.timeRangeListbox);
       this.Controls.Add(this.label1);
       this.Controls.Add(this.framesToAnalyzeDisplay);
       this.Controls.Add(this.thumbnailLabel);
@@ -239,8 +310,15 @@
     private System.Windows.Forms.TextBox thumbnailLabel;
     private System.Windows.Forms.TextBox framesToAnalyzeDisplay;
     private System.Windows.Forms.Label label1;
-    private System.Windows.Forms.ListBox timeRangeListbox;
     private System.Windows.Forms.Button cancelButton;
     private System.Windows.Forms.Button addTimeRangeButton;
+    private System.Windows.Forms.MaskedTextBox timeRangeInput1;
+    private System.Windows.Forms.MaskedTextBox timeRangeInput2;
+    private System.Windows.Forms.Label label3;
+    private System.Windows.Forms.Button removeTimeRangeButton;
+    private System.Windows.Forms.ListView timeRangeListview;
+    private System.Windows.Forms.ColumnHeader Od;
+    private System.Windows.Forms.ColumnHeader Do;
+    private System.Windows.Forms.ToolTip wrongTimeFromatTooltip;
   }
 }

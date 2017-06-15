@@ -173,20 +173,25 @@ namespace TesseractTest
     }
 
 
-    private void GetExtractionOptions(ref VideoFile file, ref MediaFile input)
+    private void getExtractionOptions(ref VideoFile file, ref MediaFile input)
     {
       ExtractionOptions extractionOptions = new ExtractionOptions();
-      Form2 form2 = new Form2(ref file, ref input, ref extractionOptions);
+      bool proceed = true;
+      Form2 form2 = new Form2(ref file, ref input, ref extractionOptions, ref proceed);
       form2.ShowDialog();
       System.IO.File.Delete(Directory.GetCurrentDirectory() + @"\temp\thumbnail.png");
-
-      List<object> bgwArgs = new List<object>();
-      bgwArgs.Add(file);
-      bgwArgs.Add(input);
-      bgwArgs.Add(extractionOptions);
-      bgwFileProcessor.RunWorkerAsync(bgwArgs);
-      //extractTagsFromFile(ref file, ref input, ref extractionOptions);
-      //System.IO.File.Delete(Directory.GetCurrentDirectory() + @"\temp\img.png");
+      extractionOptions.DEBUG_displayTimeRanges();
+      if (proceed)
+      {
+        Console.WriteLine("Proceeded.");
+        List<object> bgwArgs = new List<object>();
+        bgwArgs.Add(file);
+        bgwArgs.Add(input);
+        bgwArgs.Add(extractionOptions);
+        bgwFileProcessor.RunWorkerAsync(bgwArgs);
+        //extractTagsFromFile(ref file, ref input, ref extractionOptions);
+        //System.IO.File.Delete(Directory.GetCurrentDirectory() + @"\temp\img.png");
+      }
     }
 
 
@@ -217,7 +222,7 @@ namespace TesseractTest
               double fps = input.Metadata.VideoData.Fps;
               TimeSpan time = input.Metadata.Duration;
               VideoFile file = new VideoFile(f, fps, time);
-              GetExtractionOptions(ref file, ref input);
+              getExtractionOptions(ref file, ref input);
 
               HashSet<string> gottenTags = file.getTags();
               //if (gottenTags.Count() > 0)
