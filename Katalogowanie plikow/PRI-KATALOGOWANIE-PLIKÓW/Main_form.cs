@@ -1755,7 +1755,8 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                         DataTable new_folder_ID_container = new DataTable();
                         FbDataAdapter new_folder_ID_grabber = new FbDataAdapter("SELECT ID " +
                                                                                 "FROM " + database_tables[0].Item2 + " " +
-                                                                                "WHERE NAME = '" + folder.Item2 + "';"
+                                                                                "WHERE NAME = '" + folder.Item2 + "' " +
+                                                                                "AND DIR_ID = " + catalog_folder_id_list.Last() +";"
                                                                                 ,
                                                                                 new FbConnection(database_connection_string_builder.ConnectionString));
 
@@ -1775,6 +1776,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                             }
                             else
                             {
+                                if (new_id == 0) new_id = catalog_folder_id_list.Last();
                                 Tuple<int, int, string, string, string> found_file = all_files_selected.Find(x => (x.Item3+x.Item5).Equals(file.Item2));
                                 if(found_file != null) database_virtual_file_copy(found_file.Item2, new_id, found_file.Item4, found_file.Item3);
                             }

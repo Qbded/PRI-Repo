@@ -22,23 +22,9 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
     {
         // Tutaj wylądują po procesie ekstrakcji metadane.
         public List<string[]> metadata { get; set; }
-
-        /* Tutaj wylądują po przeszukaniu katalogu wyswietlane podfoldery i pliki w nich zawarte
-         * Struktura:
-         * 1. directories_grabbed:
-         * int Item1 - przechowuje ID folderu z tabeli virtual_folder.
-         * string Item2 - przechowuje nazwę folderu wyciągniętą z tabeli virtual_folder.
-         * 2. files_grabbed:
-         * int Item1 - przechowuje ID pliku wyciągniętego z którejś z tabel zawierających metadane.
-         * string Item2 - przechowuje nazwę tabeli, z której pochodzi dany plik.
-         * string Item3 - przechowuje nazwę pliku.
-         * string Item4 - przechowuje rozszerzenie pliku.
-         * System.Datetime Item5 - przechowuje czas ostatniego zapisu dla danego pliku.
-         * System.Datetime Item6 - przechowuje datę ostatniego katalogowanie dla pliku (czyt. kiedy został ostatnim razem zmieniony podczas katalogowania).
-         * int Item7 - przechowuje rozmiar pliku.
-        */
+        // Tutaj wylądują po przeszukaniu katalogu wyswietlane podfoldery i pliki w nich zawarte
         public List<Tuple<int, string>> directories_grabbed { get; set; } 
-        public List<Tuple<int, string, string, string, System.DateTime, System.DateTime, int>> files_grabbed { get; set; }
+        public List<Tuple<int, string, string, System.DateTime, System.DateTime, int>> files_grabbed { get; set; }
 
         // Tutaj przechowujemy connection string do bazy danych.
         private FbConnectionStringBuilder database_connection_string_builder { get; set; }
@@ -64,7 +50,6 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
 
         // Wcześniejsze zmienne globalne jeszcze z kodu Janka, jedynie dodałem w extends kropki przed nazwami rozszerzeń.
         public string[] extends = { ".txt", ".csv", ".doc", ".docx", ".odt", ".ods", ".odp", ".xls", ".xlsx", ".pdf", ".ppt", ".pptx", ".pps", ".fb2", ".htm", ".html", ".tsv", ".xml", ".jpg", ".jpeg", ".tiff", ".bmp", ".mp4", ".avi", ".mp3", ".wav"};
-        
         // Z tych zmiennych nie korzystałem nigdy...
         private string regex = @"((u|s|wy){0,1}(tw((órz)|(orzyć)|(orzenie))))(\s)(etykiet(y|ę){0,1})(\s)((<[a-ząęśćżźół\#]+\$>)+)(\s)((dla){0,1})(\s)((każde){0,1}((go)|j){0,1})(\s){0,1}((grupy){0,1})(\s){0,1}((((plik)|(obiekt))(u|ów))|(lokacji))(\s)(((\*{0,1})\.{0,1}[a-z0-9]{3,4}\s{0,1})+)";
         private string regexCreate = @"(create)(\s)(label)(\s)((<[a-ząęśćżźół\#]+\$>)+)(\s)((for){0,1})(\s)((every)|(all)|(each){0,1})(\s){0,1}((group of files)|(files' group){0,1})(\s)(((\*{0,1})\.{0,1}[a-z0-9]{3,4}\s{0,1})+)";
@@ -89,9 +74,6 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
         private List<string> catalog_folder_path_list = new List<string>();
         private ListViewItem[] LV_catalog_display_cache;
         private List<ListViewItem> LV_catalog_display_item_selection = new List<ListViewItem>();
-        private List<ListViewItem> LV_catalog_display_data_to_manipulate = new List<ListViewItem>();
-        private int LV_catalog_display_data_to_manipulate_orgin_directory_id = 0;
-        private bool cache_refresh = true, copy = false, cut = false;
 
         /*   Oduzależnienie programu od statycznych stringów - pobieranie lokacji programu
          *    
@@ -106,13 +88,12 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
          *    
          *    Wynikowo struktura programu ma wygladac w ten desen:
          *    bin\ - tutaj żyja nasze .dll'ki i .exe'c aplikacji
-         *    db\ - tutaj żyje nasz katalog, w pliku catalog.fdb
-         *    output\ - tutaj żyją wyniki tego co zwraca Karol swoją obrabiarką do pl. multimedialnych.
+         *                *    db\ - tutaj żyje nasz katalog, w pliku catalog.fdb
          *    
          *    Tutaj zakladam ze program jest schowany glebiej przez Visual Studio, stad potrzebne są nam dodatkowe skoki. Przepisanie tej procedury na czysto
          *    nie jest problemem.
          *    
-         *    UWAGA: Moze wygenerowac IOException jeżeli coś innego czyta nasze podfoldery!
+         *    UWAGA: Moze wygenerowac IOException jeżeli coś innego czyta nasze katalogi!
         */
         private void DetermineFilepaths()
         {
@@ -137,14 +118,14 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             this.database_path = target_directory + @"\db\catalog.fdb"; // Lokacja katalogu tworzonego przez program
         }
 
-    /* Tworzenie reprezentacji bazy danych (jej tabel i kolumn) w programie
+        /* Tworzenie reprezentacji bazy danych (jej tabel i kolumn) w programie
          * 
          * Dodajemy do list: database_tables i database_columns; wartości wyznaczone empirycznie na podstawie danych testowych.
          * 
          * Gdy funkcja kończy działanie, mamy już wszystkie informacje o strukturze bazy załadowane i gotowe do korzystania.
          * 
         */
-        // Procedura przechowująca konstrukcję bazy danych.
+
         private void DetermineDatabaseConstruction()
         {
             database_tables = new List<Tuple<int, string>>();
@@ -256,6 +237,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
         }
 
         // Ładowanie skryptów tworzących tabele bazy danych i ich kolumny, na podstawie danych w database_tables i database_rows
+
         private void LoadCreationScripts()
         {
             creation_scripts = new List<string>();
@@ -295,7 +277,6 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             }
         }
 
-        // Przygotowanie stringa do łączenia z bazą danych
         void PrepareConnectionString()
         {
             database_connection_string_builder = new FbConnectionStringBuilder();
@@ -306,7 +287,6 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             database_connection_string_builder.ServerType = FbServerType.Default;
         }
 
-    // Obsługa logiki wymaganej przez WPF i resizing okna.
         public Form1()
         {
             this.AutoSize = true;
@@ -327,7 +307,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             excludedMetadata = new List<string>();
             metadata = new List<string[]>();
             directories_grabbed = new List<Tuple<int, string>>();
-            files_grabbed = new List<Tuple<int, string, string, string, System.DateTime, System.DateTime, int>>();
+            files_grabbed = new List<Tuple<int, string, string, System.DateTime, System.DateTime, int>>();
         }
 
         /* Zmiana rozmiaru okna głównego
@@ -346,6 +326,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
         *  I tyle, reszta w kodzie.
         *  
         */
+
         private void Form1_Resize(object sender, EventArgs e)
         {
             // Ustawiamy rozdzielczosc minimalna na poziomie tego, co zrobił Janek
@@ -385,14 +366,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                 // (jezeli chcemy go skalowac) lub jego lokację (jeżeli chcemy zmienić pozycję)
             }
         }
-
-        private void TB_catalog_path_current_resizer(object sender, EventArgs e)
-        {
-            TableLayoutPanel parent = (TableLayoutPanel)sender;
-            TextBox target = (TextBox)parent.Controls[1];
-            target.Width = parent.Size.Width - 150;
-        }
-
+        
 
 
         /*    Sprawdzanie czy istnieje baza danych (i jej walidacja jeżeli istnieje)
@@ -412,6 +386,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
          *    
          *    UWAGA: Moze wygenerowac IOException jeżeli coś innego czyta nasze katalogi!
          */
+
         private void BT_test_database_click(object sender, EventArgs e)
         {
             if (File.Exists(database_path))
@@ -458,12 +433,15 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                 database_validated_successfully = true;
             }
         }
+        
+
 
         /*  Ekstracja metadanych - wywołanie okna odpowiedzialnego za jej obsługę
          *  
          *  Informacje o tym jak konkretnie robimy ekstrakcję metadanych znajdują się w formularzu Metadata_extractor.cs
          * 
          */
+
         private void BT_extract_metadata_click(object sender, EventArgs e)
         {
             using (FolderBrowserDialog open = new FolderBrowserDialog())
@@ -481,7 +459,6 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             }
         }
 
-        // Stary kawałek logiki do wyświetlania zawatrości zmiennej metadata, teraz już nie jest potrzebny
         private void chkExcludeMetadata_CheckedChanged(object sender, EventArgs e)
         {
             if (this.chkExcludeMetadata.Checked)
@@ -574,57 +551,6 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             }
         }
 
-    // Operacje na bazie danych
-
-        // Tworzenie plików w wirtualnych folderach
-        private void database_virtual_item_make(int parent_id, string type, List<string> data)
-        {
-            string destination = String.Empty;
-            string datafields = String.Empty;
-            string values = String.Empty;
-            string[] values_passed = new string[0];
-
-            if (data.Count != 0)
-            {
-                destination = type;
-                var datatable_index = database_tables.Find(x => x.Item2.Equals(destination)).Item1;
-
-                var columns_to_populate = database_columns.FindAll(x => x.Item1 == datatable_index);
-                values_passed = new string[columns_to_populate.Count - 1];
-
-                // ID nie wypełniamy z ręki (robi to automatycznie silnik bazodanowy), stąd startujemy tutaj przejście od 1.
-                for (int j = 1; j < columns_to_populate.Count; j++)
-                {
-                    datafields += columns_to_populate[j].Item2 + ",";
-                    values += "@" + columns_to_populate[j].Item2 + ",";
-                    values_passed[j - 1] = columns_to_populate[j].Item2;
-                }
-                datafields = datafields.TrimEnd(',');
-                values = values.TrimEnd(',');
-
-                FbCommand add_data = new FbCommand("INSERT INTO " + destination + "(" + datafields + ") VALUES (" + values + ")", new FbConnection(database_connection_string_builder.ConnectionString));
-
-                
-                add_data.Parameters.AddWithValue(values_passed[0], parent_id);
-
-                for (int j = 1; j < data.Count(); j++)
-                {
-                    if (!(data.ElementAt(j).Equals(""))) add_data.Parameters.AddWithValue(values_passed[j], data.ElementAt(j));
-                    else add_data.Parameters.AddWithValue(values_passed[j], null);
-                }
-
-                if (data.Count() < values_passed.Length)
-                {
-                    for (int j = data.Count(); j < values_passed.Length; j++) add_data.Parameters.AddWithValue(values_passed[j], null);
-                }
-
-                add_data.Connection.Open();
-                add_data.ExecuteNonQuery();
-                add_data.Connection.Close();
-            }
-        }
-
-        // Tworzenie wirtualnych folderów
         private void database_virtual_folder_make(string name, int parent_index, bool modifiable_flag)
         {
             var columns_to_populate = database_columns.FindAll(x => x.Item1 == 0); // szukamy struktury tabeli virtual_folder
@@ -659,6 +585,8 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             folder_creator.ExecuteNonQuery();
             database_connection.Close();
         }
+
+       
 
         // Budowanie odpowiednich kolumn bazy danych
         private void database_build(string database_connection_string)
@@ -717,6 +645,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
          * Informacja o wyniku walidacji przechowywana jest w bool'u database_validated_successfully.
          * 
          */
+
         private int[] database_validate(string database_connection_string)
         {
             // Tworzymy tablicę 6-elementową przechowującą wynik walidacji dla każdej tabeli bazy programu. Zawiera true gdy są poprawne, false gdy są błędne.
@@ -781,9 +710,8 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
         }
 
 
-    // Zakładka Katalog i jej logika:
+        // Zakładka Katalog:
 
-        // Wyświetlanie zawartości całego folderu.
         private void LV_catalog_display_folder_content_display(int id_to_display)
         {
             // Reset danych do wyswietlenia, na wypadek gdyby funkcja byla wywolana drugi i dalszy raz.
@@ -809,7 +737,9 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             {
                 directories_grabbed.Add(new Tuple<int, string>(
                                        (int)database_folder_subdirectories.Rows[i].ItemArray[0],
-                                       (string)database_folder_subdirectories.Rows[i].ItemArray[1])); 
+                                       (string)database_folder_subdirectories.Rows[i].ItemArray[1]));
+
+                
             }
 
             for (int i = 1; i < database_tables.Count; i++) // bierzemy wszystkie tabele oprócz virtual_folder
@@ -825,9 +755,8 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
 
                 for (int j = 0; j < database_folder_content.Rows.Count; j++)
                 {
-                    files_grabbed.Add(new Tuple<int, string, string, string, System.DateTime, System.DateTime, int>(
-                                     (int)database_folder_content.Rows[j].ItemArray[0],
-                                     database_tables[i].Item2,               
+                    files_grabbed.Add(new Tuple<int, string, string, System.DateTime, System.DateTime, int>(
+                                     (int)database_folder_content.Rows[j].ItemArray[0],               
                                      (string)database_folder_content.Rows[j].ItemArray[1],
                                      (string)database_folder_content.Rows[j].ItemArray[2],
                                      (System.DateTime)database_folder_content.Rows[j].ItemArray[3],
@@ -836,32 +765,8 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                 }
             }
             LV_catalog_display.VirtualListSize = directories_grabbed.Count + files_grabbed.Count;
-            if(LV_catalog_display.VirtualListSize >=1) LV_catalog_display.RedrawItems(0, LV_catalog_display.VirtualListSize-1, false);
         }
 
-        // Wywołuje się przed LV_catalog_display_item_selected, służy do obsługi SHIFT+LMB w wybieraniu przedziałów.
-        private void LV_catalog_display_item_range_select(object sender, ListViewVirtualItemsSelectionRangeChangedEventArgs e)
-        {
-            ListView parent = (ListView)sender;
-            if (e.IsSelected == true)
-            {
-                for (int i = e.StartIndex; i <= e.EndIndex; i++) LV_catalog_display_item_selection.Add(parent.Items[i]);
-            }
-            else LV_catalog_display_item_selection.Clear();
-        }
-
-        // Wywołuje się po LV_catalog_display_item_range_select, służy do obsługi CTRL+LMB w wybiraniu poszczególnych rzeczy.
-        private void LV_catalog_display_item_selected(object sender, ListViewItemSelectionChangedEventArgs e)
-        {
-            ListView parent = (ListView)sender;
-            LV_catalog_display_item_selection.Clear();
-            for (int i = 0; i < parent.SelectedIndices.Count; i++)
-            {
-                LV_catalog_display_item_selection.Add(parent.Items[parent.SelectedIndices[i]]);
-            }
-        }
-
-        // Obsługa zdarzenia wejścia w zakładkę, w zależności od wyniku testu bazy uaktywnia lub dezaktywuje podgląd katalogu.
         private void LV_catalog_display_visible_changed(object sender, EventArgs e)
         {
             if (database_validated_successfully == false)
@@ -871,34 +776,18 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             }
             else
             {
-                if (LV_catalog_display.Enabled == false)
-                {
-                    LV_catalog_display_folder_content_display(1);
-                    catalog_folder_id_list.Add(1);
-                    catalog_folder_path_list.Add(@"\");
-                    TB_catalog_path_current.Text = catalog_folder_path_list.Last();
-                    LV_catalog_display.Enabled = true;
-                }
-                else
-                {
-                    // Wyczyść wcześniejszą zawartość i zregeneruj
-                    TB_catalog_path_current.Text = string.Empty;
-                    if (LV_catalog_display_cache != null) Array.Clear(LV_catalog_display_cache, 0, LV_catalog_display_cache.Length);
-                    catalog_folder_id_list.Clear();
-                    catalog_folder_path_list.Clear();
-                    LV_catalog_display_folder_content_display(1);
-                    catalog_folder_id_list.Add(1);
-                    catalog_folder_path_list.Add(@"\");
-                    TB_catalog_path_current.Text = catalog_folder_path_list.Last();
-                    LV_catalog_display.Enabled = true;
-                }
+                LV_catalog_display_folder_content_display(1);
+                catalog_folder_id_list.Add(1);
+                catalog_folder_path_list.Add(@"\");
+                TB_catalog_path_current.Text = catalog_folder_path_list.Last();
+                LV_catalog_display.Enabled = true;
+                LV_catalog_display.FocusedItem = null;
             }
         }
-
-        // Obsługa zdarzenia cachowania, potrzebna dla ListView w trybie wirtualnym. Odpowiada za konstrukcję i uaktualnianie cache'u.
+        
         private void LV_catalog_display_cache_items(object sender, CacheVirtualItemsEventArgs e)
         {
-            if (LV_catalog_display_cache != null && e.StartIndex >= 0 && e.EndIndex <= LV_catalog_display_cache.Length && cache_refresh==false)
+            if (LV_catalog_display_cache != null && e.StartIndex >= 0 && e.EndIndex <= LV_catalog_display_cache.Length)
             {
                 //If the newly requested cache is a subset of the old cache, 
                 //no need to rebuild everything, so do nothing.
@@ -926,24 +815,18 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                 if(i >= directories_grabbed.Count)
                 {
                     item_to_add.Name = files_grabbed[i - directories_grabbed.Count].Item1.ToString();
-                    item_to_add.ToolTipText = files_grabbed[i - directories_grabbed.Count].Item2;
-                    item_to_add.Text = files_grabbed[i - directories_grabbed.Count].Item3;
-                    item_to_add.SubItems.Add(files_grabbed[i - directories_grabbed.Count].Item4);
+                    item_to_add.Text = files_grabbed[i - directories_grabbed.Count].Item2;
+                    item_to_add.SubItems.Add(files_grabbed[i - directories_grabbed.Count].Item3);
+                    item_to_add.SubItems.Add(files_grabbed[i - directories_grabbed.Count].Item4.ToLongTimeString() + " " +
+                                             files_grabbed[i - directories_grabbed.Count].Item4.ToShortDateString());
                     item_to_add.SubItems.Add(files_grabbed[i - directories_grabbed.Count].Item5.ToLongTimeString() + " " +
                                              files_grabbed[i - directories_grabbed.Count].Item5.ToShortDateString());
-                    item_to_add.SubItems.Add(files_grabbed[i - directories_grabbed.Count].Item6.ToLongTimeString() + " " +
-                                             files_grabbed[i - directories_grabbed.Count].Item6.ToShortDateString());
-                    item_to_add.SubItems.Add(files_grabbed[i - directories_grabbed.Count].Item7.ToString());
+                    item_to_add.SubItems.Add(files_grabbed[i - directories_grabbed.Count].Item6.ToString());
                     LV_catalog_display_cache[i] = item_to_add;
                 }
             }
-
-            cache_refresh = false;
         }
 
-        /* Obsługa zdarzenia pobrania przedmiotu do wyświetlenia, wymagana dla ListView w trybie wirtualnym. 
-         * Pobiera z cache'u przedmiot albo wydaje polecenie jego rekonstrukcji jeżeli nie ma w nim wymaganego przedmiotu.
-        */
         private void LV_catalog_display_retrieve_item(object sender, RetrieveVirtualItemEventArgs e)
         {
             if (LV_catalog_display_cache != null && e.ItemIndex >= 0 && e.ItemIndex < LV_catalog_display_cache.Length)
@@ -959,7 +842,6 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             }
         }
 
-        // Logika tworzenia folderu z menu kontekstowego.
         private void context_menu_folder_make(int parent_dir_id, string new_folder_name)
         {
             bool folder_exists_already = false;
@@ -987,13 +869,10 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                 // Nie znaleźliśmy duplikatu o tym samym imieniu i o tym samym rodzicu
                 // W przypadku nowego folderu z listy kontekstowej wywołujemy po prostu z sztywnym stringiem "Nowy folder"
                 database_virtual_folder_make(new_folder_name, parent_dir_id, true);
-                // Zlecamy programowi ponowne wyświetlenie folderu - jako że przybył nam nowy folder.
-                cache_refresh = true;
                 LV_catalog_display_folder_content_display(parent_dir_id);
             }
         }
 
-        // Obsługa kliknięcia w ListView gdy nie klika się w żadny z wyświetlanych przez niego element.
         private void LV_catalog_display_click_no_selection(object sender, MouseEventArgs e)
         {
             ListView parent = (ListView)sender;
@@ -1004,417 +883,78 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                 context_menu_position.Y = context_menu_position.Y + parent.Location.Y + 30; // kolumna ma rozmiar 30px
                 ContextMenuStrip background_context_menu_strip = new ContextMenuStrip();
                 background_context_menu_strip.Items.Add("Nowy folder");
-                background_context_menu_strip.Items.Add("Wklej");
-                if (copy == false && cut == false) background_context_menu_strip.Items[1].Enabled = false;
                 background_context_menu_strip.ItemClicked += element_context_menu_item_select;
                 parent.ContextMenuStrip = background_context_menu_strip;
             }
+            
         }
 
-        // Obsługa wybierania elementów z menu kontekstowego (oba typy obsługiwane jednym zdarzeniem.
         private void element_context_menu_item_select(object sender, ToolStripItemClickedEventArgs e)
         {
             ContextMenuStrip parent = (ContextMenuStrip)sender;
             ListView super_parent = (ListView)parent.SourceControl;
             
-            // Menu kontekstowe bez zaznaczenia obiektu w folderze
             if (e.ClickedItem.Text.Equals("Nowy folder"))
             {
                 context_menu_folder_make(catalog_folder_id_list.Last(),"Nowy folder");
-                super_parent.Items[super_parent.Items.Count-1].BeginEdit();
-            }
-            if (e.ClickedItem.Text.Equals("Wklej"))
-            {
-                if(copy == true)
-                {
-                    for(int i = 0; i < LV_catalog_display_data_to_manipulate.Count; i++)
-                    {
-                        if(LV_catalog_display_data_to_manipulate[i].SubItems[1].Text.Equals("Folder")) {
-                            database_virtual_folder_copy(int.Parse(LV_catalog_display_data_to_manipulate[i].Name),
-                                                 catalog_folder_id_list.Last(),
-                                                 LV_catalog_display_data_to_manipulate[i].Text);
-                        }
-                        else
-                        {
-                            database_virtual_file_copy(LV_catalog_display_data_to_manipulate_orgin_directory_id,
-                                                       catalog_folder_id_list.Last(),
-                                                       LV_catalog_display_data_to_manipulate[i].ToolTipText,
-                                                       LV_catalog_display_data_to_manipulate[i].Text);
-                        }
-                    }
-                    
-                }
-                if(cut == true)
-                {
-
-                }
-                LV_catalog_display_folder_content_display(catalog_folder_id_list.Last());
-            }
-            
-            // Menu kontekstowe dla obiektów w folderze
-            if (e.ClickedItem.Text.Equals("Otwórz"))
-            {
-                if(super_parent.FocusedItem.SubItems[1].Text.Equals("Folder"))
-                {
-                    // Otwieramy folder
-                    LV_catalog_display_change_directory(super_parent.FocusedItem);
-                }
-                else
-                {
-                    // Otwieramy plik
-                    string target_location = database_virtual_filepath_get(int.Parse(super_parent.FocusedItem.Name), super_parent.FocusedItem.ToolTipText);
-                    if(target_location != string.Empty)
-                    {
-                        System.Diagnostics.Process.Start(target_location);
-                    }
-                }
-            }
-            if (e.ClickedItem.Text.Equals("Wytnij"))
-            {
-                LV_catalog_display_data_to_manipulate = LV_catalog_display_item_selection;
-                LV_catalog_display_data_to_manipulate_orgin_directory_id = catalog_folder_id_list.Last();
-                cut = true;
-                if (copy == true) copy = false;
-            }
-            if (e.ClickedItem.Text.Equals("Kopiuj"))
-            {
-                LV_catalog_display_data_to_manipulate = new List<ListViewItem>(LV_catalog_display_item_selection);
-                LV_catalog_display_data_to_manipulate_orgin_directory_id = catalog_folder_id_list.Last();
-                copy = true;
-                if (cut == true) cut = false;
-            }
-            if (e.ClickedItem.Text.Equals("Usuń"))
-            {
-                foreach(var item in LV_catalog_display_item_selection)
-                {   
-                        // wysylamy do usuniecia folder
-                        if (item.SubItems[1].Text.Equals("Folder"))
-                        database_virtual_folder_delete(int.Parse(item.Name),
-                                                       database_tables[0].Item2,
-                                                       false,
-                                                       false);
-                        // wysylamy do usuniecia plik
-                        else database_virtual_folder_delete(int.Parse(item.Name),
-                                                            item.ToolTipText,
-                                                            true,
-                                                            false);
-                }
-
-                cache_refresh = true;
-                LV_catalog_display_folder_content_display(catalog_folder_id_list.Last());
-
-                //Tutaj trzeba dac polecenie regenerowanie cache'u.
             }
             if (e.ClickedItem.Text.Equals("Zmień nazwę"))
             {
                 // parent.Text - ID obiektu który wysłał polecenie zmiany nazwy
-                super_parent.Items[int.Parse(parent.Text)].BeginEdit();
+                
+                super_parent.Items[int.Parse(parent.Text)].BeginEdit();         
             }
-            if (e.ClickedItem.Text.Equals("Właściwości"))
+            if (e.ClickedItem.Text.Equals("Usuń"))
             {
-
-            }
-        }
-
-        // Pobieranie ścieżki rzeczywistej pliku z bazy danych.
-        private string database_virtual_filepath_get (int id, string target_table)
-        {
-            string result = string.Empty;
-
-            DataTable file_location_container = new DataTable();
-            FbDataAdapter file_location_grabber = new FbDataAdapter("SELECT ID,PATH " +
-                                                                    "FROM " + target_table + " " +
-                                                                    "WHERE ID = " + id + ";"
-                                                                    ,
-                                                                    new FbConnection(database_connection_string_builder.ConnectionString));
-
-            file_location_grabber.Fill(file_location_container);
-
-            if(file_location_container.Rows.Count == 1)
-            {
-                result = (string)file_location_container.Rows[0].ItemArray[1];
-            }
-            else
-            {
-                // Błąd - nie znaleziono w podanej tabeli pliku o takim ID.
-                MessageBox.Show("Błąd! Nie znaleziono pliku w tabeli.");
-            }
-
-            return result;
-        }
-
-        // Sprawdzenie czy zadany folder jest modyfikowalny (de facto pobranie flagi MODIFIABLE z kolumny virtual_folder i zwrócenie jej do programu)
-        private bool database_virtual_folder_modifiable_check (int id_to_check)
-        {
-            bool is_modifiable = true;
-            DataTable database_folder_modifiable_verifier_container = new DataTable();
-            FbDataAdapter database_folder_modifiable_verifier = new FbDataAdapter("SELECT ID,NAME,MODIFIABLE " +
-                                                                                  "FROM " + database_tables[0].Item2 + " " +
-                                                                                  "WHERE ID = " + id_to_check + ";"
-                                                                                  ,
-                                                                                  new FbConnection(database_connection_string_builder.ConnectionString));
-
-            database_folder_modifiable_verifier.Fill(database_folder_modifiable_verifier_container);
-
-            if (database_folder_modifiable_verifier_container.Rows.Count == 1)
-            {
-                // Wszystko dobrze, znalazł wartość
-                is_modifiable = bool.Parse(database_folder_modifiable_verifier_container.Rows[0].ItemArray[2].ToString());
-                if (is_modifiable == false)
+                for(int i = 0; i < super_parent.VirtualListSize; i++)
                 {
-                    MessageBox.Show(database_folder_modifiable_verifier_container.Rows[0].ItemArray[1].ToString()+" jest folderem domyślnym, nie może on zostać zmodyfikowany!");
+                    if (super_parent.Items[i].Selected == true)
+                    {
+
+                        // wysylamy do usuniecia folder
+                        if (super_parent.Items[i].SubItems[1].Text.Equals("Folder")) database_virtual_folder_delete(int.Parse(super_parent.Items[i].Name),
+                                                                                                                    super_parent.Items[i].Text,
+                                                                                                                    string.Empty,
+                                                                                                                    false);
+                        // wysylamy do usuniecia plik
+                        else database_virtual_folder_delete(int.Parse(super_parent.Items[i].Name),
+                                                            super_parent.Items[i].Text,
+                                                            super_parent.Items[i].SubItems[1].Text,
+                                                            true);
+                        Array.Clear(LV_catalog_display_cache, 0, LV_catalog_display_cache.Length);
+                    }
                 }
             }
-            else
-            {
-                MessageBox.Show("Bład podczas pobierania flagi MODIFIABLE folderu!");
-            }
-            return is_modifiable;
+
         }
 
-        // Procedura wywołująca kopiowanie pliku wirtualnego do folderu, patrzymy czy nie występuje kolizja i zmieniamy nazwę jeżeli zaszła.
-        private void database_virtual_file_copy (int source_folder_id, int destination_folder_id, string type, string name)
+        private void database_virtual_folder_delete (int id_to_delete, string name_to_delete, string extension_to_delete,bool is_file)
         {
-            string name_new = name;
-            List<string> passed_data = new List<string>();
-
-            // Sprawdzamy czy folder do którego kopiujemy nie ma już pliku o tej samej nazwie
-            DataTable file_exists_container = new DataTable();
-            FbDataAdapter file_exists_checker = new FbDataAdapter("SELECT NAME,DIR_ID" +
-                                                                    "FROM " + type + " " +
-                                                                    "WHERE NAME = " + name_new +
-                                                                    "AND DIR_ID = " + destination_folder_id + ";"
-                                                                    ,
-                                                                    new FbConnection(database_connection_string_builder.ConnectionString));
-
-            file_exists_checker.Fill(file_exists_container);
-            if (file_exists_container.Rows.Count >= 1)
+            if(is_file == false)
             {
-                // Kolizja - mamy już plik o takiej nazwie w folderze do którego kopiujemy!
-                // Doczepiamy do nazwy folderu cyfrę z ilością kopii i jest ok dopóki nie zrobimy sizeof(int) takich samych plików w jednym folderze.
-                name_new = name_new + " " + file_exists_container.Rows.Count;
-            }
+                //Logika usuwania folderu - sprawdź czy nic w nim nie ma, jeżeli jest to zwróć błąd.
 
-            DataTable file_content_container = new DataTable();
-            FbDataAdapter file_content_grabber = new FbDataAdapter("SELECT *" +
-                                                                    "FROM " + type + " " +
-                                                                    "WHERE NAME = " + name_new +
-                                                                    "AND DIR_ID = " + source_folder_id + ";"
-                                                                    ,
-                                                                    new FbConnection(database_connection_string_builder.ConnectionString));
-
-            file_content_grabber.Fill(file_content_container);
-            if(file_content_container.Rows.Count == 1)
-            {
-                for (int i = 1; i < file_content_container.Rows[0].ItemArray.Count(); i++)
-                    passed_data.Add((string)file_content_container.Rows[0].ItemArray[i]);
-            }
-
-            database_virtual_item_make(destination_folder_id, type, passed_data);
-        }
-
-        // Procedura wywołująca kopiowanie folderu wraz z jego zawartością do innego katalogu. Też sprawdza czy nie zaszła kolizja nazw.
-        private void database_virtual_folder_copy (int source_folder_id,int destination_folder_id, string name)
-        {
-            string name_new = name;
-            int id_new = 0;
-            string error_message = string.Empty;
-            bool error = false;
-
-            // 1. Tworzymy folder, który będzie naszą kopią
-
-            // Sprawdzamy czy folder do którego kopiujemy nie ma już folderu o tej samej nazwie
-            DataTable folder_exists_container = new DataTable();
-            FbDataAdapter folder_exists_checker = new FbDataAdapter("SELECT ID,DIR_ID " +
-                                                                    "FROM " + database_tables[0].Item2 + " " +
-                                                                    "WHERE NAME = '" + name_new + "' " +
-                                                                    "AND DIR_ID = " + destination_folder_id + ";"
-                                                                    ,
-                                                                    new FbConnection(database_connection_string_builder.ConnectionString));
-
-            folder_exists_checker.Fill(folder_exists_container);
-            if (folder_exists_container.Rows.Count >= 1)
-            {
-                // Kolizja - mamy już folder o takiej nazwie w folderze do którego kopiujemy!
-                // Doczepiamy do nazwy folderu cyfrę z ilością kopii i jest ok dopóki nie zrobimy sizeof(int) folderów w jednym folderze.
-                name_new = name_new + " " + folder_exists_container.Rows.Count;
-            }
-
-            database_virtual_folder_make(name_new, destination_folder_id, true);
-
-            // 2. Szukamy go w katalogu - chcemy jego ID żeby wrzucić do niego wszystkie rzeczy które były w folderze źródłowym
-
-            DataTable new_folder_id_container = new DataTable();
-            FbDataAdapter new_folder_id_grabber = new FbDataAdapter("SELECT ID,DIR_ID,NAME" + " " + 
-                                                                    "FROM " + database_tables[0].Item2 + " " +
-                                                                    "WHERE NAME = '" + name_new + "' " +
-                                                                    "AND DIR_ID = " + destination_folder_id + ";"
-                                                                    ,
-                                                                    new FbConnection(database_connection_string_builder.ConnectionString));
-
-            new_folder_id_grabber.Fill(new_folder_id_container);
-
-            if(new_folder_id_container.Rows.Count == 1)
-            {
-                // Wszystko ok - pobieram ID nadane nowemu folderowi!
-                id_new = (int)new_folder_id_container.Rows[0].ItemArray[0];
             }
             else
             {
-                // Błąd! Nie znalazł nowo-stworzonego folderu, albo znalazł ich za dużo!
-                error = true;
-                error_message += "Nie mogłem znaleść ID nowo-utworzonego folderu, albo znalazłem ich więcej niż jeden.\n";
-            }
-
-            // 3. Gdy mamy już id kopiujemy całą zawartość folderu źródłowego do naszego nowoutworzonego folderu
-
-            if (error == false)
-            {
-                // Przeszukujemy zawartość folderu źródłowego i odtwarzamy obiekty z niego w naszym nowym folderze:
-                // Najpierw tworzymy jego podfoldery. Uwaga bo funkcja wywołuje tutaj samą siebie rekurencyjnie.
-                DataTable new_folder_subfolders_to_create_container = new DataTable();
-                FbDataAdapter new_folder_subfolders_to_create_grabber = new FbDataAdapter("SELECT ID,NAME,DIR_ID " +
-                                                                        "FROM " + database_tables[0].Item2 + " " +
-                                                                        "WHERE DIR_ID = " + source_folder_id + ";"
-                                                                        ,
-                                                                        new FbConnection(database_connection_string_builder.ConnectionString));
-
-                new_folder_subfolders_to_create_grabber.Fill(new_folder_subfolders_to_create_container);
-
-                for (int i = 0; i < new_folder_subfolders_to_create_container.Rows.Count; i++)
-                {
-                    if(!new_folder_subfolders_to_create_container.Rows[i].ItemArray[1].Equals(name_new))
-                    database_virtual_folder_copy((int)new_folder_subfolders_to_create_container.Rows[i].ItemArray[0],
-                                                 id_new, 
-                                                 (string)new_folder_subfolders_to_create_container.Rows[i].ItemArray[1]);
-                }
-
-                // Przekopiowaliśmy podfoldery, teraz trzeba wziąść całą pozostałą zawartośc folderu źródłowego
+                //Logika usuwania pliku - po prostu przeszukaj tabele i usuń takowy.
                 for (int i = 1; i < database_tables.Count; i++)
                 {
-                    DataTable new_folder_content_container = new DataTable();
-                    FbDataAdapter new_folder_content_grabber = new FbDataAdapter("SELECT *" +
-                                                                            "FROM " + database_tables[i].Item2 + " " +
-                                                                            "WHERE DIR_ID = " + source_folder_id + ";"
-                                                                            ,
-                                                                            new FbConnection(database_connection_string_builder.ConnectionString));
+                    FbCommand database_file_remover = new FbCommand("DELETE FROM " + database_tables[i].Item2 + " " +
+                                                                    "WHERE ID = " + id_to_delete + " " +
+                                                                    "AND NAME = '" + name_to_delete + "' " +
+                                                                    "AND EXTENSION = '" + extension_to_delete + "' ;"
+                                                                    ,
+                                                                    new FbConnection(database_connection_string_builder.ConnectionString));
 
-                    new_folder_content_grabber.Fill(new_folder_content_container);
-                    for (int j = 0; j < new_folder_content_container.Rows.Count; j++)
-                    {
-                        List<string> data_passed = new List<string>();
-                        for(int k = 1; k < new_folder_content_container.Rows[j].ItemArray.Count(); k++)
-                        {
-                            string value = new_folder_content_container.Rows[j].ItemArray[k].ToString();
-                            data_passed.Add(value);
-                        }
-                        database_virtual_item_make(id_new, database_tables[i].Item2, data_passed);
-                    }
+                    database_file_remover.Connection.Open();
+                    database_file_remover.ExecuteNonQuery();
+                    database_file_remover.Connection.Close();
                 }
-
-            }
-            else
-            {
-                //Error handling - tutaj zwracamy co poszło nie tak.
-                MessageBox.Show(error_message);
             }
         }
 
-        // Procedura usuwająca zadany folder wirtualny, w zależności od użytkownika usuwa foldery z zawartością.
-        private void database_virtual_folder_delete (int id_to_delete, string target_table, bool is_file, bool surpress_pop_ups)
-        {
-            // Sprawdzamy czy to co usuwamy jest plikiem - jeżeli nie jest to mamy kilka rzeczy do sprawdzenia...
-            if (is_file == false)
-            {
-                // Tutaj mamy folder.
-
-                // Sprawdzamy najpierw czy folder jest usuwalny, potem czy nie ma nic w folderze który możemy usunąć
-                // Obsługa sytuacji nieedytowalnego folderu jest już w funkcji database_virtual_folder_modifiable_check
-                if (database_virtual_folder_modifiable_check(id_to_delete) == true)
-                {
-                    bool has_something_inside = false, found_file = false;
-                    // W tej liście przechowujemy wszystkie informacje niezbędne do rekurencyjnego odpalenia instrukcji usuwania.
-                    List<Tuple<int, string, string, bool>> detected_files = new List<Tuple<int, string, string, bool>>();
-
-                    for (int i = 0; i < database_tables.Count; i++)
-                    {
-                        DataTable folder_content_checker_container = new DataTable();
-                        FbDataAdapter folder_content_checker = new FbDataAdapter("SELECT ID,NAME,DIR_ID " +
-                                                                                 "FROM " + database_tables[i].Item2 + " " +
-                                                                                 "WHERE DIR_ID = " + id_to_delete + ";"
-                                                                                 ,
-                                                                                 new FbConnection(database_connection_string_builder.ConnectionString));
-                        folder_content_checker.Fill(folder_content_checker_container);
-                        if (folder_content_checker_container.Rows.Count != 0)
-                        {
-                            for (int j = 0; j < folder_content_checker_container.Rows.Count; j++)
-                            {
-                                if (i == 0) found_file = true;
-                                else found_file = false;
-                                detected_files.Add(new Tuple<int, string, string, bool>
-                                                  (int.Parse(folder_content_checker_container.Rows[j].ItemArray[0].ToString()),
-                                                  (string)folder_content_checker_container.Rows[j].ItemArray[1],
-                                                  database_tables[i].Item2,
-                                                  !found_file));
-                            }
-                            has_something_inside = true;
-                        }
-                    }
-                    if (has_something_inside == true)
-                    {
-                        DialogResult subfolder_found = DialogResult.Yes;
-                        if (surpress_pop_ups == false) subfolder_found = MessageBox.Show("Folder nie jest pusty!\n" + "Czy mam go usunąć mimo to?",
-                                                                                         "Usuń folder z zawartością",
-                                                                                         MessageBoxButtons.YesNo);
-                        if (subfolder_found == DialogResult.Yes)
-                        {
-                            foreach (var thing_inside in detected_files)
-                            {
-                                database_virtual_folder_delete(thing_inside.Item1, thing_inside.Item3, thing_inside.Item4,true);
-                            }
-                            // Po usunięciu zawartości z potomków przyszedł czas na sam folder - wiemy że teraz musi być już pusty.
-                            FbCommand database_directory_remover = new FbCommand("DELETE FROM " + target_table + " " +
-                                                                                 "WHERE ID = " + id_to_delete + ";"
-                                                                                 ,
-                                                                                 new FbConnection(database_connection_string_builder.ConnectionString));
-                            database_directory_remover.Connection.Open();
-                            database_directory_remover.ExecuteNonQuery();
-                            database_directory_remover.Connection.Close();
-                        }
-                        if (subfolder_found == DialogResult.No)
-                        {
-                            //Nie robimy nic - folder nie zostanie usunięty.
-                        }
-                    }
-                    else
-                    {
-                        //Wszystko ok, nie ma nic w srodku, możemy usuwać.
-                        FbCommand database_directory_remover = new FbCommand("DELETE FROM " + target_table + " " +
-                                                                             "WHERE ID = " + id_to_delete + ";"
-                                                                             ,
-                                                                             new FbConnection(database_connection_string_builder.ConnectionString));
-                        database_directory_remover.Connection.Open();
-                        database_directory_remover.ExecuteNonQuery();
-                        database_directory_remover.Connection.Close();
-                    }
-                }
-            }
-            else
-            // Tutaj mamy plik
-            {
-                //Logika usuwania pliku - po prostu usuń z odpowiedniej tabeli.
-                FbCommand database_file_remover = new FbCommand("DELETE FROM " + target_table + " " +
-                                                                "WHERE ID = " + id_to_delete + ";"
-                                                                ,
-                                                                new FbConnection(database_connection_string_builder.ConnectionString));
-                database_file_remover.Connection.Open();
-                database_file_remover.ExecuteNonQuery();
-                database_file_remover.Connection.Close();
-            }
-        }
-
-        // Sprawdzanie możliwości edycji nazwy pliku przed jej modyfikacją - sprawdzamy czy nazwa jest edytowalna.
-        private void LV_catalog_display_before_label_edit (object sender, LabelEditEventArgs e)
+        private void LV_catalog_display_before_label_edit(object sender, LabelEditEventArgs e)
         {
             ListView parent = (ListView)sender;
 
@@ -1423,10 +963,40 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             // parent.Items[e.Item].Text - nazwa obiektu do zmiany nazwy.
             // parent.Items[e.Item].Subitems[1].Text - typ obiektu do zmiany nazwy.
 
-            if (parent.Items[e.Item].SubItems[1].Text.Equals("Folder"))
+            if (parent.Items[e.Item].SubItems[1].Text.Equals("Folder")) 
             {
-                if (database_virtual_folder_modifiable_check(int.Parse(parent.Items[e.Item].SubItems[0].Name)) == true) e.CancelEdit = false;
-                else e.CancelEdit = true;
+                // Edytujemy nazwę folderu - sprawdzić czy dozwolona jest modyfikacja nazwy dla tego folderu!
+                bool editable = false;
+                DataTable database_folder_uneditable_verifier_container = new DataTable();
+                FbDataAdapter database_folder_uneditable_verifier = new FbDataAdapter("SELECT ID,MODIFIABLE " +
+                                                                                      "FROM " + database_tables[0].Item2 + " " +
+                                                                                      "WHERE ID = " + parent.Items[e.Item].Name + ";"
+                                                                                      ,
+                                                                                      new FbConnection(database_connection_string_builder.ConnectionString));
+
+                database_folder_uneditable_verifier.Fill(database_folder_uneditable_verifier_container);
+
+                if(database_folder_uneditable_verifier_container.Rows.Count == 1)
+                {
+                    // Wszystko dobrze, znalazł wartość
+                    editable = bool.Parse(database_folder_uneditable_verifier_container.Rows[0].ItemArray[1].ToString());
+                    if (editable == false)
+                    {
+                        MessageBox.Show("Nazwa folderu nie może zostać zmieniona - foldery domyślne nie mogą być zmodyfikowane!");
+                        e.CancelEdit = true;
+                    }
+                    else
+                    {
+                        e.CancelEdit = false;
+                    }
+                }
+                else
+                {
+                    // Coś poszło nie tak...
+                    e.CancelEdit = true;
+                    MessageBox.Show("Bład podczas pobierania flagi MODIFIABLE dla folderu o id = " + parent.Items[e.Item].Name);
+                }
+                
             }
             else
             {
@@ -1434,8 +1004,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             }
         }
 
-        // Sprawdzanie możliwości edycji nazwy pliku po wpisaniu nowej - tutaj sprawdzamy kolizje z już istniejącymi nazwami.
-        private void LV_catalog_display_after_label_edit (object sender, LabelEditEventArgs e)
+        private void LV_catalog_display_after_label_edit(object sender, LabelEditEventArgs e)
         {
             // tutaj użytkownik skonczył już edytować nazwę - sprawdzamy czy nie ma juz czegoś o tej samej nazwie i dopiero gdy wiemy że nie ma dajemy mu zrobić swoje.
             // potem updateujemy rekord w bazie danych.
@@ -1486,43 +1055,50 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                 bool file_exists_already = false;
                 DataTable database_file_already_exists_container = new DataTable();
 
-                target_table = parent.Items[e.Item].ToolTipText;
+                target_table = parent.Items[e.Item].Text;
 
-                FbDataAdapter database_file_already_exists_verifier = new FbDataAdapter("SELECT NAME,DIR_ID,EXTENSION " +
-                                                                                        "FROM " + target_table + " " +
-                                                                                        "WHERE DIR_ID = " + catalog_folder_id_list.Last() + 
-                                                                                        "AND NAME = '" + e.Label + "' " +
-                                                                                        "AND EXTENSION = '" + parent.Items[e.Item].SubItems[1].Text + "';"
-                                                                                        ,
-                                                                                        new FbConnection(database_connection_string_builder.ConnectionString));
-
-                database_file_already_exists_container.Clear();
-                database_file_already_exists_verifier.Fill(database_file_already_exists_container);
-                if (database_file_already_exists_container.Rows.Count > 0)
+                for (int i = 1; i < database_tables.Count; i++)
                 {
-                    MessageBox.Show(e.Label + " jest już w tym folderze!");
-                    file_exists_already = true;
-                    e.CancelEdit = true;
+                    FbDataAdapter database_file_already_exists_verifier = new FbDataAdapter("SELECT NAME,DIR_ID,EXTENSION " +
+                                                                                            "FROM " + database_tables[i].Item2 + " " +
+                                                                                            "WHERE DIR_ID = " + catalog_folder_id_list.Last() + 
+                                                                                            "AND NAME = '" + e.Label + "' " +
+                                                                                            "AND EXTENSION = '" + parent.Items[e.Item].SubItems[1].Text + "';"
+                                                                                            ,
+                                                                                            new FbConnection(database_connection_string_builder.ConnectionString));
+
+                    database_file_already_exists_container.Clear();
+                    database_file_already_exists_verifier.Fill(database_file_already_exists_container);
+                    if (database_file_already_exists_container.Rows.Count > 0)
+                    {
+                        MessageBox.Show(e.Label + " jest już w tym folderze!");
+                        file_exists_already = true;
+                        e.CancelEdit = true;
+                    }
                 }
+
                 if (!file_exists_already)
                 {
                     // Nie znaleźliśmy duplikatu o tym samym imieniu i o tym samym rodzicu, czas zmienić jego pierwotną zawartość w bazie danych.
-                    FbCommand database_file_renamer = new FbCommand("UPDATE " + target_table + " " +
-                                                                    "SET NAME = '" + e.Label + "' " +
-                                                                    "WHERE ID = " + parent.Items[e.Item].Name + " " +
-                                                                    "AND NAME = '" + parent.Items[e.Item].Text + "' ;"
-                                                                    ,
-                                                                    new FbConnection(database_connection_string_builder.ConnectionString));
+                    // Jako że nie wiemy w której z tabel jest zadany plik lecimy przez wszystkie (co da się zrobić szybciej jeżeli jest źle).
+                    for (int i = 1; i < database_tables.Count; i++)
+                    {
+                        FbCommand database_file_renamer = new FbCommand("UPDATE " + database_tables[i].Item2 + " " +
+                                                                        "SET NAME = '" + e.Label + "' " +
+                                                                        "WHERE ID = " + parent.Items[e.Item].Name + " " +
+                                                                        "AND NAME = '" + parent.Items[e.Item].Text + "' ;"
+                                                                        ,
+                                                                        new FbConnection(database_connection_string_builder.ConnectionString));
 
-                    database_file_renamer.Connection.Open();
-                    database_file_renamer.ExecuteNonQuery();
-                    database_file_renamer.Connection.Close();
+                        database_file_renamer.Connection.Open();
+                        database_file_renamer.ExecuteNonQuery();
+                        database_file_renamer.Connection.Close();
+                    }
                 }
             }
         }
 
-        // Obsługuje zdarzenie pojedynczego kliknięcia myszą.
-        private void LV_catalog_display_single_click (object sender, MouseEventArgs e)
+        private void LV_catalog_display_single_click(object sender, MouseEventArgs e)
         {
             ListView parent = (ListView)sender;
             if (e.Button == MouseButtons.Right)
@@ -1568,62 +1144,26 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             }
         }
 
-        // Zmienia wyswietlany folder.
-        private void LV_catalog_display_change_directory (ListViewItem target_directory)
+        private void LV_catalog_display_double_click(object sender, MouseEventArgs e)
         {
-            if (target_directory != null && target_directory.SubItems.Count != 0) {
-                if (target_directory.SubItems[1].Text.Equals("Folder"))
+            if(e.Button == MouseButtons.Left)
+            {
+                ListView parent = (ListView)sender;
+                if (parent.HitTest(e.Location).Item.SubItems[1].Text.Equals("Folder"))
                 {
-                    catalog_folder_id_list.Add(int.Parse(target_directory.Name));
-                    catalog_folder_path_list.Add(target_directory.Text + @"\");
+                    catalog_folder_id_list.Add(int.Parse(parent.FocusedItem.Name));
+                    catalog_folder_path_list.Add(parent.FocusedItem.Text + @"\");
                     TB_catalog_path_current.Text = string.Empty;
                     for (int i = 0; i < catalog_folder_path_list.Count; i++)
                     {
                         TB_catalog_path_current.Text += catalog_folder_path_list[i];
                     }
-                    cache_refresh = true;
                     LV_catalog_display_folder_content_display(catalog_folder_id_list.Last());
                 }
-                else
-                {
-                    // Błąd - przekazano do funkcji plik.
-                    MessageBox.Show("Błąd! Przekazany przedmiot wskazuje na coś innego niż folder");
-                }
-            }
-            else
-            {
-                // Błąd - przekazany obiekt jest niepoprawnie skonstruowany lub pusty
-                MessageBox.Show("Błąd! Przekazany obiekt jest nieprawidłowo skonstruowany");
             }
         }
 
-        // Obsługuje zdarzenie podwójnego kliknięcia.
-        private void LV_catalog_display_double_click (object sender, MouseEventArgs e)
-        {
-            if(e.Button == MouseButtons.Left)
-            {
-                ListView parent = (ListView)sender;
-                ListViewItem target = parent.HitTest(e.Location).Item;
-
-                if (target.SubItems[1].Text.Equals("Folder"))
-                {
-                    // Otwieramy folder
-                    LV_catalog_display_change_directory(target);
-                }
-                else
-                {
-                    // Otwieramy plik
-                    string target_location = database_virtual_filepath_get(int.Parse(target.Name), target.ToolTipText);
-                    if (target_location != string.Empty)
-                    {
-                        System.Diagnostics.Process.Start(target_location);
-                    }
-                }
-            }
-        }
-
-        // Obsługuje guzik do cofania się pomiędzy folderami.
-        private void BT_previous_click (object sender, EventArgs e)
+        private void BT_previous_click(object sender, EventArgs e)
         {
             if (catalog_folder_id_list.Count > 1)
             {
@@ -1639,6 +1179,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             }
             else MessageBox.Show("Jestem już w folderze głównym.");
         }
+
 
         // Dalej znajduje się kod legacy...
 
