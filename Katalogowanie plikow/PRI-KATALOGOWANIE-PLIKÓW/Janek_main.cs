@@ -437,14 +437,16 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                     }
                 }
 
-                if(result_directories.Count != 0 && result_files.Count != 0)
-                {
-                    // Dajemy znać formowi wywołującemu (tutaj Special_function_window) że dane są gotowe do odbioru.
-                    OnDataAvalible(this, EventArgs.Empty);
-                    MessageBox.Show("Zakończono proces katalogowania.");
-                    this.Close();
-                }
+               
             }
+            if (result_directories.Count != 0 && result_files.Count != 0)
+            {
+                // Dajemy znać formowi wywołującemu (tutaj Special_function_window) że dane są gotowe do odbioru.
+                OnDataAvalible(this, EventArgs.Empty);
+                MessageBox.Show("Zakończono proces katalogowania.");
+                this.Close();
+            }
+            
             /*
             foreach (var merge in merged)
             {
