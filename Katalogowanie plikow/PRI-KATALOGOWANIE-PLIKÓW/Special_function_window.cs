@@ -104,9 +104,11 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                     DataTable file_path_container = new DataTable();
                     FbDataAdapter file_path_grabber = new FbDataAdapter("SELECT PATH " +
                                                                         "FROM " + current.ToolTipText + " " +
-                                                                        "WHERE ID = " + int.Parse(current.Name) + ";"
+                                                                        "WHERE ID = @Id;"
                                                                         ,
                                                                         new FbConnection(DB_connection_string));
+
+                    file_path_grabber.SelectCommand.Parameters.AddWithValue("@Id", int.Parse(current.Name));
 
                     file_path_container.Clear();
                     file_path_grabber.Fill(file_path_container);
@@ -128,9 +130,11 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                 // Tworzymy adapter i podpinamy do niego zapytanie SQL wyłuskujące nam wszystkie tabele w bazie (oprócz domyślnych tabel systemu bazodanowego)
                 FbDataAdapter database_grab_directory_subdirectories = new FbDataAdapter("SELECT ID,NAME " +
                                                                                          "FROM virtual_folder " +
-                                                                                         "WHERE DIR_ID = " + int.Parse(current.Name) + ";"
+                                                                                         "WHERE DIR_ID = @Target_directory_id;"
                                                                                          ,
                                                                                          new FbConnection(DB_connection_string));
+
+                database_grab_directory_subdirectories.SelectCommand.Parameters.AddWithValue("@Target_directory_id", int.Parse(current.Name));
 
                 database_grab_directory_subdirectories.Fill(database_folder_subdirectories);
 
@@ -155,9 +159,11 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                 {
                     FbDataAdapter database_grab_directory_content = new FbDataAdapter("SELECT PATH,EXTENSION " +
                                                                     "FROM " + database_tables[i].Item2 + " " +
-                                                                    "WHERE DIR_ID = " + int.Parse(current.Name) + ";"
+                                                                    "WHERE DIR_ID = @Target_directory_id;"
                                                                     ,
                                                                     new FbConnection(DB_connection_string));
+
+                    database_grab_directory_content.SelectCommand.Parameters.AddWithValue("@Target_directory_id", int.Parse(current.Name));
 
                     database_folder_content.Clear();
                     database_grab_directory_content.Fill(database_folder_content);

@@ -69,7 +69,7 @@
             this.tabPage1.Margin = new System.Windows.Forms.Padding(2);
             this.tabPage1.Name = "tabPage1";
             this.tabPage1.Padding = new System.Windows.Forms.Padding(2);
-            this.tabPage1.Size = new System.Drawing.Size(447, 393);
+            this.tabPage1.Size = new System.Drawing.Size(447, 394);
             this.tabPage1.TabIndex = 0;
             this.tabPage1.Text = "Kryteria katalogowania";
             this.tabPage1.UseVisualStyleBackColor = true;
@@ -114,9 +114,6 @@
             this.chkMetadata.Name = "chkMetadata";
             this.chkMetadata.Size = new System.Drawing.Size(431, 294);
             this.chkMetadata.TabIndex = 2;
-            this.chkMetadata.ItemCheck += new System.Windows.Forms.ItemCheckEventHandler(this.chkMetadata_ItemCheck);
-            this.chkMetadata.SelectedIndexChanged += new System.EventHandler(this.chkMetadata_SelectedIndexChanged);
-            this.chkMetadata.DoubleClick += new System.EventHandler(this.chkMetadata_DoubleClick);
             // 
             // tabControl1
             // 
@@ -128,9 +125,8 @@
             this.tabControl1.Margin = new System.Windows.Forms.Padding(2);
             this.tabControl1.Name = "tabControl1";
             this.tabControl1.SelectedIndex = 0;
-            this.tabControl1.Size = new System.Drawing.Size(455, 426);
+            this.tabControl1.Size = new System.Drawing.Size(455, 427);
             this.tabControl1.TabIndex = 0;
-            this.tabControl1.SelectedIndexChanged += new System.EventHandler(this.tabControl1_SelectedIndexChanged);
             // 
             // TP_catalog
             // 
@@ -288,14 +284,14 @@
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
-            this.ClientSize = new System.Drawing.Size(455, 426);
+            this.ClientSize = new System.Drawing.Size(455, 427);
             this.Controls.Add(this.tabControl1);
             this.KeyPreview = true;
             this.Margin = new System.Windows.Forms.Padding(2);
             this.MinimumSize = new System.Drawing.Size(471, 465);
             this.Name = "Main_form";
+            this.SizeGripStyle = System.Windows.Forms.SizeGripStyle.Show;
             this.Text = "Katalogowanie plików";
-            this.Resize += new System.EventHandler(this.Form1_Resize);
             this.tabPage1.ResumeLayout(false);
             this.tabPage1.PerformLayout();
             this.tabControl1.ResumeLayout(false);

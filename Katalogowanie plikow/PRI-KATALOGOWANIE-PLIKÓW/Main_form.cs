@@ -64,8 +64,9 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
 
         // Wcześniejsze zmienne globalne jeszcze z kodu Janka, jedynie dodałem w extends kropki przed nazwami rozszerzeń.
         public string[] extends = { ".txt", ".csv", ".doc", ".docx", ".odt", ".ods", ".odp", ".xls", ".xlsx", ".pdf", ".ppt", ".pptx", ".pps", ".fb2", ".htm", ".html", ".tsv", ".xml", ".jpg", ".jpeg", ".tiff", ".bmp", ".mp4", ".avi", ".mp3", ".wav"};
-        
+
         // Z tych zmiennych nie korzystałem nigdy...
+        /*
         private string regex = @"((u|s|wy){0,1}(tw((órz)|(orzyć)|(orzenie))))(\s)(etykiet(y|ę){0,1})(\s)((<[a-ząęśćżźół\#]+\$>)+)(\s)((dla){0,1})(\s)((każde){0,1}((go)|j){0,1})(\s){0,1}((grupy){0,1})(\s){0,1}((((plik)|(obiekt))(u|ów))|(lokacji))(\s)(((\*{0,1})\.{0,1}[a-z0-9]{3,4}\s{0,1})+)";
         private string regexCreate = @"(create)(\s)(label)(\s)((<[a-ząęśćżźół\#]+\$>)+)(\s)((for){0,1})(\s)((every)|(all)|(each){0,1})(\s){0,1}((group of files)|(files' group){0,1})(\s)(((\*{0,1})\.{0,1}[a-z0-9]{3,4}\s{0,1})+)";
         private string[] exampleCommands = { "utwórz etykietę <x$> dla pliku *.mp3", "utwórz etykietę <x$> dla obiektu *.mp3", "utwórz etykietę <x$> dla lokacji *.mp3", "utwórz etykiety <x$><y$> dla grupy plików *.mp3 *wav", "utwórz etykiety <x$><y$> dla plików *.mp3 *wav", "utwórz etykiety <x$><y$> plików *.mp3 *wav", "utwórz etykiety <x$><y$> dla obiektów *.mp3 *wav", "utwórz etykiety <x$><y$> dla lokacji *.mp3 *wav" };
@@ -73,6 +74,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
         int randResult = 0;
         int randResultCreate = 0;
         List<string> excludedMetadata;
+        */
 
         // Ścieżki do poszczególnych plików niezbędnych do działania programu:
         private string program_path = null;
@@ -94,8 +96,6 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
         private bool cache_refresh = true, copy = false, cut = false;
 
         // Zmienne przesyłacza do opcji specialnych:
-        private List<Tuple<string,string>> files_to_work_on;
-
         private Special_function_window special_option_selector;
 
         /*   Oduzależnienie programu od statycznych stringów - pobieranie lokacji programu
@@ -314,9 +314,6 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
     // Obsługa logiki wymaganej przez WPF i resizing okna.
         public Main_form()
         {
-            this.AutoSize = true;
-            this.AutoSizeMode = AutoSizeMode.GrowAndShrink;
-
             InitializeComponent();
 
             DetermineFilepaths();
@@ -324,11 +321,13 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             LoadCreationScripts();
             PrepareConnectionString();
 
+            /*
             this.chkMetadata.LostFocus += ChkMetadata_LostFocus;
             this.Load += Form1_Load;
             this.KeyDown += Form1_KeyDown;
-
             excludedMetadata = new List<string>();
+            */
+
             metadata = new List<string[]>();
             directories_grabbed = new List<Tuple<int, string>>();
             files_grabbed = new List<Tuple<int, string, string, string, System.DateTime, System.DateTime, int>>();
@@ -350,6 +349,8 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
         *  I tyle, reszta w kodzie.
         *  
         */
+
+        /* Old - logika resize'owania okna, teraz już zbędna.
         private void Form1_Resize(object sender, EventArgs e)
         {
             // Ustawiamy rozdzielczosc minimalna na poziomie tego, co zrobił Janek
@@ -368,6 +369,8 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                 // (jezeli chcemy go skalowac) lub jego lokację (jeżeli chcemy zmienić pozycję)
             }
         }
+        */
+        
         
         private void TB_catalog_path_current_resizer(object sender, EventArgs e)
         {
@@ -375,6 +378,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             TextBox target = (TextBox)parent.Controls[1];
             target.Width = parent.Size.Width - 150;
         }
+        
 
 
         /*    Sprawdzanie czy istnieje baza danych (i jej walidacja jeżeli istnieje)
@@ -672,9 +676,11 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             DataTable subfolders_container = new DataTable();
             FbDataAdapter subfolders_grabber = new FbDataAdapter("SELECT ID " +
                                                                  "FROM " + database_tables[0].Item2 + " " +
-                                                                 "WHERE DIR_ID = " + id + ";"
+                                                                 "WHERE DIR_ID = @Target_directory_id;"
                                                                  ,
                                                                  new FbConnection(database_connection_string_builder.ConnectionString));
+
+            subfolders_grabber.SelectCommand.Parameters.AddWithValue("@Target_directory_id", id);
 
             subfolders_grabber.Fill(subfolders_container);
 
@@ -693,9 +699,11 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                 DataTable files_container = new DataTable();
                 FbDataAdapter files_grabber = new FbDataAdapter("SELECT ID,DIR_ID,NAME,EXTENSION " +
                                                                 "FROM " + database_tables[i].Item2 + " " +
-                                                                "WHERE DIR_ID = " + id + ";"
+                                                                "WHERE DIR_ID = @Target_directory_id;"
                                                                 ,
                                                                 new FbConnection(database_connection_string_builder.ConnectionString));
+
+                files_grabber.SelectCommand.Parameters.AddWithValue("@Target_directory_id", id);
 
                 files_container.Clear();
                 files_grabber.Fill(files_container);
@@ -833,9 +841,12 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             // Tworzymy adapter i podpinamy do niego zapytanie SQL wyłuskujące nam wszystkie tabele w bazie (oprócz domyślnych tabel systemu bazodanowego)
             FbDataAdapter database_grab_directory_subdirectories = new FbDataAdapter("SELECT ID,NAME " +
                                                                                      "FROM virtual_folder " +
-                                                                                     "WHERE DIR_ID = " + id_to_display + ";"
+                                                                                     "WHERE DIR_ID = @Target_directory_id;"
                                                                                      ,
                                                                                      new FbConnection(database_connection_string_builder.ConnectionString));
+
+            database_grab_directory_subdirectories.SelectCommand.Parameters.AddWithValue("@Target_directory_id", id_to_display);
+
             // Zeby zrobic go uniwersalnie, trzeba przekazać jako parametr DIR_ID i DEPTH, DIR_ID bedziemy mieli bezposrednio z folders_grabbed.
 
             database_grab_directory_subdirectories.Fill(database_folder_subdirectories);
@@ -851,9 +862,11 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             {
                 FbDataAdapter database_grab_directory_content = new FbDataAdapter("SELECT ID,NAME,EXTENSION,FS_LAST_WRITE_TIME,CATALOGING_DATE,SIZE " +
                                                                 "FROM " + database_tables[i].Item2 + " " +
-                                                                "WHERE DIR_ID = " + id_to_display + ";"
+                                                                "WHERE DIR_ID = @Target_directory_id;"
                                                                 ,
                                                                 new FbConnection(database_connection_string_builder.ConnectionString));
+
+                database_grab_directory_content.SelectCommand.Parameters.AddWithValue("@Target_directory_id", id_to_display);
 
                 database_folder_content.Clear();
                 database_grab_directory_content.Fill(database_folder_content);
@@ -995,26 +1008,28 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
         }
 
         // Logika tworzenia folderu z menu kontekstowego.
-        private void context_menu_folder_make(int parent_dir_id, string new_folder_name)
+        private bool context_menu_folder_make(int parent_dir_id, string new_folder_name)
         {
-            bool folder_exists_already = false;
+            bool folder_exists_already = false, result = false;
             DataTable database_folder_already_exists_container = new DataTable();
             FbDataAdapter database_folder_already_exists_verifier = new FbDataAdapter("SELECT NAME,DIR_ID " +
                                                                                       "FROM " + database_tables[0].Item2 + " " +
-                                                                                      "WHERE DIR_ID = " + parent_dir_id.ToString() + ";"
+                                                                                      "WHERE DIR_ID = @Target_directory_id " + 
+                                                                                      "AND NAME = @Name;"
                                                                                       ,
                                                                                       new FbConnection(database_connection_string_builder.ConnectionString));
 
+            database_folder_already_exists_verifier.SelectCommand.Parameters.AddWithValue("@Target_directory_id", parent_dir_id.ToString());
+            database_folder_already_exists_verifier.SelectCommand.Parameters.AddWithValue("@Name", new_folder_name);
+
             database_folder_already_exists_container.Clear();
             database_folder_already_exists_verifier.Fill(database_folder_already_exists_container);
-            for (int i = 0; i < database_folder_already_exists_container.Rows.Count; i++)
+
+            if(database_folder_already_exists_container.Rows.Count > 0)
             {
-                if(database_folder_already_exists_container.Rows[i].ItemArray[0].Equals(new_folder_name)) 
-                {
-                    MessageBox.Show(new_folder_name + " jest już w tym folderze!");
-                    folder_exists_already = true;
-                    break;
-                }
+                MessageBox.Show(new_folder_name + " jest już w tym folderze!");
+                folder_exists_already = true;
+                result = false;
             }
 
             if(!folder_exists_already)
@@ -1022,10 +1037,12 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                 // Nie znaleźliśmy duplikatu o tym samym imieniu i o tym samym rodzicu
                 // W przypadku nowego folderu z listy kontekstowej wywołujemy po prostu z sztywnym stringiem "Nowy folder"
                 database_virtual_folder_make(new_folder_name, parent_dir_id, true);
+                result = true;
                 // Zlecamy programowi ponowne wyświetlenie folderu - jako że przybył nam nowy folder.
                 cache_refresh = true;
                 LV_catalog_display_folder_content_display(parent_dir_id);
             }
+            return result;
         }
 
         // Obsługa kliknięcia w ListView gdy nie klika się w żadny z wyświetlanych przez niego element.
@@ -1055,8 +1072,17 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             // Menu kontekstowe bez zaznaczenia obiektu w folderze
             if (e.ClickedItem.Text.Equals("Nowy folder"))
             {
-                context_menu_folder_make(catalog_folder_id_list.Last(),"Nowy folder");
-                super_parent.Items[super_parent.Items.Count-1].BeginEdit();
+                if(context_menu_folder_make(catalog_folder_id_list.Last(),"Nowy folder"))
+                {
+                    for(int i = 0; i < super_parent.Items.Count; i++)
+                    {
+                        if (super_parent.Items[i].Text.Equals("Nowy folder"))
+                        {
+                            super_parent.Items[i].BeginEdit();
+                            break;
+                        }
+                    }
+                }
             }
             if (e.ClickedItem.Text.Equals("Wklej"))
             {
@@ -1160,9 +1186,11 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             DataTable file_location_container = new DataTable();
             FbDataAdapter file_location_grabber = new FbDataAdapter("SELECT ID,PATH " +
                                                                     "FROM " + target_table + " " +
-                                                                    "WHERE ID = " + id + ";"
+                                                                    "WHERE ID = @Id;"
                                                                     ,
                                                                     new FbConnection(database_connection_string_builder.ConnectionString));
+
+            file_location_grabber.SelectCommand.Parameters.AddWithValue("@Id", id);
 
             file_location_grabber.Fill(file_location_container);
 
@@ -1186,9 +1214,11 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             DataTable database_folder_modifiable_verifier_container = new DataTable();
             FbDataAdapter database_folder_modifiable_verifier = new FbDataAdapter("SELECT ID,NAME,MODIFIABLE " +
                                                                                   "FROM " + database_tables[0].Item2 + " " +
-                                                                                  "WHERE ID = " + id_to_check + ";"
+                                                                                  "WHERE ID = @Id;"
                                                                                   ,
                                                                                   new FbConnection(database_connection_string_builder.ConnectionString));
+
+            database_folder_modifiable_verifier.SelectCommand.Parameters.AddWithValue("@Id", id_to_check);
 
             database_folder_modifiable_verifier.Fill(database_folder_modifiable_verifier_container);
 
@@ -1217,41 +1247,45 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             DataTable file_exists_container = new DataTable();
             FbDataAdapter file_exists_checker = new FbDataAdapter("SELECT NAME " +
                                                                     "FROM " + type + " " +
-                                                                    "WHERE DIR_ID = " + destination_folder_id + 
-                                                                    "AND EXTENSION = '" + extension + "';"
+                                                                    "WHERE NAME = @Name " +
+                                                                    "AND DIR_ID = @Target_directory_id " +
+                                                                    "AND EXTENSION = @Extension;"
                                                                     ,
                                                                     new FbConnection(database_connection_string_builder.ConnectionString));
 
+            file_exists_checker.SelectCommand.Parameters.AddWithValue("@Name", name_new);
+            file_exists_checker.SelectCommand.Parameters.AddWithValue("@Target_directory_id", destination_folder_id);
+            file_exists_checker.SelectCommand.Parameters.AddWithValue("@Extension", extension);
+
             file_exists_checker.Fill(file_exists_container);
-            for (int i = 0; i < file_exists_container.Rows.Count; i++)
+
+            if(file_exists_container.Rows.Count > 0)
             {
-                if (file_exists_container.Rows[i].ItemArray[0].Equals(name_new))
-                {
-                    name_new = name_new + " " + file_exists_container.Rows.Count;
-                    break;
-                }
                 // Kolizja - mamy już plik o takiej nazwie w folderze do którego kopiujemy!
                 // Doczepiamy do nazwy folderu cyfrę z ilością kopii i jest ok dopóki nie zrobimy sizeof(int) takich samych plików w jednym folderze.
+                name_new = name_new + " " + file_exists_container.Rows.Count;
             }
 
             DataTable file_content_container = new DataTable();
             FbDataAdapter file_content_grabber = new FbDataAdapter("SELECT * " +
                                                                     "FROM " + type + " " +
-                                                                    "WHERE DIR_ID = " + source_folder_id +
-                                                                    "AND EXTENSION = '" + extension + "';"
+                                                                    "WHERE NAME = @Name " +
+                                                                    "AND DIR_ID = @Target_directory_id " +
+                                                                    "AND EXTENSION = @Extension;"
                                                                     ,
                                                                     new FbConnection(database_connection_string_builder.ConnectionString));
 
+            file_content_grabber.SelectCommand.Parameters.AddWithValue("@Name", name_new);
+            file_content_grabber.SelectCommand.Parameters.AddWithValue("@Target_directory_id", source_folder_id);
+            file_content_grabber.SelectCommand.Parameters.AddWithValue("@Extension", extension);
+
             file_content_grabber.Fill(file_content_container);
 
-            for(int i = 0; i < file_content_container.Rows.Count; i++)
+            if(file_content_container.Rows.Count == 1)
             {
-                if (file_content_container.Rows[i].ItemArray[3].Equals(name_new)) {
-                    for(int j = 1; j < file_content_container.Rows[i].ItemArray.Count(); j++)
-                    {
-                        passed_data.Add("" + file_content_container.Rows[i].ItemArray[j]);
-                    }
-                    break;
+                for (int j = 1; j < file_content_container.Rows[0].ItemArray.Count(); j++)
+                {
+                    passed_data.Add("" + file_content_container.Rows[0].ItemArray[j]);
                 }
             }
 
@@ -1272,10 +1306,13 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             DataTable folder_exists_container = new DataTable();
             FbDataAdapter folder_exists_checker = new FbDataAdapter("SELECT ID,DIR_ID " +
                                                                     "FROM " + database_tables[0].Item2 + " " +
-                                                                    "WHERE NAME = '" + name_new + "' " +
-                                                                    "AND DIR_ID = " + destination_folder_id + ";"
+                                                                    "WHERE NAME = @Name " +
+                                                                    "AND DIR_ID = @Target_directory_id;"
                                                                     ,
                                                                     new FbConnection(database_connection_string_builder.ConnectionString));
+
+            folder_exists_checker.SelectCommand.Parameters.AddWithValue("@Name", name_new);
+            folder_exists_checker.SelectCommand.Parameters.AddWithValue("@Target_directory_id", destination_folder_id);
 
             folder_exists_checker.Fill(folder_exists_container);
             if (folder_exists_container.Rows.Count >= 1)
@@ -1292,10 +1329,13 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             DataTable new_folder_id_container = new DataTable();
             FbDataAdapter new_folder_id_grabber = new FbDataAdapter("SELECT ID,DIR_ID,NAME" + " " + 
                                                                     "FROM " + database_tables[0].Item2 + " " +
-                                                                    "WHERE NAME = '" + name_new + "' " +
-                                                                    "AND DIR_ID = " + destination_folder_id + ";"
+                                                                    "WHERE NAME = @Name " +
+                                                                    "AND DIR_ID = @Target_directory_id;"
                                                                     ,
                                                                     new FbConnection(database_connection_string_builder.ConnectionString));
+
+            new_folder_id_grabber.SelectCommand.Parameters.AddWithValue("@Name", name_new);
+            new_folder_id_grabber.SelectCommand.Parameters.AddWithValue("@Target_directory_id", destination_folder_id);
 
             new_folder_id_grabber.Fill(new_folder_id_container);
 
@@ -1320,9 +1360,11 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                 DataTable new_folder_subfolders_to_create_container = new DataTable();
                 FbDataAdapter new_folder_subfolders_to_create_grabber = new FbDataAdapter("SELECT ID,NAME,DIR_ID " +
                                                                         "FROM " + database_tables[0].Item2 + " " +
-                                                                        "WHERE DIR_ID = " + source_folder_id + ";"
+                                                                        "WHERE DIR_ID = @Target_directory_id;"
                                                                         ,
                                                                         new FbConnection(database_connection_string_builder.ConnectionString));
+
+                new_folder_subfolders_to_create_grabber.SelectCommand.Parameters.AddWithValue("@Target_directory_id", source_folder_id);
 
                 new_folder_subfolders_to_create_grabber.Fill(new_folder_subfolders_to_create_container);
 
@@ -1340,9 +1382,11 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                     DataTable new_folder_content_container = new DataTable();
                     FbDataAdapter new_folder_content_grabber = new FbDataAdapter("SELECT *" +
                                                                             "FROM " + database_tables[i].Item2 + " " +
-                                                                            "WHERE DIR_ID = " + source_folder_id + ";"
+                                                                            "WHERE DIR_ID = @Target_directory_id;"
                                                                             ,
                                                                             new FbConnection(database_connection_string_builder.ConnectionString));
+
+                    new_folder_content_grabber.SelectCommand.Parameters.AddWithValue("@Target_directory_id", source_folder_id);
 
                     new_folder_content_grabber.Fill(new_folder_content_container);
                     for (int j = 0; j < new_folder_content_container.Rows.Count; j++)
@@ -1386,9 +1430,12 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                         DataTable folder_content_checker_container = new DataTable();
                         FbDataAdapter folder_content_checker = new FbDataAdapter("SELECT ID,NAME,DIR_ID " +
                                                                                  "FROM " + database_tables[i].Item2 + " " +
-                                                                                 "WHERE DIR_ID = " + id_to_delete + ";"
+                                                                                 "WHERE DIR_ID = @Target_directory_id;"
                                                                                  ,
                                                                                  new FbConnection(database_connection_string_builder.ConnectionString));
+
+                        folder_content_checker.SelectCommand.Parameters.AddWithValue("@Target_directory_id", id_to_delete);
+
                         folder_content_checker.Fill(folder_content_checker_container);
                         if (folder_content_checker_container.Rows.Count != 0)
                         {
@@ -1419,9 +1466,12 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                             }
                             // Po usunięciu zawartości z potomków przyszedł czas na sam folder - wiemy że teraz musi być już pusty.
                             FbCommand database_directory_remover = new FbCommand("DELETE FROM " + target_table + " " +
-                                                                                 "WHERE ID = " + id_to_delete + ";"
+                                                                                 "WHERE ID = @Id;"
                                                                                  ,
                                                                                  new FbConnection(database_connection_string_builder.ConnectionString));
+
+                            database_directory_remover.Parameters.AddWithValue("@Id", id_to_delete);
+
                             database_directory_remover.Connection.Open();
                             database_directory_remover.ExecuteNonQuery();
                             database_directory_remover.Connection.Close();
@@ -1435,9 +1485,12 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                     {
                         //Wszystko ok, nie ma nic w srodku, możemy usuwać.
                         FbCommand database_directory_remover = new FbCommand("DELETE FROM " + target_table + " " +
-                                                                             "WHERE ID = " + id_to_delete + ";"
+                                                                             "WHERE ID = @Id;"
                                                                              ,
                                                                              new FbConnection(database_connection_string_builder.ConnectionString));
+
+                        database_directory_remover.Parameters.AddWithValue("@Id", id_to_delete);
+
                         database_directory_remover.Connection.Open();
                         database_directory_remover.ExecuteNonQuery();
                         database_directory_remover.Connection.Close();
@@ -1449,9 +1502,12 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             {
                 //Logika usuwania pliku - po prostu usuń z odpowiedniej tabeli.
                 FbCommand database_file_remover = new FbCommand("DELETE FROM " + target_table + " " +
-                                                                "WHERE ID = " + id_to_delete + ";"
+                                                                "WHERE ID = @Id;"
                                                                 ,
                                                                 new FbConnection(database_connection_string_builder.ConnectionString));
+
+                database_file_remover.Parameters.AddWithValue("@Id", id_to_delete);
+
                 database_file_remover.Connection.Open();
                 database_file_remover.ExecuteNonQuery();
                 database_file_remover.Connection.Close();
@@ -1467,7 +1523,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             // parent.Items[e.Item].Name - ID obiektu do zmiany nazwy.
             // parent.Items[e.Item].Text - nazwa obiektu do zmiany nazwy.
             // parent.Items[e.Item].Subitems[1].Text - typ obiektu do zmiany nazwy.
-
+            
             if (parent.Items[e.Item].SubItems[1].Text.Equals("Folder"))
             {
                 if (database_virtual_folder_modifiable_check(int.Parse(parent.Items[e.Item].SubItems[0].Name)) == true) e.CancelEdit = false;
@@ -1478,7 +1534,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                 // Edytujemy nazwę pliku - wszystko dozwolone tutaj, sprawdzimy dopiero po tym jak cos wpisze
             }
         }
-
+        
         // Sprawdzanie możliwości edycji nazwy pliku po wpisaniu nowej - tutaj sprawdzamy kolizje z już istniejącymi nazwami.
         private void LV_catalog_display_after_label_edit (object sender, LabelEditEventArgs e)
         {
@@ -1487,83 +1543,107 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
 
             ListView parent = (ListView)sender;
 
-            if (parent.Items[e.Item].SubItems[1].Text.Equals("Folder"))
+            if (e.Label == null) e.CancelEdit = true;
+            else
             {
-                // Edytujemy nazwę folderu - sprawdzić czy dozwolona jest modyfikacja nazwy dla tego folderu!
-                bool folder_exists_already = false;
-                DataTable database_folder_already_exists_container = new DataTable();
-                FbDataAdapter database_folder_already_exists_verifier = new FbDataAdapter("SELECT NAME,DIR_ID " +
-                                                                                          "FROM " + database_tables[0].Item2 + " " +
-                                                                                          "WHERE DIR_ID = " + catalog_folder_id_list.Last() + " " +
-                                                                                          "AND NAME = '" + e.Label + "' ;"
-                                                                                          ,
-                                                                                          new FbConnection(database_connection_string_builder.ConnectionString));
-
-                database_folder_already_exists_container.Clear();
-                database_folder_already_exists_verifier.Fill(database_folder_already_exists_container);
-                if(database_folder_already_exists_container.Rows.Count > 0)
+                if (e.Label == "") e.CancelEdit = true;
+            }
+            if(e.CancelEdit != true)
+            {
+                if (parent.Items[e.Item].SubItems[1].Text.Equals("Folder"))
                 {
+                    // Edytujemy nazwę folderu - sprawdzić czy dozwolona jest modyfikacja nazwy dla tego folderu!
+                    bool folder_exists_already = false;
+                    DataTable database_folder_already_exists_container = new DataTable();
+                    FbDataAdapter database_folder_already_exists_verifier = new FbDataAdapter("SELECT NAME,DIR_ID " +
+                                                                                              "FROM " + database_tables[0].Item2 + " " +
+                                                                                              "WHERE DIR_ID = @Target_directory_ID " +
+                                                                                              "AND NAME = @Name;"
+                                                                                              ,
+                                                                                              new FbConnection(database_connection_string_builder.ConnectionString));
+
+                    database_folder_already_exists_verifier.SelectCommand.Parameters.AddWithValue("@Target_directory_ID", catalog_folder_id_list.Last());
+                    database_folder_already_exists_verifier.SelectCommand.Parameters.AddWithValue("@Name", e.Label);
+
+
+                    database_folder_already_exists_container.Clear();
+                    database_folder_already_exists_verifier.Fill(database_folder_already_exists_container);
+                    if (database_folder_already_exists_container.Rows.Count > 0)
+                    {
                         MessageBox.Show(e.Label + " jest już w tym folderze!");
                         folder_exists_already = true;
                         e.CancelEdit = true;
-                }
+                    }
 
-                if (!folder_exists_already)
+                    if (!folder_exists_already)
+                    {
+                        // Nie znaleźliśmy duplikatu o tym samym imieniu i o tym samym rodzicu, czas zmienić jego pierwotną zawartość w bazie danych:
+                        FbCommand database_folder_renamer = new FbCommand("UPDATE " + database_tables[0].Item2 + " " +
+                                                                          "SET NAME = @Name " +
+                                                                          "WHERE ID = @Id;"
+                                                                          ,
+                                                                          new FbConnection(database_connection_string_builder.ConnectionString));
+
+                        database_folder_renamer.Parameters.AddWithValue("@Name", e.Label);
+                        database_folder_renamer.Parameters.AddWithValue("@Id", parent.Items[e.Item].Name);
+
+                        database_folder_renamer.Connection.Open();
+                        database_folder_renamer.ExecuteNonQuery();
+                        database_folder_renamer.Connection.Close();
+                    }
+
+                }
+                else
                 {
-                    // Nie znaleźliśmy duplikatu o tym samym imieniu i o tym samym rodzicu, czas zmienić jego pierwotną zawartość w bazie danych:
-                    FbCommand database_folder_renamer = new FbCommand("UPDATE " + database_tables[0].Item2 + " " +
-                                                                      "SET NAME = '" + e.Label + "' " +
-                                                                      "WHERE ID = " + parent.Items[e.Item].Name + ";"
-                                                                      ,
-                                                                      new FbConnection(database_connection_string_builder.ConnectionString));
+                    // Edytujemy nazwę pliku - wszystko dozwolone, byle tylko nie było dwóch plikach o tych samych nazwach i rozszerzeniach
+                    // Edytujemy nazwę pliku - sprawdzamy czy nie pojawił się już plik o tej samej nazwie i rozszerzeniu.
+                    string target_table = string.Empty;
+                    bool file_exists_already = false;
+                    DataTable database_file_already_exists_container = new DataTable();
 
-                    database_folder_renamer.Connection.Open();
-                    database_folder_renamer.ExecuteNonQuery();
-                    database_folder_renamer.Connection.Close();
+                    target_table = parent.Items[e.Item].ToolTipText;
+
+                    FbDataAdapter database_file_already_exists_verifier = new FbDataAdapter("SELECT NAME,DIR_ID,EXTENSION " +
+                                                                                            "FROM " + target_table + " " +
+                                                                                            "WHERE DIR_ID = @Target_directory_ID " +
+                                                                                            "AND NAME = @Name " +
+                                                                                            "AND EXTENSION = @Extension;"
+                                                                                            ,
+                                                                                            new FbConnection(database_connection_string_builder.ConnectionString));
+
+                    database_file_already_exists_verifier.SelectCommand.Parameters.AddWithValue("@Target_directory_ID", catalog_folder_id_list.Last());
+                    database_file_already_exists_verifier.SelectCommand.Parameters.AddWithValue("@Name", e.Label);
+                    database_file_already_exists_verifier.SelectCommand.Parameters.AddWithValue("@Extension", parent.Items[e.Item].SubItems[1].Text);
+
+                    database_file_already_exists_container.Clear();
+                    database_file_already_exists_verifier.Fill(database_file_already_exists_container);
+                    if (database_file_already_exists_container.Rows.Count > 0)
+                    {
+                        MessageBox.Show(e.Label + " jest już w tym folderze!");
+                        file_exists_already = true;
+                        e.CancelEdit = true;
+                    }
+                    if (!file_exists_already)
+                    {
+                        // Nie znaleźliśmy duplikatu o tym samym imieniu i o tym samym rodzicu, czas zmienić jego pierwotną zawartość w bazie danych.
+                        FbCommand database_file_renamer = new FbCommand("UPDATE " + target_table + " " +
+                                                                        "SET NAME = @Name " +
+                                                                        "WHERE ID = @Id " +
+                                                                        "AND NAME = @Name_to_find;"
+                                                                        ,
+                                                                        new FbConnection(database_connection_string_builder.ConnectionString));
+
+                        database_file_renamer.Parameters.AddWithValue("@Name", e.Label);
+                        database_file_renamer.Parameters.AddWithValue("@Id", parent.Items[e.Item].Name);
+                        database_file_renamer.Parameters.AddWithValue("@Name_to_find", parent.Items[e.Item].Text);
+
+
+                        database_file_renamer.Connection.Open();
+                        database_file_renamer.ExecuteNonQuery();
+                        database_file_renamer.Connection.Close();
+                    }
                 }
-
-            }
-            else
-            {
-                // Edytujemy nazwę pliku - wszystko dozwolone, byle tylko nie było dwóch plikach o tych samych nazwach i rozszerzeniach
-                // Edytujemy nazwę pliku - sprawdzamy czy nie pojawił się już plik o tej samej nazwie i rozszerzeniu.
-                string target_table = string.Empty;
-                bool file_exists_already = false;
-                DataTable database_file_already_exists_container = new DataTable();
-
-                target_table = parent.Items[e.Item].ToolTipText;
-
-                FbDataAdapter database_file_already_exists_verifier = new FbDataAdapter("SELECT NAME,DIR_ID,EXTENSION " +
-                                                                                        "FROM " + target_table + " " +
-                                                                                        "WHERE DIR_ID = " + catalog_folder_id_list.Last() + 
-                                                                                        "AND NAME = '" + e.Label + "' " +
-                                                                                        "AND EXTENSION = '" + parent.Items[e.Item].SubItems[1].Text + "';"
-                                                                                        ,
-                                                                                        new FbConnection(database_connection_string_builder.ConnectionString));
-
-                database_file_already_exists_container.Clear();
-                database_file_already_exists_verifier.Fill(database_file_already_exists_container);
-                if (database_file_already_exists_container.Rows.Count > 0)
-                {
-                    MessageBox.Show(e.Label + " jest już w tym folderze!");
-                    file_exists_already = true;
-                    e.CancelEdit = true;
-                }
-                if (!file_exists_already)
-                {
-                    // Nie znaleźliśmy duplikatu o tym samym imieniu i o tym samym rodzicu, czas zmienić jego pierwotną zawartość w bazie danych.
-                    FbCommand database_file_renamer = new FbCommand("UPDATE " + target_table + " " +
-                                                                    "SET NAME = '" + e.Label + "' " +
-                                                                    "WHERE ID = " + parent.Items[e.Item].Name + " " +
-                                                                    "AND NAME = '" + parent.Items[e.Item].Text + "' ;"
-                                                                    ,
-                                                                    new FbConnection(database_connection_string_builder.ConnectionString));
-
-                    database_file_renamer.Connection.Open();
-                    database_file_renamer.ExecuteNonQuery();
-                    database_file_renamer.Connection.Close();
-                }
-            }
+            }      
         }
 
         // Obsługuje zdarzenie pojedynczego kliknięcia myszą.
@@ -1771,18 +1851,22 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
 
                             database_virtual_folder_make(folder.Item2, catalog_folder_id_list.Last(), true);
                             DataTable new_folder_ID_container = new DataTable();
-                            FbDataAdapter new_folder_ID_grabber = new FbDataAdapter("SELECT ID,NAME " +
+                            FbDataAdapter new_folder_ID_grabber = new FbDataAdapter("SELECT ID " +
                                                                                     "FROM " + database_tables[0].Item2 + " " +
-                                                                                    "WHERE DIR_ID = " + catalog_folder_id_list.Last() +";"
+                                                                                    "WHERE NAME = @Name " + 
+                                                                                    "AND DIR_ID = @Target_directory_id;"
                                                                                     ,
                                                                                     new FbConnection(database_connection_string_builder.ConnectionString));
 
-                            new_folder_ID_grabber.Fill(new_folder_ID_container);
-                            for (int i = 0; i < new_folder_ID_container.Rows.Count; i++)
-                            {
-                                if(new_folder_ID_container.Rows[i].ItemArray[1].Equals(folder.Item2)) new_id = (int)new_folder_ID_container.Rows[i].ItemArray[0];
-                            }
+                            new_folder_ID_grabber.SelectCommand.Parameters.AddWithValue("@Name", folder.Item2);
+                            new_folder_ID_grabber.SelectCommand.Parameters.AddWithValue("@Target_directory_id", catalog_folder_id_list.Last());
 
+
+                            new_folder_ID_grabber.Fill(new_folder_ID_container);
+                            if(new_folder_ID_container.Rows.Count == 1)
+                            {
+                                new_id = (int)new_folder_ID_container.Rows[0].ItemArray[0];
+                            }
                         
                             foreach (Tuple<int, string> file in audio_sorter_files_to_add.FindAll(x => x.Item1.Equals(folder.Item1)))
                             {
@@ -1884,7 +1968,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
 
 
 
-
+        /*
         // Kod legacy, w zasadzie nie widziałem nigdzie jego użycia
         private void Form1_KeyDown(object sender, KeyEventArgs e)
         {
@@ -1894,10 +1978,8 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
        
         private void ChkMetadata_LostFocus(object sender, EventArgs e)
         {
-            /*
             var diff = metadata.Where(x => !excludedMetadata.Contains(x)).ToList();
             this.AppendXML(diff);
-            */
         }
         
 
@@ -2184,7 +2266,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
 
             var metadataKeyDist = metadataKey.Distinct();
         }
-        */
+        
 
         private string Decrypt(string v1, bool v2)
         {
@@ -2216,5 +2298,6 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
 
             return UTF8Encoding.UTF8.GetString(resultArray);
         }
+        */
     }
 }
