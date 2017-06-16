@@ -324,7 +324,6 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             LoadCreationScripts();
             PrepareConnectionString();
 
-            this.txtCommand.LostFocus += TxtCommand_LostFocus;
             this.chkMetadata.LostFocus += ChkMetadata_LostFocus;
             this.Load += Form1_Load;
             this.KeyDown += Form1_KeyDown;
@@ -363,41 +362,19 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                 tabPage1.Width = this.Size.Width - 24;
                 tabPage1.Height = this.Size.Height - 71;
 
-                // Przechodzimy do jego subkomponentów:
-                    // Groupbox użyj opcje:
-                    groupBox1.Width = tabPage1.Width - 9;
-                    // Dla niego zostawiamy wysokość stałą, jako ze pod nim jeszcze cos jest.
-                    // Przechodzimy do jego subkomponentów (nie wszystkie wymagaja skalowania)
-                        // Textbox txtCommand:
-                        txtCommand.Width = tabPage1.Width - 126;
-
-                        // Button BT_test_database:
-                        BT_test_database.Location = new Point(groupBox1.Width - 135, 99);
-                        // Tez zostawiamy wysokość stałą, jego rodzic nie zmienia swojej wysokosci.
-
-                        // Button BT_extract_metadata:
-                        BT_extract_metadata.Location = new Point(groupBox1.Width - 135, 138);
-                        // Tez zostawiamy wysokość stałą, jego rodzic nie zmienia swojej wysokosci.
-                    // Groupbox metadane:
-                    groupBox2.Width = tabPage1.Width - 13;
-                    groupBox2.Height = tabPage1.Height - groupBox1.Height - 15;
-                        // CheckedListBox chkMetadata:
-                            chkMetadata.Width = groupBox2.Width - 12;
-                            chkMetadata.Height = groupBox2.Height - 51;
                 // I to na tyle, jak bedzie przybywalo komponentów trzeba bedzie je tutaj dodawać
                 // Liczby do odejmowania obliczam biorąc za podstawę okno w rozmiarze minimalnym,
                 // odejmuje od rozmiaru kontenera macierzystego albo rozmiar jego subkomponentu
                 // (jezeli chcemy go skalowac) lub jego lokację (jeżeli chcemy zmienić pozycję)
             }
         }
-
+        
         private void TB_catalog_path_current_resizer(object sender, EventArgs e)
         {
             TableLayoutPanel parent = (TableLayoutPanel)sender;
             TextBox target = (TextBox)parent.Controls[1];
             target.Width = parent.Size.Width - 150;
         }
-
 
 
         /*    Sprawdzanie czy istnieje baza danych (i jej walidacja jeżeli istnieje)
@@ -1097,7 +1074,8 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                             database_virtual_file_copy(LV_catalog_display_data_to_manipulate_orgin_directory_id,
                                                        catalog_folder_id_list.Last(),
                                                        LV_catalog_display_data_to_manipulate[i].ToolTipText,
-                                                       LV_catalog_display_data_to_manipulate[i].Text);
+                                                       LV_catalog_display_data_to_manipulate[i].Text,
+                                                       LV_catalog_display_data_to_manipulate[i].SubItems[0].Text);
                         }
                     }
                     
@@ -1231,41 +1209,50 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
         }
 
         // Procedura wywołująca kopiowanie pliku wirtualnego do folderu, patrzymy czy nie występuje kolizja i zmieniamy nazwę jeżeli zaszła.
-        private void database_virtual_file_copy (int source_folder_id, int destination_folder_id, string type, string name)
+        private void database_virtual_file_copy (int source_folder_id, int destination_folder_id, string type, string name, string extension)
         {
-            string name_new = name;
             List<string> passed_data = new List<string>();
-
+            string name_new = name;
             // Sprawdzamy czy folder do którego kopiujemy nie ma już pliku o tej samej nazwie
             DataTable file_exists_container = new DataTable();
-            FbDataAdapter file_exists_checker = new FbDataAdapter("SELECT NAME,DIR_ID " +
+            FbDataAdapter file_exists_checker = new FbDataAdapter("SELECT NAME " +
                                                                     "FROM " + type + " " +
-                                                                    "WHERE NAME = '" + name_new + "' " +
-                                                                    "AND DIR_ID = " + destination_folder_id + ";"
+                                                                    "WHERE DIR_ID = " + destination_folder_id + 
+                                                                    "AND EXTENSION = '" + extension + "';"
                                                                     ,
                                                                     new FbConnection(database_connection_string_builder.ConnectionString));
 
             file_exists_checker.Fill(file_exists_container);
-            if (file_exists_container.Rows.Count >= 1)
+            for (int i = 0; i < file_exists_container.Rows.Count; i++)
             {
+                if (file_exists_container.Rows[i].ItemArray[0].Equals(name_new))
+                {
+                    name_new = name_new + " " + file_exists_container.Rows.Count;
+                    break;
+                }
                 // Kolizja - mamy już plik o takiej nazwie w folderze do którego kopiujemy!
                 // Doczepiamy do nazwy folderu cyfrę z ilością kopii i jest ok dopóki nie zrobimy sizeof(int) takich samych plików w jednym folderze.
-                name_new = name_new + " " + file_exists_container.Rows.Count;
             }
 
             DataTable file_content_container = new DataTable();
             FbDataAdapter file_content_grabber = new FbDataAdapter("SELECT * " +
                                                                     "FROM " + type + " " +
-                                                                    "WHERE NAME = '" + name_new + "' " +
-                                                                    "AND DIR_ID = " + source_folder_id + ";"
+                                                                    "WHERE DIR_ID = " + source_folder_id +
+                                                                    "AND EXTENSION = '" + extension + "';"
                                                                     ,
                                                                     new FbConnection(database_connection_string_builder.ConnectionString));
 
             file_content_grabber.Fill(file_content_container);
-            if(file_content_container.Rows.Count == 1)
+
+            for(int i = 0; i < file_content_container.Rows.Count; i++)
             {
-                for (int i = 1; i < file_content_container.Rows[0].ItemArray.Count(); i++)
-                    passed_data.Add("" + file_content_container.Rows[0].ItemArray[i]);
+                if (file_content_container.Rows[i].ItemArray[3].Equals(name_new)) {
+                    for(int j = 1; j < file_content_container.Rows[i].ItemArray.Count(); j++)
+                    {
+                        passed_data.Add("" + file_content_container.Rows[i].ItemArray[j]);
+                    }
+                    break;
+                }
             }
 
             database_virtual_item_make(destination_folder_id, type, passed_data);
@@ -1674,7 +1661,14 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                     string target_location = database_virtual_filepath_get(int.Parse(target.Name), target.ToolTipText);
                     if (target_location != string.Empty)
                     {
-                        System.Diagnostics.Process.Start(target_location);
+                        try
+                        {
+                            System.Diagnostics.Process.Start(target_location);
+                        }
+                        catch (Exception _e)
+                        {
+                            MessageBox.Show(_e.Message);
+                        }
                     }
                 }
             }
@@ -1699,7 +1693,6 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
         }
 
         // Obsługa opcji specjalnych:
-
         void Special_function_window_OnDataAvalible(object sender, EventArgs e)
         {
             // Obsługa zdarzenia powrotu z wyboru opcji specjalnych - używana przez zarówno kod Janka jak i kod Karola, głównie zajmują się dodawaniem
@@ -1749,9 +1742,30 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                     audio_sorter_folders_to_add = special_option_selector.audio_sorter_folders_returned;
                     audio_sorter_files_to_add = special_option_selector.audio_sorter_files_returned;
 
+                    int iter_count = audio_sorter_folders_to_add.Count;
+                    for(int i = 0; i<iter_count; i++)
+                    {
+                        Tuple<int, string> processed_folder = audio_sorter_folders_to_add.ElementAt(i);
+                        List<Tuple<int,string>> found_repeats = audio_sorter_folders_to_add.FindAll(x => x.Item2.Equals(processed_folder.Item2));
+                        found_repeats.Remove(processed_folder);
+                        foreach(var repeat in found_repeats)
+                        {
+                            List<Tuple<int, string>> files_to_correct = audio_sorter_files_to_add.FindAll(x => x.Item1.Equals(repeat.Item1));
+                            foreach (var file_to_correct in files_to_correct)
+                            {
+                                Tuple<int, string> corrected_value = new Tuple<int, string>(processed_folder.Item1, file_to_correct.Item2);
+                                audio_sorter_files_to_add[audio_sorter_files_to_add.FindIndex(x => x.Equals(file_to_correct))] = corrected_value;
+                            }
+                            audio_sorter_folders_to_add.Remove(repeat);
+                            iter_count = audio_sorter_folders_to_add.Count;
+                        }
+                    }
+
+                    audio_sorter_files_to_add = audio_sorter_files_to_add.Distinct().ToList();
+
                     foreach (Tuple<int, string> folder in audio_sorter_folders_to_add)
                     {
-                        if (audio_sorter_files_to_add.Where(x => x.Item1.Equals(folder.Item1)).Count() != 0)
+                        if (audio_sorter_files_to_add.FindAll(x => x.Item1.Equals(folder.Item1)).Count() > 0)
                         {
                             int new_id = 0;
 
@@ -1770,20 +1784,11 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                             }
 
                         
-                            foreach (Tuple<int, string> file in audio_sorter_files_to_add.Where(x => x.Item1.Equals(folder.Item1)))
+                            foreach (Tuple<int, string> file in audio_sorter_files_to_add.FindAll(x => x.Item1.Equals(folder.Item1)))
                             {
-                                ListViewItem file_from_container = LV_catalog_display_item_selection.Find(x => x.Text.Equals(file.Item2));
-
-                                if (file_from_container != null)
-                                {
-                                    // Plik był bezpośrednio zaznaczony
-                                }
-                                else
-                                {
                                     if (new_id == 0) new_id = catalog_folder_id_list.Last();
                                     Tuple<int, int, string, string, string> found_file = all_files_selected.Find(x => (x.Item3 + x.Item5).Equals(file.Item2));
-                                    if (found_file != null) database_virtual_file_copy(found_file.Item2, new_id, found_file.Item4, found_file.Item3);
-                                }
+                                    if (found_file != null) database_virtual_file_copy(found_file.Item2, new_id, found_file.Item4, found_file.Item3, found_file.Item5);
                             }
                         }
                     }
@@ -1898,19 +1903,11 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
 
         private void Form1_Load(object sender, EventArgs e)
         {
-            Random rand = new Random();
-            randResult = rand.Next(0, exampleCommands.Length - 1);
-            randResultCreate = rand.Next(0, exampleCommandsCreate.Length - 1);
-            this.lbExampleCommand.Text += exampleCommands[randResult];
+
         }
 
         private void TxtCommand_LostFocus(object sender, EventArgs e)
         {
-            Regex rx = new Regex(regex, RegexOptions.IgnoreCase);
-            Match mtxtCommand = Regex.Match(this.txtCommand.Text, regex);
-
-            foreach (var item in this.GroupRegex(rx, mtxtCommand))
-                _group.Add(item);
 
             var notSupported = String.Empty;
             try
@@ -1981,69 +1978,13 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
 
         private void txtCommand_TextChanged(object sender, EventArgs e)
         {
-            if (this.txtCommand.Text.Contains("<"))
-                this.toolTip1.SetToolTip(txtCommand, "nazwa_etykiety$");
-            if (this.txtCommand.Text.Contains(">"))
-                this.toolTip1.RemoveAll();
-            if (this.txtCommand.Text.Contains(".") || this.txtCommand.Text.Contains("*"))
-            {
-                string text = String.Empty;
-                for (int i = 0; i < extends.Length; i++)
-                {
-                    text += extends[i] + "\n";
-                }
-                this.toolTip1.SetToolTip(txtCommand, text);
-            }
+            
         }
 
         List<string> _group = new List<string>();
         private void chkUseCreteRule_CheckedChanged(object sender, EventArgs e)
         {
-            if (this.chkUseCreteRule.Checked)
-            {
-                this.lbExampleCommand.Text = "";
-                this.lbExampleCommand.Text += "E.g. " + exampleCommandsCreate[randResultCreate];
-            }
-            else
-            {
-                this.lbExampleCommand.Text = "";
-                this.lbExampleCommand.Text += "Np.: " + exampleCommands[randResult];
-            }
-
-            this.chkUseEquality.Enabled = true;
-
-            Regex rx = new Regex(regex, RegexOptions.IgnoreCase);
-            Match m = Regex.Match(exampleCommands[randResult], regex);
-
-            Regex rxCreate = new Regex(regexCreate, RegexOptions.IgnoreCase);
-            Match mCreate = Regex.Match(exampleCommandsCreate[randResultCreate], regexCreate);
-            var groupRegex = GroupRegex(rx, m);
-            var groupRegexCreate = GroupRegex(rxCreate, mCreate);
-            var split = txtCommand.Text.Split(' ');
-            bool equals = false;
-
-            if (this.txtCommand.Text.Length != 0)
-                foreach (var group in this.Groups(groupRegex, groupRegexCreate))
-                    foreach (var s in split)
-                        if (s == group.Key)
-                            equals = true;
-
-            Match mtxtCommand = Regex.Match(this.txtCommand.Text, regex);
-
-            foreach (var item in this.GroupRegex(rx, mtxtCommand))
-                _group.Add(item);
-
-            if (this.chkUseCreteRule.Checked)
-            {
-                this.txtCommand.Text = String.Empty;
-                if (equals)
-                    foreach (var group in this.Groups(groupRegex, groupRegexCreate))
-                        this.txtCommand.Text += " " + group.Value;
-
-                if (this.txtCommand.Text.Length != 0)
-                    this.txtCommand.Text += " " + _group[5] + " " + _group[_group.Count - 2];
-                this.txtCommand.Text = RemoveDuplicates(txtCommand.Text);
-            }
+            
         }
 
         private string RemoveDuplicates(string p)
@@ -2063,8 +2004,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
 
         private void chkUseEquality_CheckedChanged(object sender, EventArgs e)
         {
-            Regex rx = new Regex(@"((each)|(all)|(every))(\s)(for)(\s)(((group of files)|(files' group)){0,1})");
-            this.txtCommand.Text = rx.Replace(this.txtCommand.Text, "=");
+
         }
 
         private void chooseMetadata_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
@@ -2159,8 +2099,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
 
         private void chkMetadata_SelectedIndexChanged(object sender, EventArgs e)
         {
-            //this.chkMetadata.Items.Remove(this.chkMetadata.SelectedItem);
-            this.toolTip1.SetToolTip(this.chkMetadata, this.chkMetadata.SelectedItem.ToString());
+
         }
 
         private void bnCatalogue_Click(object sender, EventArgs e)
