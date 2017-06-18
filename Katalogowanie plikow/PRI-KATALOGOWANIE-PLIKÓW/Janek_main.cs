@@ -44,6 +44,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
         List<string> extensionsInLv;
         int _index;
         string activate;
+        string text;
 
         public List<Tuple<int, string>> result_directories;
         public List<Tuple<int, string>> result_files;
@@ -56,10 +57,10 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
         {
             InitializeComponent();
 
-            this.txtCommand.LostFocus += TxtCommand_LostFocus;
             this.Load += Form1_Load;
             this.KeyDown += Form1_KeyDown;
 
+            text = "utwórz etykietę <x$> dla pliku *.mp3";
             length = new List<int>();
             result_directories = new List<Tuple<int, string>>();
             result_files = new List<Tuple<int, string>>();
@@ -125,16 +126,6 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             {
                 this.Close();
             }
-            else if (Control.ModifierKeys == Keys.Alt
-                && e.KeyCode == Keys.U)
-            {
-                this.chkUseCreteRule.Checked = true;
-            }
-            else if (Control.ModifierKeys == Keys.Alt
-                && e.KeyCode == Keys.R)
-            {
-                this.chkUseEquality.Checked = true;
-            }
 
             else if (Control.ModifierKeys == Keys.Alt
                 && e.KeyCode == Keys.A)
@@ -169,10 +160,6 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
 
         private void Form1_Load(object sender, EventArgs e)
         {
-            Random rand = new Random();
-            randResult = rand.Next(0, exampleCommands.Length - 1);
-            randResultCreate = rand.Next(0, exampleCommandsCreate.Length - 1);
-            this.lbExampleCommand.Text += exampleCommands[randResult];
 
         }
 
@@ -247,74 +234,33 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
 
         private void txtCommand_TextChanged(object sender, EventArgs e)
         {
-            if (this.txtCommand.Text.Contains("<")) 
-                this.toolTip1.SetToolTip(txtCommand, "nazwa_etykiety$");
-            if (this.txtCommand.Text.Contains(">"))
-                this.toolTip1.RemoveAll();
-            if (this.txtCommand.Text.Contains(".") || this.txtCommand.Text.Contains("*"))
-            {
-                string text = String.Empty;
-                for (int i = 0; i < extends.Length; i++)
-                {
-                    text += extends[i] + "\n";
-                }
-                this.toolTip1.SetToolTip(txtCommand, text);
-            }
+
         }
         List<string> _group = new List<string>();
         private void chkUseCreteRule_CheckedChanged(object sender, EventArgs e)
         {
-            if (this.chkUseCreteRule.Checked)
-            {
-                this.lbExampleCommand.Text = "";
-                this.lbExampleCommand.Text += "E.g. " +exampleCommandsCreate[randResultCreate];
-            }
-            else
-            {
-                this.lbExampleCommand.Text = "";
-                this.lbExampleCommand.Text += "Np.: " + exampleCommands[randResult];
-            }
-
-            this.chkUseEquality.Enabled = true;
 
             Regex rx = new Regex(regex, RegexOptions.IgnoreCase);
-            Match m = Regex.Match(exampleCommands[randResult], regex);
+            Match m = Regex.Match(text, regex);
 
             Regex rxCreate = new Regex(regexCreate, RegexOptions.IgnoreCase);
-            Match mCreate = Regex.Match(exampleCommandsCreate[randResultCreate], regexCreate);
+            Match mCreate = Regex.Match("create label <x$> for every file *.mp3", regexCreate);
             var groupRegex = GroupRegex(rx, m);
             var groupRegexCreate = GroupRegex(rxCreate, mCreate);
-            var split = txtCommand.Text.Split(' ');
+            var split = text.Split(' ');
             equals = false;
 
-            if (this.txtCommand.Text.Length != 0)
+            if (text.Length != 0)
                 foreach (var group in this.Groups(groupRegex, groupRegexCreate))
                     foreach (var s in split)
                         if (s == group.Key)
                             equals = true;
 
-            Match mtxtCommand = Regex.Match(this.txtCommand.Text, regex);
+            Match mtxtCommand = Regex.Match(text, regex);
 
             foreach (var item in this.GroupRegex(rx, mtxtCommand))
                 _group.Add(item);
 
-            if (this.chkUseCreteRule.Checked)
-            {
-                this.txtCommand.Text = String.Empty;
-                if (equals)
-                    foreach (var group in this.Groups(groupRegex, groupRegexCreate))
-                        this.txtCommand.Text += " " + group.Value;
-
-                if (this.txtCommand.Text.Length != 0)
-                    try
-                    {
-                        this.txtCommand.Text += " " + _group[5] + " " + _group[_group.Count - 2];
-                    }
-                    catch (Exception) { }
-                this.txtCommand.Text = RemoveDuplicates(txtCommand.Text);
-                foreach (var g in _group)
-                    MessageBox.Show(g);
-            }
         }
 
         private string RemoveDuplicates(string p)
@@ -334,13 +280,13 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
 
         private void chkUseEquality_CheckedChanged(object sender, EventArgs e)
         {
-            Regex rx = new Regex(@"((each)|(all)|(every))(\s)(for)(\s)(((group of files)|(files' group)){0,1})");
-            this.txtCommand.Text = rx.Replace(this.txtCommand.Text, "=");
+
         }
         
         private void bnCatalogue_Click(object sender, EventArgs e)
         {
             int _i = 0, _j = 1;
+            bnCatalogue.Enabled = false;
 
             double[] nToArray_i, nToArray_j;
             Dictionary<string, double> similarities = new Dictionary<string, double>();
@@ -385,7 +331,14 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                 double min = differences.Min(x => x.Value);
                 double value = differences.Aggregate((x, y) => x.Value < y.Value ? y : x).Value;
                 string key = differences.Aggregate((x, y) => x.Value < y.Value ? y : x).Key;
-                merged.Add(key, value);
+                try
+                {
+                    merged.Add(key, value);
+                }
+                catch (Exception _e)
+                {
+                    MessageBox.Show(_e.Message);
+                }
                 differences.Clear();
                 oldSim.Add(key + "," + key, min);
                 
@@ -437,14 +390,16 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                     }
                 }
 
-                if(result_directories.Count != 0 && result_files.Count != 0)
-                {
-                    // Dajemy znać formowi wywołującemu (tutaj Special_function_window) że dane są gotowe do odbioru.
-                    OnDataAvalible(this, EventArgs.Empty);
-                    MessageBox.Show("Zakończono proces katalogowania.");
-                    this.Close();
-                }
+               
             }
+            if (result_directories.Count != 0 && result_files.Count != 0)
+            {
+                // Dajemy znać formowi wywołującemu (tutaj Special_function_window) że dane są gotowe do odbioru.
+                OnDataAvalible(this, EventArgs.Empty);
+                MessageBox.Show("Zakończono proces katalogowania.");
+                this.Close();
+            }
+            
             /*
             foreach (var merge in merged)
             {
@@ -596,15 +551,14 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             {
                 List<string> summary = new List<string>();
                 summary.Add(names[index]);
-                foreach (var label in fileLabels.Keys)
-                    summary.Add(label);
+
                 foreach (var item in obj)
                 {
                     summary.Add(item.ToString());
                 }
                 ListViewItem row = new ListViewItem();
                 
-                for (int i = 0; i < 13; i++)
+                for (int i = 0; i < 12; i++)
                 {
                     row.SubItems.Insert(i, new ListViewItem.ListViewSubItem(new ListViewItem(), summary[i]));
                 }
@@ -669,9 +623,9 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                 fileLabelsStr += "<nienazwany$>";
             }
 
-            if (this.txtCommand.Text == String.Empty)
+            if (text == String.Empty)
             {
-                this.txtCommand.Text = "utwórz etykietę " + fileLabelsStr + " dla każdego pliku " + extensionsStr.TrimEnd(' ');
+                text = "utwórz etykietę " + fileLabelsStr + " dla każdego pliku " + extensionsStr.TrimEnd(' ');
             }
 
             Regex rx = new Regex(regex, RegexOptions.IgnoreCase);
@@ -682,14 +636,14 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
 
             var groupRegexCreate = GroupRegex(rxCreate, mCreate);
 
-            Match mtxtCommand = Regex.Match(this.txtCommand.Text, regex);
+            Match mtxtCommand = Regex.Match(text, regex);
 
             foreach (var item in this.GroupRegex(rx, mtxtCommand))
                 _group.Add(item);
             var groupRegex = GroupRegex(rx, m);
-            var split = txtCommand.Text.Split(' ');
+            var split = text.Split(' ');
 
-            if (this.txtCommand.Text.Length != 0)
+            if (text.Length != 0)
                 foreach (var group in this.Groups(groupRegex, groupRegexCreate))
                     foreach (var s in split)
                         if (s == group.Key)
@@ -711,15 +665,15 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             catch (Exception) { }
             if (equals)
                 foreach (var group in this.Groups(groupRegex, groupRegexCreate))
-                    this.txtCommand.Text += " " + group.Value;
+                    this.text += " " + group.Value;
 
-            if (this.txtCommand.Text.Length != 0)
+            if (this.text.Length != 0)
                 try
                 {
-                    this.txtCommand.Text += " " + _group[5] + " " + _group[_group.Count - 2];
+                    this.text += " " + _group[5] + " " + _group[_group.Count - 2];
                 }
                 catch (Exception) { }
-            this.txtCommand.Text = RemoveDuplicates(txtCommand.Text);
+            this.text = RemoveDuplicates(text);
 
             Regex rxLabel = new Regex(@"(<[A-ZĄĘŚĆŻŹÓŁa-ząęśćżźół\#\s0-9%\.,]+\$>)", RegexOptions.IgnoreCase);
             Match mLabel = Regex.Match(_group[5], @"(<[A-ZĄĘŚĆŻŹÓŁa-ząęśćżźół\#\s0-9%\.,]+\$>)");
@@ -738,8 +692,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                 }
                 catch (Exception) { };
             }
-            if (this.txtCommand.TextLength >= 89)
-                this.chkUseCreteRule.Enabled = false;
+            
             this.Text = "Katalogowanie plików dźwiękowych [obliczam...]";
             try
             {

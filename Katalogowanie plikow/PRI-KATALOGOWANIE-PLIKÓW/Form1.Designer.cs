@@ -29,7 +29,7 @@
         private void InitializeComponent()
         {
             this.components = new System.ComponentModel.Container();
-            System.Windows.Forms.ListViewGroup listViewGroup9 = new System.Windows.Forms.ListViewGroup("Plik", System.Windows.Forms.HorizontalAlignment.Left);
+            System.Windows.Forms.ListViewGroup listViewGroup1 = new System.Windows.Forms.ListViewGroup("Plik", System.Windows.Forms.HorizontalAlignment.Left);
             this.tabPage1 = new System.Windows.Forms.TabPage();
             this.groupBox2 = new System.Windows.Forms.GroupBox();
             this.chkSelectAllListPositions = new System.Windows.Forms.CheckBox();
@@ -64,11 +64,9 @@
             this.columnHeader8 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.columnHeader9 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.TP_catalog = new System.Windows.Forms.TabPage();
-            this.Catalog_page_main_layout = new System.Windows.Forms.TableLayoutPanel();
-            this.Catalog_page_top_table_layout = new System.Windows.Forms.TableLayoutPanel();
-            this.BT_previous = new System.Windows.Forms.Button();
-            this.BT_specials = new System.Windows.Forms.Button();
             this.TB_catalog_path_current = new System.Windows.Forms.TextBox();
+            this.BT_next = new System.Windows.Forms.Button();
+            this.BT_previous = new System.Windows.Forms.Button();
             this.LV_catalog_display = new System.Windows.Forms.ListView();
             this.Nazwa = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.Typ = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
@@ -83,8 +81,6 @@
             this.tabPage2.SuspendLayout();
             this.contextMenuStrip1.SuspendLayout();
             this.TP_catalog.SuspendLayout();
-            this.Catalog_page_main_layout.SuspendLayout();
-            this.Catalog_page_top_table_layout.SuspendLayout();
             this.SuspendLayout();
             // 
             // tabPage1
@@ -324,10 +320,10 @@
             this.columnHeader7,
             this.columnHeader8,
             this.columnHeader9});
-            listViewGroup9.Header = "Plik";
-            listViewGroup9.Name = "listViewGroup1";
+            listViewGroup1.Header = "Plik";
+            listViewGroup1.Name = "listViewGroup1";
             this.listView1.Groups.AddRange(new System.Windows.Forms.ListViewGroup[] {
-            listViewGroup9});
+            listViewGroup1});
             this.listView1.Location = new System.Drawing.Point(10, 5);
             this.listView1.Name = "listView1";
             this.listView1.Size = new System.Drawing.Size(429, 266);
@@ -385,7 +381,10 @@
             // 
             // TP_catalog
             // 
-            this.TP_catalog.Controls.Add(this.Catalog_page_main_layout);
+            this.TP_catalog.Controls.Add(this.TB_catalog_path_current);
+            this.TP_catalog.Controls.Add(this.BT_next);
+            this.TP_catalog.Controls.Add(this.BT_previous);
+            this.TP_catalog.Controls.Add(this.LV_catalog_display);
             this.TP_catalog.Location = new System.Drawing.Point(4, 29);
             this.TP_catalog.Name = "TP_catalog";
             this.TP_catalog.Padding = new System.Windows.Forms.Padding(3);
@@ -394,66 +393,31 @@
             this.TP_catalog.Text = "Katalog";
             this.TP_catalog.UseVisualStyleBackColor = true;
             // 
-            // Catalog_page_main_layout
+            // TB_catalog_path_current
             // 
-            this.Catalog_page_main_layout.AutoSize = true;
-            this.Catalog_page_main_layout.ColumnCount = 1;
-            this.Catalog_page_main_layout.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
-            this.Catalog_page_main_layout.Controls.Add(this.Catalog_page_top_table_layout, 0, 0);
-            this.Catalog_page_main_layout.Controls.Add(this.LV_catalog_display, 0, 1);
-            this.Catalog_page_main_layout.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.Catalog_page_main_layout.Location = new System.Drawing.Point(3, 3);
-            this.Catalog_page_main_layout.Name = "Catalog_page_main_layout";
-            this.Catalog_page_main_layout.RowCount = 2;
-            this.Catalog_page_main_layout.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 42F));
-            this.Catalog_page_main_layout.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
-            this.Catalog_page_main_layout.Size = new System.Drawing.Size(441, 388);
-            this.Catalog_page_main_layout.TabIndex = 4;
+            this.TB_catalog_path_current.Location = new System.Drawing.Point(89, 7);
+            this.TB_catalog_path_current.Name = "TB_catalog_path_current";
+            this.TB_catalog_path_current.Size = new System.Drawing.Size(269, 26);
+            this.TB_catalog_path_current.TabIndex = 3;
             // 
-            // Catalog_page_top_table_layout
+            // BT_next
             // 
-            this.Catalog_page_top_table_layout.ColumnCount = 3;
-            this.Catalog_page_top_table_layout.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 70F));
-            this.Catalog_page_top_table_layout.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle());
-            this.Catalog_page_top_table_layout.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 70F));
-            this.Catalog_page_top_table_layout.Controls.Add(this.BT_specials, 2, 0);
-            this.Catalog_page_top_table_layout.Controls.Add(this.TB_catalog_path_current, 1, 0);
-            this.Catalog_page_top_table_layout.Controls.Add(this.BT_previous, 0, 0);
-            this.Catalog_page_top_table_layout.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.Catalog_page_top_table_layout.Location = new System.Drawing.Point(3, 3);
-            this.Catalog_page_top_table_layout.Name = "Catalog_page_top_table_layout";
-            this.Catalog_page_top_table_layout.RowCount = 1;
-            this.Catalog_page_top_table_layout.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
-            this.Catalog_page_top_table_layout.Size = new System.Drawing.Size(435, 36);
-            this.Catalog_page_top_table_layout.TabIndex = 0;
-            this.Catalog_page_top_table_layout.SizeChanged += new System.EventHandler(this.TB_catalog_path_current_resizer);
+            this.BT_next.Location = new System.Drawing.Point(364, 6);
+            this.BT_next.Name = "BT_next";
+            this.BT_next.Size = new System.Drawing.Size(75, 29);
+            this.BT_next.TabIndex = 2;
+            this.BT_next.Text = "Dalej";
+            this.BT_next.UseVisualStyleBackColor = true;
             // 
             // BT_previous
             // 
-            this.BT_previous.Location = new System.Drawing.Point(3, 3);
+            this.BT_previous.Location = new System.Drawing.Point(8, 6);
             this.BT_previous.Name = "BT_previous";
-            this.BT_previous.Size = new System.Drawing.Size(63, 29);
+            this.BT_previous.Size = new System.Drawing.Size(75, 29);
             this.BT_previous.TabIndex = 1;
             this.BT_previous.Text = "Cofnij";
             this.BT_previous.UseVisualStyleBackColor = true;
             this.BT_previous.Click += new System.EventHandler(this.BT_previous_click);
-            // 
-            // BT_specials
-            // 
-            this.BT_specials.Location = new System.Drawing.Point(367, 3);
-            this.BT_specials.Name = "BT_specials";
-            this.BT_specials.Size = new System.Drawing.Size(63, 29);
-            this.BT_specials.TabIndex = 2;
-            this.BT_specials.Text = "Inne";
-            this.BT_specials.UseVisualStyleBackColor = true;
-            // 
-            // TB_catalog_path_current
-            // 
-            this.TB_catalog_path_current.Dock = System.Windows.Forms.DockStyle.Top;
-            this.TB_catalog_path_current.Location = new System.Drawing.Point(96, 2);
-            this.TB_catalog_path_current.Name = "TB_catalog_path_current";
-            this.TB_catalog_path_current.Size = new System.Drawing.Size(292, 26);
-            this.TB_catalog_path_current.TabIndex = 3;
             // 
             // LV_catalog_display
             // 
@@ -463,13 +427,11 @@
             this.Ostatnia_modyfikacja,
             this.Ostatnie_katalogowanie,
             this.Rozmiar});
-            this.LV_catalog_display.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.LV_catalog_display.Enabled = false;
             this.LV_catalog_display.LabelEdit = true;
             this.LV_catalog_display.LabelWrap = false;
-            this.LV_catalog_display.Location = new System.Drawing.Point(3, 45);
+            this.LV_catalog_display.Location = new System.Drawing.Point(6, 41);
             this.LV_catalog_display.Name = "LV_catalog_display";
-            this.LV_catalog_display.Size = new System.Drawing.Size(435, 340);
+            this.LV_catalog_display.Size = new System.Drawing.Size(433, 347);
             this.LV_catalog_display.TabIndex = 0;
             this.LV_catalog_display.TabStop = false;
             this.LV_catalog_display.UseCompatibleStateImageBehavior = false;
@@ -478,9 +440,7 @@
             this.LV_catalog_display.AfterLabelEdit += new System.Windows.Forms.LabelEditEventHandler(this.LV_catalog_display_after_label_edit);
             this.LV_catalog_display.BeforeLabelEdit += new System.Windows.Forms.LabelEditEventHandler(this.LV_catalog_display_before_label_edit);
             this.LV_catalog_display.CacheVirtualItems += new System.Windows.Forms.CacheVirtualItemsEventHandler(this.LV_catalog_display_cache_items);
-            this.LV_catalog_display.ItemSelectionChanged += new System.Windows.Forms.ListViewItemSelectionChangedEventHandler(this.LV_catalog_display_item_selected);
             this.LV_catalog_display.RetrieveVirtualItem += new System.Windows.Forms.RetrieveVirtualItemEventHandler(this.LV_catalog_display_retrieve_item);
-            this.LV_catalog_display.VirtualItemsSelectionRangeChanged += new System.Windows.Forms.ListViewVirtualItemsSelectionRangeChangedEventHandler(this.LV_catalog_display_item_range_select);
             this.LV_catalog_display.VisibleChanged += new System.EventHandler(this.LV_catalog_display_visible_changed);
             this.LV_catalog_display.MouseClick += new System.Windows.Forms.MouseEventHandler(this.LV_catalog_display_single_click);
             this.LV_catalog_display.MouseDoubleClick += new System.Windows.Forms.MouseEventHandler(this.LV_catalog_display_double_click);
@@ -489,33 +449,31 @@
             // Nazwa
             // 
             this.Nazwa.Text = "Nazwa";
-            this.Nazwa.Width = 100;
             // 
             // Typ
             // 
             this.Typ.Text = "Typ";
-            this.Typ.Width = 100;
+            this.Typ.Width = 37;
             // 
             // Ostatnia_modyfikacja
             // 
             this.Ostatnia_modyfikacja.Text = "Ostatnia modyfikacja";
-            this.Ostatnia_modyfikacja.Width = 200;
+            this.Ostatnia_modyfikacja.Width = 159;
             // 
             // Ostatnie_katalogowanie
             // 
             this.Ostatnie_katalogowanie.Text = "Ostatnie katalogowanie";
-            this.Ostatnie_katalogowanie.Width = 200;
+            this.Ostatnie_katalogowanie.Width = 178;
             // 
             // Rozmiar
             // 
             this.Rozmiar.Text = "Rozmiar";
-            this.Rozmiar.Width = 100;
+            this.Rozmiar.Width = 71;
             // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
             this.ClientSize = new System.Drawing.Size(455, 427);
             this.Controls.Add(this.tabControl1);
             this.KeyPreview = true;
@@ -534,9 +492,6 @@
             this.contextMenuStrip1.ResumeLayout(false);
             this.TP_catalog.ResumeLayout(false);
             this.TP_catalog.PerformLayout();
-            this.Catalog_page_main_layout.ResumeLayout(false);
-            this.Catalog_page_top_table_layout.ResumeLayout(false);
-            this.Catalog_page_top_table_layout.PerformLayout();
             this.ResumeLayout(false);
 
         }
@@ -583,11 +538,9 @@
         private System.Windows.Forms.ColumnHeader Typ;
         private System.Windows.Forms.ColumnHeader Rozmiar;
         private System.Windows.Forms.TextBox TB_catalog_path_current;
-        private System.Windows.Forms.Button BT_specials;
+        private System.Windows.Forms.Button BT_next;
         private System.Windows.Forms.Button BT_previous;
         private System.Windows.Forms.ColumnHeader Ostatnie_katalogowanie;
-        private System.Windows.Forms.TableLayoutPanel Catalog_page_main_layout;
-        private System.Windows.Forms.TableLayoutPanel Catalog_page_top_table_layout;
     }
 }
 

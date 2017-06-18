@@ -45,10 +45,8 @@
             this.Durance = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.toolTip1 = new System.Windows.Forms.ToolTip(this.components);
             this.backgroundWorker1 = new System.ComponentModel.BackgroundWorker();
-            this.groupBox1 = new System.Windows.Forms.GroupBox();
             this.listView1 = new System.Windows.Forms.ListView();
             this.P = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
-            this.L = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.Q1Min = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.Q1Max = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.Q2Min = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
@@ -67,14 +65,7 @@
             this.bnPreview = new System.Windows.Forms.Button();
             this.bnShare = new System.Windows.Forms.Button();
             this.bnCatalogue = new System.Windows.Forms.Button();
-            this.chkOmitDollarSign = new System.Windows.Forms.CheckBox();
-            this.chkUseEquality = new System.Windows.Forms.CheckBox();
-            this.chkUseCreteRule = new System.Windows.Forms.CheckBox();
-            this.lbExampleCommand = new System.Windows.Forms.Label();
-            this.label1 = new System.Windows.Forms.Label();
-            this.txtCommand = new System.Windows.Forms.TextBox();
             this.timer1 = new System.Windows.Forms.Timer(this.components);
-            this.groupBox1.SuspendLayout();
             this.contextMenuStrip1.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -156,32 +147,6 @@
             this.backgroundWorker1.ProgressChanged += new System.ComponentModel.ProgressChangedEventHandler(this.backgroundWorker1_ProgressChanged);
             this.backgroundWorker1.RunWorkerCompleted += new System.ComponentModel.RunWorkerCompletedEventHandler(this.backgroundWorker1_RunWorkerCompleted);
             // 
-            // groupBox1
-            // 
-            this.groupBox1.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
-            | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.groupBox1.Controls.Add(this.listView1);
-            this.groupBox1.Controls.Add(this.bnChooseFolder);
-            this.groupBox1.Controls.Add(this.bnPreview);
-            this.groupBox1.Controls.Add(this.bnShare);
-            this.groupBox1.Controls.Add(this.bnCatalogue);
-            this.groupBox1.Controls.Add(this.chkOmitDollarSign);
-            this.groupBox1.Controls.Add(this.chkUseEquality);
-            this.groupBox1.Controls.Add(this.chkUseCreteRule);
-            this.groupBox1.Controls.Add(this.lbExampleCommand);
-            this.groupBox1.Controls.Add(this.label1);
-            this.groupBox1.Controls.Add(this.txtCommand);
-            this.groupBox1.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(238)));
-            this.groupBox1.Location = new System.Drawing.Point(11, 18);
-            this.groupBox1.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
-            this.groupBox1.Name = "groupBox1";
-            this.groupBox1.Padding = new System.Windows.Forms.Padding(3, 2, 3, 2);
-            this.groupBox1.Size = new System.Drawing.Size(700, 641);
-            this.groupBox1.TabIndex = 1;
-            this.groupBox1.TabStop = false;
-            this.groupBox1.Text = " Użyj polecenia";
-            // 
             // listView1
             // 
             this.listView1.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
@@ -189,7 +154,6 @@
             | System.Windows.Forms.AnchorStyles.Right)));
             this.listView1.Columns.AddRange(new System.Windows.Forms.ColumnHeader[] {
             this.P,
-            this.L,
             this.Q1Min,
             this.Q1Max,
             this.Q2Min,
@@ -202,10 +166,11 @@
             this.Mod,
             this.Total});
             this.listView1.ContextMenuStrip = this.contextMenuStrip1;
-            this.listView1.Location = new System.Drawing.Point(5, 229);
-            this.listView1.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
+            this.listView1.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F);
+            this.listView1.Location = new System.Drawing.Point(4, 3);
+            this.listView1.Margin = new System.Windows.Forms.Padding(2);
             this.listView1.Name = "listView1";
-            this.listView1.Size = new System.Drawing.Size(688, 354);
+            this.listView1.Size = new System.Drawing.Size(429, 419);
             this.listView1.TabIndex = 14;
             this.listView1.UseCompatibleStateImageBehavior = false;
             this.listView1.View = System.Windows.Forms.View.Details;
@@ -215,11 +180,6 @@
             // 
             this.P.Text = "Plik";
             this.P.Width = 120;
-            // 
-            // L
-            // 
-            this.L.Text = "Etykieta";
-            this.L.Width = 120;
             // 
             // Q1Min
             // 
@@ -283,159 +243,96 @@
             this.PlayPauseToolStripMenuItem,
             this.StopToolStripMenuItem});
             this.contextMenuStrip1.Name = "contextMenuStrip1";
-            this.contextMenuStrip1.Size = new System.Drawing.Size(209, 56);
+            this.contextMenuStrip1.Size = new System.Drawing.Size(174, 48);
             // 
             // PlayPauseToolStripMenuItem
             // 
             this.PlayPauseToolStripMenuItem.Name = "PlayPauseToolStripMenuItem";
-            this.PlayPauseToolStripMenuItem.Size = new System.Drawing.Size(208, 26);
+            this.PlayPauseToolStripMenuItem.Size = new System.Drawing.Size(173, 22);
             this.PlayPauseToolStripMenuItem.Text = "&Wznów/Wstrzymaj";
             this.PlayPauseToolStripMenuItem.Click += new System.EventHandler(this.PlayPauseToolStripMenuItem_Click);
             // 
             // StopToolStripMenuItem
             // 
             this.StopToolStripMenuItem.Name = "StopToolStripMenuItem";
-            this.StopToolStripMenuItem.Size = new System.Drawing.Size(208, 26);
+            this.StopToolStripMenuItem.Size = new System.Drawing.Size(173, 22);
             this.StopToolStripMenuItem.Text = "&Zatrzymaj";
             this.StopToolStripMenuItem.Click += new System.EventHandler(this.StopToolStripMenuItem_Click);
             // 
             // bnChooseFolder
             // 
             this.bnChooseFolder.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.bnChooseFolder.FlatStyle = System.Windows.Forms.FlatStyle.Popup;
-            this.bnChooseFolder.Location = new System.Drawing.Point(643, 39);
-            this.bnChooseFolder.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
+            this.bnChooseFolder.BackColor = System.Drawing.SystemColors.Control;
+            this.bnChooseFolder.FlatStyle = System.Windows.Forms.FlatStyle.System;
+            this.bnChooseFolder.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F);
+            this.bnChooseFolder.Location = new System.Drawing.Point(439, 288);
+            this.bnChooseFolder.Margin = new System.Windows.Forms.Padding(2);
             this.bnChooseFolder.Name = "bnChooseFolder";
-            this.bnChooseFolder.Size = new System.Drawing.Size(52, 30);
+            this.bnChooseFolder.Size = new System.Drawing.Size(97, 30);
             this.bnChooseFolder.TabIndex = 12;
-            this.bnChooseFolder.Text = "...";
-            this.bnChooseFolder.UseVisualStyleBackColor = true;
+            this.bnChooseFolder.Text = "Aktywuj";
+            this.bnChooseFolder.UseVisualStyleBackColor = false;
             this.bnChooseFolder.Click += new System.EventHandler(this.bnChooseFolder_Click);
             // 
             // bnPreview
             // 
-            this.bnPreview.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
+            this.bnPreview.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.bnPreview.Enabled = false;
-            this.bnPreview.FlatStyle = System.Windows.Forms.FlatStyle.Popup;
-            this.bnPreview.Location = new System.Drawing.Point(400, 590);
-            this.bnPreview.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.bnPreview.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F);
+            this.bnPreview.Location = new System.Drawing.Point(439, 323);
             this.bnPreview.Name = "bnPreview";
-            this.bnPreview.Size = new System.Drawing.Size(143, 39);
+            this.bnPreview.Size = new System.Drawing.Size(97, 29);
             this.bnPreview.TabIndex = 11;
-            this.bnPreview.Text = "&Podgląd";
+            this.bnPreview.Text = "Podgląd";
             this.bnPreview.UseVisualStyleBackColor = true;
             this.bnPreview.Click += new System.EventHandler(this.bnPreview_Click);
             // 
             // bnShare
             // 
-            this.bnShare.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
+            this.bnShare.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.bnShare.Enabled = false;
-            this.bnShare.FlatStyle = System.Windows.Forms.FlatStyle.Popup;
-            this.bnShare.Location = new System.Drawing.Point(552, 591);
-            this.bnShare.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.bnShare.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F);
+            this.bnShare.Location = new System.Drawing.Point(439, 393);
             this.bnShare.Name = "bnShare";
-            this.bnShare.Size = new System.Drawing.Size(143, 39);
+            this.bnShare.Size = new System.Drawing.Size(97, 29);
             this.bnShare.TabIndex = 10;
-            this.bnShare.Text = "U&dostępnij";
+            this.bnShare.Text = "Udostępnij";
             this.bnShare.UseVisualStyleBackColor = true;
             // 
             // bnCatalogue
             // 
-            this.bnCatalogue.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
+            this.bnCatalogue.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.bnCatalogue.Enabled = false;
-            this.bnCatalogue.FlatStyle = System.Windows.Forms.FlatStyle.Popup;
-            this.bnCatalogue.Location = new System.Drawing.Point(0, 590);
-            this.bnCatalogue.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.bnCatalogue.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F);
+            this.bnCatalogue.Location = new System.Drawing.Point(439, 358);
             this.bnCatalogue.Name = "bnCatalogue";
-            this.bnCatalogue.Size = new System.Drawing.Size(388, 39);
+            this.bnCatalogue.Size = new System.Drawing.Size(97, 29);
             this.bnCatalogue.TabIndex = 9;
-            this.bnCatalogue.Text = "&Kataloguj";
+            this.bnCatalogue.Text = "Kataloguj";
             this.bnCatalogue.UseVisualStyleBackColor = true;
             this.bnCatalogue.Click += new System.EventHandler(this.bnCatalogue_Click);
-            // 
-            // chkOmitDollarSign
-            // 
-            this.chkOmitDollarSign.AutoSize = true;
-            this.chkOmitDollarSign.Location = new System.Drawing.Point(28, 193);
-            this.chkOmitDollarSign.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
-            this.chkOmitDollarSign.Name = "chkOmitDollarSign";
-            this.chkOmitDollarSign.Size = new System.Drawing.Size(687, 29);
-            this.chkOmitDollarSign.TabIndex = 7;
-            this.chkOmitDollarSign.Text = "&Pomiń numer (znak dolara ($) w regule) w nazwie folderu/ów katalogowania";
-            this.chkOmitDollarSign.UseVisualStyleBackColor = true;
-            // 
-            // chkUseEquality
-            // 
-            this.chkUseEquality.AutoSize = true;
-            this.chkUseEquality.Enabled = false;
-            this.chkUseEquality.Location = new System.Drawing.Point(28, 155);
-            this.chkUseEquality.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
-            this.chkUseEquality.Name = "chkUseEquality";
-            this.chkUseEquality.Size = new System.Drawing.Size(243, 29);
-            this.chkUseEquality.TabIndex = 5;
-            this.chkUseEquality.Text = "Użyj znaku &równości (=)";
-            this.chkUseEquality.UseVisualStyleBackColor = true;
-            // 
-            // chkUseCreteRule
-            // 
-            this.chkUseCreteRule.AutoSize = true;
-            this.chkUseCreteRule.Location = new System.Drawing.Point(28, 118);
-            this.chkUseCreteRule.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
-            this.chkUseCreteRule.Name = "chkUseCreteRule";
-            this.chkUseCreteRule.Size = new System.Drawing.Size(260, 29);
-            this.chkUseCreteRule.TabIndex = 3;
-            this.chkUseCreteRule.Text = "&Użyj reguły typu \"create...\"";
-            this.chkUseCreteRule.UseVisualStyleBackColor = true;
-            // 
-            // lbExampleCommand
-            // 
-            this.lbExampleCommand.AutoSize = true;
-            this.lbExampleCommand.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Italic, System.Drawing.GraphicsUnit.Point, ((byte)(238)));
-            this.lbExampleCommand.Location = new System.Drawing.Point(23, 89);
-            this.lbExampleCommand.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
-            this.lbExampleCommand.Name = "lbExampleCommand";
-            this.lbExampleCommand.Size = new System.Drawing.Size(53, 25);
-            this.lbExampleCommand.TabIndex = 4;
-            this.lbExampleCommand.Text = "Np.: ";
-            // 
-            // label1
-            // 
-            this.label1.AutoSize = true;
-            this.label1.Location = new System.Drawing.Point(23, 42);
-            this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(104, 25);
-            this.label1.TabIndex = 1;
-            this.label1.Text = "Polecenie:";
-            // 
-            // txtCommand
-            // 
-            this.txtCommand.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.txtCommand.Location = new System.Drawing.Point(133, 39);
-            this.txtCommand.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
-            this.txtCommand.Name = "txtCommand";
-            this.txtCommand.Size = new System.Drawing.Size(503, 30);
-            this.txtCommand.TabIndex = 0;
             // 
             // timer1
             // 
             this.timer1.Interval = 1000;
             this.timer1.Tick += new System.EventHandler(this.timer1_Tick);
             // 
-            // Form1
+            // Janek_main
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
+            this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor = System.Drawing.SystemColors.Window;
-            this.ClientSize = new System.Drawing.Size(713, 663);
-            this.Controls.Add(this.groupBox1);
+            this.ClientSize = new System.Drawing.Size(541, 434);
+            this.Controls.Add(this.bnShare);
+            this.Controls.Add(this.listView1);
+            this.Controls.Add(this.bnChooseFolder);
+            this.Controls.Add(this.bnPreview);
+            this.Controls.Add(this.bnCatalogue);
             this.KeyPreview = true;
-            this.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
-            this.Name = "Form1";
+            this.Margin = new System.Windows.Forms.Padding(2);
+            this.Name = "Janek_main";
             this.Text = "Katalogowanie plików dźwiękowych [bezczynny]";
             this.TextChanged += new System.EventHandler(this.Form1_TextChanged);
-            this.groupBox1.ResumeLayout(false);
-            this.groupBox1.PerformLayout();
             this.contextMenuStrip1.ResumeLayout(false);
             this.ResumeLayout(false);
 
@@ -458,20 +355,12 @@
         private System.Windows.Forms.ColumnHeader Durance;
         private System.Windows.Forms.ToolTip toolTip1;
         private System.ComponentModel.BackgroundWorker backgroundWorker1;
-        private System.Windows.Forms.GroupBox groupBox1;
-        private System.Windows.Forms.CheckBox chkOmitDollarSign;
-        private System.Windows.Forms.CheckBox chkUseEquality;
-        private System.Windows.Forms.CheckBox chkUseCreteRule;
-        private System.Windows.Forms.Label lbExampleCommand;
-        private System.Windows.Forms.Label label1;
-        private System.Windows.Forms.TextBox txtCommand;
         private System.Windows.Forms.Button bnPreview;
         private System.Windows.Forms.Button bnShare;
         private System.Windows.Forms.Button bnCatalogue;
         private System.Windows.Forms.Button bnChooseFolder;
         private System.Windows.Forms.ListView listView1;
         private System.Windows.Forms.ColumnHeader P;
-        private System.Windows.Forms.ColumnHeader L;
         private System.Windows.Forms.ColumnHeader Q1Min;
         private System.Windows.Forms.ColumnHeader Q1Max;
         private System.Windows.Forms.ColumnHeader Q2Min;
