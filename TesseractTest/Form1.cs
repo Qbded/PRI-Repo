@@ -13,6 +13,7 @@ using Tesseract;
 using MediaToolkit.Model;
 using MediaToolkit;
 using MediaToolkit.Options;
+using TesseractTest.classes;
 
 namespace TesseractTest
 {
@@ -77,7 +78,7 @@ namespace TesseractTest
       HashSet<string> tags = new HashSet<string>();
       try
       {
-        using (var engine = new TesseractEngine(@"../../tessdata", "pol", EngineMode.Default))
+        using (var engine = new TesseractEngine(@"../../tessdata", language, EngineMode.Default))
         {
           using (var img = Pix.LoadFromFile(filePath))
           {
@@ -94,6 +95,7 @@ namespace TesseractTest
                                     '“', '‘', '”', '„', '›',
                                     '0', '1', '2', '3', '4',
                                     '5', '6', '7', '8', '9',
+                                    '«', '»', '?', 
                                     '\n', '\t', '\r' };
               string[] unprocessedTags = text.Split(delimiters);
               unprocessedTags = unprocessedTags.Select(s => s.ToLower()).ToArray();
@@ -131,38 +133,54 @@ namespace TesseractTest
         Directory.CreateDirectory(frameDirectory);
       }
       string framePath = frameDirectory + @"\img.png";
-
-      TimeSpan timePointer = new TimeSpan(0);
-      TimeSpan timeStep = new TimeSpan((long)(10000000 * extractionOptions.getSamplingFrequency()));
       
       var outputFile = new MediaFile { Filename = framePath };
       using (var engine = new Engine())
       {
-        engine.GetMetadata(input);
-        
-        // Saves the frame located on the x-th second of the video.
-        while (timePointer.CompareTo(input.Metadata.Duration) < 0)
+        TimeSpan totalDuration = new TimeSpan(0);
+        foreach(TimeRange timeRange in extractionOptions.timeRanges)
         {
-          if(bgwFileProcessor.CancellationPending == true)
-          {
-            e.Cancel = true;
-          }
-          var options = new ConversionOptions { Seek = TimeSpan.FromMilliseconds(timePointer.TotalMilliseconds) };
-          engine.GetThumbnail(input, outputFile, options);
-          file.addTags(extractTagsFromFrame(framePath, file.getLanguage()));
-          timePointer = timePointer.Add(timeStep);
+          totalDuration = totalDuration.Add(timeRange.finish.Subtract(timeRange.start));
+        }
 
-          bgwFileProcessor.ReportProgress((int)(Math.Floor(100 * (timePointer.TotalSeconds / input.Metadata.Duration.TotalSeconds))));
-          //Console.WriteLine("Progress at " + (int)(Math.Floor(100 * (timePointer.TotalSeconds / input.Metadata.Duration.TotalSeconds))) + "% (" + timePointer.TotalSeconds / input.Metadata.Duration.TotalSeconds + "%)");
-          //outputTextBox.AppendText("Time step: " + timeStep.Hours + ":" + timeStep.Minutes + ":" + timeStep.Seconds + "." + timeStep.Milliseconds + "/" + Environment.NewLine);
-          //outputTextBox.AppendText("" + timePointer.Hours + ":" + timePointer.Minutes + ":" + timePointer.Seconds + "." + timePointer.Milliseconds + "/" + Environment.NewLine);
+        engine.GetMetadata(input);
+
+        TimeSpan timeLapsed = new TimeSpan(0);
+        foreach (TimeRange timeRange in extractionOptions.timeRanges)
+        {
+          TimeSpan timePointer = timeRange.start;
+          TimeSpan timeStep = new TimeSpan((long)(10000000 * extractionOptions.getSamplingFrequency()));
+          // Saves the frame located on the x-th second of the video.
+          while (timePointer.CompareTo(timeRange.finish) < 0)
+          {
+            if (bgwFileProcessor.CancellationPending == true)
+            {
+              e.Cancel = true;
+            }
+            var options = new ConversionOptions { Seek = TimeSpan.FromMilliseconds(timePointer.TotalMilliseconds) };
+            engine.GetThumbnail(input, outputFile, options);
+            file.addTags(extractTagsFromFrame(framePath, file.getLanguage()));
+            timePointer = timePointer.Add(timeStep);
+            timeLapsed = timeLapsed.Add(timeStep);
+
+            bgwFileProcessor.ReportProgress((int)(Math.Floor(100 * (timeLapsed.TotalSeconds / totalDuration.TotalSeconds))));
+            //Console.WriteLine("Progress at " + (int)(Math.Floor(100 * (timePointer.TotalSeconds / input.Metadata.Duration.TotalSeconds))) + "% (" + timePointer.TotalSeconds / input.Metadata.Duration.TotalSeconds + "%)");
+            //outputTextBox.AppendText("Time step: " + timeStep.Hours + ":" + timeStep.Minutes + ":" + timeStep.Seconds + "." + timeStep.Milliseconds + "/" + Environment.NewLine);
+            //outputTextBox.AppendText("" + timePointer.Hours + ":" + timePointer.Minutes + ":" + timePointer.Seconds + "." + timePointer.Milliseconds + "/" + Environment.NewLine);
+          }
         }
       }
+
       string resultDirectory = Directory.GetCurrentDirectory() + @"\result\";
+      string resultFilePath = resultDirectory + Path.GetFileNameWithoutExtension(file.getFilePath()) + @"_tags.txt";
+
       if (!Directory.Exists(resultDirectory)){
         Directory.CreateDirectory(resultDirectory);
       }
-      StreamWriter sw = new StreamWriter(resultDirectory + Path.GetFileNameWithoutExtension(file.getFilePath()) + @"_tags.txt");
+      if(File.Exists(resultFilePath)){
+        File.Delete(resultFilePath);
+      }
+      StreamWriter sw = new StreamWriter(resultFilePath);
       foreach(string tag in file.getTags())
       {
         Console.WriteLine(tag);
@@ -176,14 +194,13 @@ namespace TesseractTest
     private void getExtractionOptions(ref VideoFile file, ref MediaFile input)
     {
       ExtractionOptions extractionOptions = new ExtractionOptions();
-      bool proceed = true;
-      Form2 form2 = new Form2(ref file, ref input, ref extractionOptions, ref proceed);
+      Form2 form2 = new Form2(ref file, ref input, ref extractionOptions);
       form2.ShowDialog();
+      bool proceed = form2.proceed;
       System.IO.File.Delete(Directory.GetCurrentDirectory() + @"\temp\thumbnail.png");
-      extractionOptions.DEBUG_displayTimeRanges();
       if (proceed)
       {
-        Console.WriteLine("Proceeded.");
+        extractionOptions.contractTimeRanges();
         List<object> bgwArgs = new List<object>();
         bgwArgs.Add(file);
         bgwArgs.Add(input);
@@ -191,6 +208,12 @@ namespace TesseractTest
         bgwFileProcessor.RunWorkerAsync(bgwArgs);
         //extractTagsFromFile(ref file, ref input, ref extractionOptions);
         //System.IO.File.Delete(Directory.GetCurrentDirectory() + @"\temp\img.png");
+      }
+      else
+      {
+        processFilesButton.Enabled = true;
+        openFileDialogButton.Enabled = true;
+        cancelFileProcessingButton.Enabled = false;
       }
     }
 
@@ -216,7 +239,6 @@ namespace TesseractTest
             {
               engine.GetMetadata(input);
             }
-            Console.WriteLine(input.Metadata.VideoData.Fps);
             try
             {
               double fps = input.Metadata.VideoData.Fps;
