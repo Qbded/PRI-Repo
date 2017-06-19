@@ -257,6 +257,9 @@
     <EmbeddedResource Include="Janek_main.resx">
       <DependentUpon>Janek_main.cs</DependentUpon>
     </EmbeddedResource>
+    <EmbeddedResource Include="Karol_main.resx">
+      <DependentUpon>Karol_main.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="Karol_progress.resx">
       <DependentUpon>Karol_progress.cs</DependentUpon>
     </EmbeddedResource>

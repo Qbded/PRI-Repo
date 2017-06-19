@@ -135,6 +135,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             proceed = true;
 
             this.Close();
+            this.Owner.Show();
             this.Dispose();
         }
 
@@ -143,6 +144,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             proceed = false;
 
             this.Close();
+            this.Owner.Show();
             this.Dispose();
         }
 

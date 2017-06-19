@@ -50,16 +50,6 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
 
         private void Karol_main_part_done(object sender, EventArgs e)
         {
-            // Reset bgw do zera
-            /*
-            bgwFileProcessor = new BackgroundWorker();
-            bgwFileProcessor.WorkerReportsProgress = true;
-            bgwFileProcessor.WorkerSupportsCancellation = true;
-            bgwFileProcessor.DoWork += new DoWorkEventHandler(bgwFileProcessor_DoWork);
-            bgwFileProcessor.RunWorkerCompleted += new RunWorkerCompletedEventHandler(enableFormButtons);
-            bgwFileProcessor.ProgressChanged += new ProgressChangedEventHandler(bgwFileProcessor_ReportProgress);
-            */
-
             // Ekstrakcja idzie tak samo, ale dla current_file zwiększonego o jeden.
             text_extraction_results.Add(new Tuple<int, string, string>(filepaths[current_file].Item1 ,filepaths[current_file].Item2, string.Empty));
             var input = new MediaFile { Filename = filepaths[current_file].Item2 };
@@ -73,6 +63,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                 double fps = input.Metadata.VideoData.Fps;
                 TimeSpan time = input.Metadata.Duration;
                 VideoFile file = new VideoFile(filepaths[current_file].Item2, fps, time);
+                
                 getExtractionOptions(ref file, ref input);
 
                 HashSet<string> gottenTags = file.getTags();
@@ -92,7 +83,6 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             {
                 Console.WriteLine(exc.Message);
             }
-            current_file++;
         }
 
         private void Karol_main_all_done(object sender, EventArgs e)
@@ -100,6 +90,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             MessageBox.Show("Ekstrakcja zakonczona!");
             OnDataAvalible(this, EventArgs.Empty);
             this.Close();
+            this.Dispose();
         }
 
         public void bgwFileProcessor_DoWork(object sender, DoWorkEventArgs e)
@@ -134,6 +125,8 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                                                                                            (string)e.Result);
                 text_extraction_results[text_extraction_results.IndexOf(text_extraction_results.Last())] = data_to_return;
             }
+
+            current_file++;
 
             if (text_extraction_results.Count == filepaths.Count)
             {
@@ -274,9 +267,12 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
         private void getExtractionOptions(ref VideoFile file, ref MediaFile input)
         {
             ExtractionOptions extractionOptions = new ExtractionOptions();
-            bool proceed = true;
+            bool proceed = false;
+
             Karol_progress form2 = new Karol_progress(ref file, ref input, ref extractionOptions, ref program_path, ref proceed);
+            form2.Owner = this;
             form2.ShowDialog();
+            proceed = form2.proceed;
             System.IO.File.Delete(program_path + @"\temp\thumbnail.png");
             extractionOptions.DEBUG_displayTimeRanges();
             if (proceed)
@@ -287,8 +283,18 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                 bgwArgs.Add(input);
                 bgwArgs.Add(extractionOptions);
                 bgwFileProcessor.RunWorkerAsync(bgwArgs);
-                //extractTagsFromFile(ref file, ref input, ref extractionOptions);
-                //System.IO.File.Delete(Directory.GetCurrentDirectory() + @"\temp\img.png");
+            }
+            if(!proceed)
+            {
+                if (text_extraction_results.Count < filepaths.Count)
+                {
+                    current_file++;
+                    Karol_main_part_done(this, new EventArgs());
+                }
+                else
+                {
+                    Karol_main_all_done(this, new EventArgs());
+                }
             }
         }
 
@@ -308,6 +314,11 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                 current_file = filepaths.IndexOf(filepaths.First());
                 Karol_main_part_done(this, new EventArgs());
             }
+        }
+
+        private void Karol_main_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            ((Special_function_window)this.Owner).Controls_set_lock(false);
         }
 
 
@@ -379,6 +390,5 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
         {
 
         }
-
     }
 }

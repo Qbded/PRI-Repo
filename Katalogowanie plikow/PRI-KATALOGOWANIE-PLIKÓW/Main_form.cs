@@ -1799,7 +1799,6 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
         {
             // Obsługa zdarzenia powrotu z wyboru opcji specjalnych - używana przez zarówno kod Janka jak i kod Karola, głównie zajmują się dodawaniem
             // wyniku do bazy danych w odpowiedni sposób.
-
             int operation_index = 0, counter = 0;
             List <Tuple<int, string>> audio_sorter_folders_to_add;
             List<Tuple<int, string>> audio_sorter_files_to_add;
@@ -1837,38 +1836,41 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
 
                     for(int i = 0; i < extractor_texts_to_add.Count; i++)
                     {
-                        // Wyszukujemy w bazie pliki o indeksach podanych w tupli, wiemy że są w metadata_multimedia
-                        FbCommand database_record_manipulator = new FbCommand("UPDATE metadata_multimedia " +
-                                                                          "SET EXTRACTED_TEXT = @Extracted_text " +
-                                                                          "WHERE ID = @Id;"
-                                                                          ,
-                                                                          new FbConnection(database_connection_string_builder.ConnectionString));
-
-                        string extracted_text = System.IO.File.ReadAllText(extractor_texts_to_add[i].Item3);
-
-                        database_record_manipulator.Parameters.AddWithValue("@Extracted_text", extracted_text);
-                        database_record_manipulator.Parameters.AddWithValue("@Id", extractor_texts_to_add[i].Item1);
-
-                        database_record_manipulator.Connection.Open();
-                        database_record_manipulator.ExecuteNonQuery();
-                        database_record_manipulator.Connection.Close();
-
-                        /* DEBUG
-                        DataTable newly_added_text_container = new DataTable();
-                        FbDataAdapter newly_added_text_grabber = new FbDataAdapter("SELECT EXTRACTED_TEXT " +
-                                                                                   "FROM metadata_multimedia " +
-                                                                                   "WHERE ID = @Id;"
-                                                                                   ,
-                                                                                   new FbConnection(database_connection_string_builder.ConnectionString));
-
-                        newly_added_text_grabber.SelectCommand.Parameters.AddWithValue("@Id", extractor_texts_to_add[i].Item1);
-
-                        newly_added_text_grabber.Fill(newly_added_text_container);
-                        if (newly_added_text_container.Rows.Count == 1)
+                        if (!extractor_texts_to_add[i].Item3.Equals(string.Empty))
                         {
-                            MessageBox.Show((string)newly_added_text_container.Rows[0].ItemArray[0]);
+                            // Wyszukujemy w bazie pliki o indeksach podanych w tupli, wiemy że są w metadata_multimedia
+                            FbCommand database_record_manipulator = new FbCommand("UPDATE metadata_multimedia " +
+                                                                              "SET EXTRACTED_TEXT = @Extracted_text " +
+                                                                              "WHERE ID = @Id;"
+                                                                              ,
+                                                                              new FbConnection(database_connection_string_builder.ConnectionString));
+
+                            string extracted_text = System.IO.File.ReadAllText(extractor_texts_to_add[i].Item3);
+
+                            database_record_manipulator.Parameters.AddWithValue("@Extracted_text", extracted_text);
+                            database_record_manipulator.Parameters.AddWithValue("@Id", extractor_texts_to_add[i].Item1);
+
+                            database_record_manipulator.Connection.Open();
+                            database_record_manipulator.ExecuteNonQuery();
+                            database_record_manipulator.Connection.Close();
+
+                            /* DEBUG
+                            DataTable newly_added_text_container = new DataTable();
+                            FbDataAdapter newly_added_text_grabber = new FbDataAdapter("SELECT EXTRACTED_TEXT " +
+                                                                                       "FROM metadata_multimedia " +
+                                                                                       "WHERE ID = @Id;"
+                                                                                       ,
+                                                                                       new FbConnection(database_connection_string_builder.ConnectionString));
+
+                            newly_added_text_grabber.SelectCommand.Parameters.AddWithValue("@Id", extractor_texts_to_add[i].Item1);
+
+                            newly_added_text_grabber.Fill(newly_added_text_container);
+                            if (newly_added_text_container.Rows.Count == 1)
+                            {
+                                MessageBox.Show((string)newly_added_text_container.Rows[0].ItemArray[0]);
+                            }
+                            */
                         }
-                        */
                     }
 
                     break;
@@ -1961,6 +1963,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             special_option_selector.program_path = program_path;
             special_option_selector.OnDataAvalible += new EventHandler(Special_function_window_OnDataAvalible);
             special_option_selector.Show();
+            this.Hide();
         }
 
         // Dalej znajduje się kod legacy...

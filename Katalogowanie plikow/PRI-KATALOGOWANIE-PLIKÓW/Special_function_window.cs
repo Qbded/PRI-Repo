@@ -48,8 +48,8 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             // Informujemy Main_form o tym że któraś z opcji zwróciła wynik.
             OnDataAvalible(this, EventArgs.Empty);
             this.Close();
+            this.Dispose();
         }
-
         void Karol_main_OnDataAvalible(object sender, EventArgs e)
         {
             // Obsługa zdarzenia powrotu z formu Karola - dostajemy listę Tuple<string,string> zawierającą nazwę pliku dla którego przeprowadzaliśmy analizę i
@@ -64,6 +64,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             // Informujemy Main_form o tym że któraś z opcji zwróciła wynik.
             OnDataAvalible(this, EventArgs.Empty);
             this.Close();
+            this.Dispose();
         }
 
         
@@ -194,11 +195,13 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             else
             {
                 extractor_window = new Karol_main();
+                extractor_window.Owner = this;
                 extractor_window.filepaths = data_to_feed;
                 extractor_window.program_path = program_path;
                 extractor_window.display_refresh();
                 extractor_window.OnDataAvalible += new EventHandler(Karol_main_OnDataAvalible);
                 extractor_window.Show();
+                Controls_set_lock(true);
             }
         }
 
@@ -214,15 +217,34 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             else
             {
                 audio_sorter_window = new Janek_main();
+                audio_sorter_window.Owner = this;
                 audio_sorter_window.names = data_to_feed;
                 audio_sorter_window.OnDataAvalible += new EventHandler(Janek_main_OnDataAvalible);
                 audio_sorter_window.Show();
+                Controls_set_lock(true);
             }
         }
 
+        // Przeszukuje katalog.
         private void BT_search_catalog_Click(object sender, EventArgs e)
         {
 
+        }
+
+        // Blokuje kontrolki okna, true powoduje zablokowanie, false odblokowanie
+        public void Controls_set_lock(bool lock_status)
+        {
+            Enabled = !lock_status;
+            BT_compare_audio_files.Enabled = !lock_status;
+            BT_extract_from_images.Enabled = !lock_status;
+            BT_search_catalog.Enabled = !lock_status;
+            if (lock_status == true) Hide();
+            else Show();
+        }
+
+        private void Special_function_window_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            this.Owner.Show();
         }
     }
 }

@@ -125,6 +125,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                 && e.KeyCode == Keys.F4)
             {
                 this.Close();
+                this.Dispose();
             }
 
             else if (Control.ModifierKeys == Keys.Alt
@@ -398,6 +399,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                 OnDataAvalible(this, EventArgs.Empty);
                 MessageBox.Show("Zakończono proces katalogowania.");
                 this.Close();
+                this.Dispose();
             }
             
             /*
@@ -804,6 +806,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
         }
 
         int second = 0, minute = 0, hour = 0;
+
         string time = String.Empty;
         private void timer1_Tick(object sender, EventArgs e)
         {
@@ -828,7 +831,15 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
 
             this.PlayPauseToolStripMenuItem.Text = "&Wznów/Wstrzymaj" + " [" + time + "]";
         }
+
+        private void Janek_main_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            ((Special_function_window)this.Owner).Controls_set_lock(false);
+        }
+
     }
+
+    
 
 
 
