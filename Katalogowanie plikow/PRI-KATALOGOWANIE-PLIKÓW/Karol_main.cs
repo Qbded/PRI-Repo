@@ -13,34 +13,94 @@ using Tesseract;
 using MediaToolkit.Model;
 using MediaToolkit;
 using MediaToolkit.Options;
-
+using PRI_KATALOGOWANIE_PLIKÓW.classes;
 
 namespace PRI_KATALOGOWANIE_PLIKÓW
 {
     public partial class Karol_main : Form
     {
         public event EventHandler OnDataAvalible;
-        public List<string> filenames;
+        public List<Tuple<int, string>> filepaths;
         public string program_path;
         BackgroundWorker bgwFileProcessor;
 
-        public List<Tuple<string, string>> text_extraction_results;
+        private event EventHandler OnAllDone;
+        private event EventHandler OnPartDone;
+        private int current_file = 0;
+
+
+        public List<Tuple<int, string, string>> text_extraction_results;
 
 
         public Karol_main()
         {
             InitializeComponent();
-            if(filenames == null) filenames = new List<string>();
+            if (filepaths == null) filepaths = new List<Tuple<int, string>>();
+            text_extraction_results = new List<Tuple<int, string, string>>();
 
-            openFileDialogButton.Enabled = false;
             bgwFileProcessor = new BackgroundWorker();
             bgwFileProcessor.WorkerReportsProgress = true;
             bgwFileProcessor.WorkerSupportsCancellation = true;
             bgwFileProcessor.DoWork += new DoWorkEventHandler(bgwFileProcessor_DoWork);
             bgwFileProcessor.RunWorkerCompleted += new RunWorkerCompletedEventHandler(enableFormButtons);
             bgwFileProcessor.ProgressChanged += new ProgressChangedEventHandler(bgwFileProcessor_ReportProgress);
+            this.OnAllDone += new EventHandler(Karol_main_all_done);
+            this.OnPartDone += new EventHandler(Karol_main_part_done);
         }
 
+        private void Karol_main_part_done(object sender, EventArgs e)
+        {
+            // Reset bgw do zera
+            /*
+            bgwFileProcessor = new BackgroundWorker();
+            bgwFileProcessor.WorkerReportsProgress = true;
+            bgwFileProcessor.WorkerSupportsCancellation = true;
+            bgwFileProcessor.DoWork += new DoWorkEventHandler(bgwFileProcessor_DoWork);
+            bgwFileProcessor.RunWorkerCompleted += new RunWorkerCompletedEventHandler(enableFormButtons);
+            bgwFileProcessor.ProgressChanged += new ProgressChangedEventHandler(bgwFileProcessor_ReportProgress);
+            */
+
+            // Ekstrakcja idzie tak samo, ale dla current_file zwiększonego o jeden.
+            text_extraction_results.Add(new Tuple<int, string, string>(filepaths[current_file].Item1 ,filepaths[current_file].Item2, string.Empty));
+            var input = new MediaFile { Filename = filepaths[current_file].Item2 };
+            using (var engine = new Engine())
+            {
+                engine.GetMetadata(input);
+            }
+            Console.WriteLine(input.Metadata.VideoData.Fps);
+            try
+            {
+                double fps = input.Metadata.VideoData.Fps;
+                TimeSpan time = input.Metadata.Duration;
+                VideoFile file = new VideoFile(filepaths[current_file].Item2, fps, time);
+                getExtractionOptions(ref file, ref input);
+
+                HashSet<string> gottenTags = file.getTags();
+                //if (gottenTags.Count() > 0)
+                //{
+                //  foreach (var tag in gottenTags)
+                //  {
+                //    outputTextBox.AppendText("[" + tag + "]");
+                //  }
+                //}
+                //else
+                //{
+                //  outputTextBox.AppendText("No tags were gotten" + Environment.NewLine);
+                //}
+            }
+            catch (Exception exc)
+            {
+                Console.WriteLine(exc.Message);
+            }
+            current_file++;
+        }
+
+        private void Karol_main_all_done(object sender, EventArgs e)
+        {
+            MessageBox.Show("Ekstrakcja zakonczona!");
+            OnDataAvalible(this, EventArgs.Empty);
+            this.Close();
+        }
 
         public void bgwFileProcessor_DoWork(object sender, DoWorkEventArgs e)
         {
@@ -49,32 +109,38 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             VideoFile file = args.ElementAt(0) as VideoFile;
             MediaFile input = args.ElementAt(1) as MediaFile;
             ExtractionOptions extractionOptions = args.ElementAt(2) as ExtractionOptions;
-            
+
             e.Result = extractTagsFromFile(ref file, ref input, ref extractionOptions, ref e);
         }
 
 
+
         void bgwFileProcessor_ReportProgress(object sender, ProgressChangedEventArgs e)
         {
-            if(e.ProgressPercentage < 100) framesCountProgress.Value = e.ProgressPercentage;
+            if (e.ProgressPercentage > 100) framesCountProgress.Value = 100;
+            else framesCountProgress.Value = e.ProgressPercentage;
             framesCountProgress.Refresh();
         }
 
-
         void enableFormButtons(object sender, RunWorkerCompletedEventArgs e)
         {
-            MessageBox.Show("Ekstrakcja zakonczona!");
             processFilesButton.Enabled = true;
-            //openFileDialogButton.Enabled = true;
             cancelFileProcessingButton.Enabled = false;
 
-            text_extraction_results = new List<Tuple<string, string>>();
-            text_extraction_results.Add((Tuple<string, string>)e.Result);
-            OnDataAvalible(this, EventArgs.Empty);
+            if (!e.Result.Equals(string.Empty))
+            {
+                Tuple<int, string, string> data_to_return = new Tuple<int, string, string>(text_extraction_results.Last().Item1,
+                                                                                           text_extraction_results.Last().Item2,
+                                                                                           (string)e.Result);
+                text_extraction_results[text_extraction_results.IndexOf(text_extraction_results.Last())] = data_to_return;
+            }
 
-            this.Close();
+            if (text_extraction_results.Count == filepaths.Count)
+            {
+                if(!text_extraction_results.Last().Item2.Equals(string.Empty)) Karol_main_all_done(this, new EventArgs());
+            }
+            else Karol_main_part_done(this, new EventArgs());
         }
-
 
         void cancelFileProcessing(object sender, EventArgs e)
         {
@@ -84,13 +150,12 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             }
         }
 
-
         private HashSet<string> extractTagsFromFrame(string filePath, string language)
         {
             HashSet<string> tags = new HashSet<string>();
             try
             {
-                using (var engine = new TesseractEngine(program_path + @"/tessdata", "pol", EngineMode.Default))
+                using (var engine = new TesseractEngine(@"../../tessdata", "pol", EngineMode.Default))
                 {
                     using (var img = Pix.LoadFromFile(filePath))
                     {
@@ -111,7 +176,6 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                             string[] unprocessedTags = text.Split(delimiters);
                             unprocessedTags = unprocessedTags.Select(s => s.ToLower()).ToArray();
                             tags = new HashSet<string>(unprocessedTags);
-
                             //System.IO.File.WriteAllText("./" + Path.GetFileNameWithoutExtension(filePath) + "_tags", tags);
 
                             //outputTextBox.AppendText("Mean confidence: " + page.GetMeanConfidence() + Environment.NewLine);
@@ -137,9 +201,10 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
         }
 
 
-        private Tuple<string,string> extractTagsFromFile(ref VideoFile file, ref MediaFile input, ref ExtractionOptions extractionOptions, ref DoWorkEventArgs e)
+        private string extractTagsFromFile(ref VideoFile file, ref MediaFile input, ref ExtractionOptions extractionOptions, ref DoWorkEventArgs e)
         {
-            Tuple<string, string> result = new Tuple<string, string>(string.Empty,string.Empty);
+            string result = string.Empty;
+
             string frameDirectory = program_path + @"\temp";
             if (!Directory.Exists(frameDirectory))
             {
@@ -147,141 +212,106 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             }
             string framePath = frameDirectory + @"\img.png";
 
-            TimeSpan timePointer = new TimeSpan(0);
-            TimeSpan timeStep = new TimeSpan((long)(10000000 * extractionOptions.getSamplingFrequency()));
-
             var outputFile = new MediaFile { Filename = framePath };
             using (var engine = new Engine())
             {
+                TimeSpan totalDuration = new TimeSpan(0);
+                foreach (TimeRange timeRange in extractionOptions.timeRanges)
+                {
+                    totalDuration = totalDuration.Add(timeRange.finish.Subtract(timeRange.start));
+                }
+
                 engine.GetMetadata(input);
 
-                // Saves the frame located on the x-th second of the video.
-                while (timePointer.CompareTo(input.Metadata.Duration) < 0)
+                TimeSpan timeLapsed = new TimeSpan(0);
+                foreach (TimeRange timeRange in extractionOptions.timeRanges)
                 {
-                    if (bgwFileProcessor.CancellationPending == true)
+                    TimeSpan timePointer = timeRange.start;
+                    TimeSpan timeStep = new TimeSpan((long)(10000000 * extractionOptions.getSamplingFrequency()));
+                    // Saves the frame located on the x-th second of the video.
+                    while (timePointer.CompareTo(timeRange.finish) < 0)
                     {
-                        e.Cancel = true;
-                    }
-                    var options = new ConversionOptions { Seek = TimeSpan.FromMilliseconds(timePointer.TotalMilliseconds) };
-                    engine.GetThumbnail(input, outputFile, options);
-                    file.addTags(extractTagsFromFrame(framePath, file.getLanguage()));
-                    timePointer = timePointer.Add(timeStep);
+                        if (bgwFileProcessor.CancellationPending == true)
+                        {
+                            e.Cancel = true;
+                        }
+                        var options = new ConversionOptions { Seek = TimeSpan.FromMilliseconds(timePointer.TotalMilliseconds) };
+                        engine.GetThumbnail(input, outputFile, options);
+                        file.addTags(extractTagsFromFrame(framePath, file.getLanguage()));
+                        timePointer = timePointer.Add(timeStep);
+                        timeLapsed = timeLapsed.Add(timeStep);
 
-                    bgwFileProcessor.ReportProgress((int)(Math.Floor(100 * (timePointer.TotalSeconds / input.Metadata.Duration.TotalSeconds))));
-                    //Console.WriteLine("Progress at " + (int)(Math.Floor(100 * (timePointer.TotalSeconds / input.Metadata.Duration.TotalSeconds))) + "% (" + timePointer.TotalSeconds / input.Metadata.Duration.TotalSeconds + "%)");
-                    //outputTextBox.AppendText("Time step: " + timeStep.Hours + ":" + timeStep.Minutes + ":" + timeStep.Seconds + "." + timeStep.Milliseconds + "/" + Environment.NewLine);
-                    //outputTextBox.AppendText("" + timePointer.Hours + ":" + timePointer.Minutes + ":" + timePointer.Seconds + "." + timePointer.Milliseconds + "/" + Environment.NewLine);
+                        bgwFileProcessor.ReportProgress((int)(Math.Floor(100 * (timeLapsed.TotalSeconds / totalDuration.TotalSeconds))));
+                        //Console.WriteLine("Progress at " + (int)(Math.Floor(100 * (timePointer.TotalSeconds / input.Metadata.Duration.TotalSeconds))) + "% (" + timePointer.TotalSeconds / input.Metadata.Duration.TotalSeconds + "%)");
+                        //outputTextBox.AppendText("Time step: " + timeStep.Hours + ":" + timeStep.Minutes + ":" + timeStep.Seconds + "." + timeStep.Milliseconds + "/" + Environment.NewLine);
+                        //outputTextBox.AppendText("" + timePointer.Hours + ":" + timePointer.Minutes + ":" + timePointer.Seconds + "." + timePointer.Milliseconds + "/" + Environment.NewLine);
+                    }
                 }
             }
 
-            /* Stara logika tworzenia folderu do którego wrzucamy plik z zapisanymi tagami
             string resultDirectory = program_path + @"\result\";
             if (!Directory.Exists(resultDirectory))
             {
                 Directory.CreateDirectory(resultDirectory);
             }
             StreamWriter sw = new StreamWriter(resultDirectory + Path.GetFileNameWithoutExtension(file.getFilePath()) + @"_tags.txt");
-            
             foreach (string tag in file.getTags())
             {
                 Console.WriteLine(tag);
                 sw.WriteLineAsync(tag);
                 sw.Flush();
             }
-            */
-            string tag_container = string.Empty;
-            foreach (string tag in file.getTags())
-            {
-                tag_container += tag + Environment.NewLine;
-            }
+            sw.Close();
 
-            Tuple<string, string> file_extract = new Tuple<string, string>(
-                file.getFilePath(),
-                tag_container);
+            result = program_path + @"\result\" + Path.GetFileNameWithoutExtension(file.getFilePath()) + @"_tags.txt";
 
-            return file_extract;
+            return result;
+
             //outputTextBox.AppendText("Done!" + Environment.NewLine);
         }
 
 
-        private void GetExtractionOptions(ref VideoFile file, ref MediaFile input)
+        private void getExtractionOptions(ref VideoFile file, ref MediaFile input)
         {
             ExtractionOptions extractionOptions = new ExtractionOptions();
-            Karol_progress form2 = new Karol_progress(ref file, ref input, ref extractionOptions, ref program_path);
+            bool proceed = true;
+            Karol_progress form2 = new Karol_progress(ref file, ref input, ref extractionOptions, ref program_path, ref proceed);
             form2.ShowDialog();
-            if(File.Exists(program_path + @"\temp\thumbnail.png")) File.Delete(program_path + @"\temp\thumbnail.png");
-
-            List<object> bgwArgs = new List<object>();
-            bgwArgs.Add(file);
-            bgwArgs.Add(input);
-            bgwArgs.Add(extractionOptions);
-            bgwFileProcessor.RunWorkerAsync(bgwArgs);
-            //extractTagsFromFile(ref file, ref input, ref extractionOptions);
-            //System.IO.File.Delete(Directory.GetCurrentDirectory() + @"\temp\img.png");
+            System.IO.File.Delete(program_path + @"\temp\thumbnail.png");
+            extractionOptions.DEBUG_displayTimeRanges();
+            if (proceed)
+            {
+                Console.WriteLine("Proceeded.");
+                List<object> bgwArgs = new List<object>();
+                bgwArgs.Add(file);
+                bgwArgs.Add(input);
+                bgwArgs.Add(extractionOptions);
+                bgwFileProcessor.RunWorkerAsync(bgwArgs);
+                //extractTagsFromFile(ref file, ref input, ref extractionOptions);
+                //System.IO.File.Delete(Directory.GetCurrentDirectory() + @"\temp\img.png");
+            }
         }
 
 
         private void processVideoFiles(object sender, System.EventArgs e)
         {
-            if (!(filenames.Count == 0))
+            if (!(filepaths.Count == 0))
             {
                 processFilesButton.Enabled = false;
                 openFileDialogButton.Enabled = false;
                 cancelFileProcessingButton.Enabled = true;
-                fileCountProgress.Maximum = filenames.Count;
+                fileCountProgress.Maximum = filepaths.Count;
 
                 fileCountProgress.Value = 0;
                 framesCountProgress.Value = 0;
 
-                if (filenames.Count > 0)
-                {
-                    foreach (string f in filenames)
-                    {
-                        var input = new MediaFile { Filename = f };
-                        using (var engine = new Engine())
-                        {
-                            engine.GetMetadata(input);
-                        }
-                        Console.WriteLine(input.Metadata.VideoData.Fps);
-                        try
-                        {
-                            double fps = input.Metadata.VideoData.Fps;
-                            TimeSpan time = input.Metadata.Duration;
-                            VideoFile file = new VideoFile(f, fps, time);
-                            GetExtractionOptions(ref file, ref input);
-
-                            HashSet<string> gottenTags = file.getTags();
-                            //if (gottenTags.Count() > 0)
-                            //{
-                            //  foreach (var tag in gottenTags)
-                            //  {
-                            //    outputTextBox.AppendText("[" + tag + "]");
-                            //  }
-                            //}
-                            //else
-                            //{
-                            //  outputTextBox.AppendText("No tags were gotten" + Environment.NewLine);
-                            //}
-                        }
-                        catch (Exception exc)
-                        {
-                            Console.WriteLine(exc.Message);
-                        }
-                    }
-                    filenames.Clear();
-                }
+                current_file = filepaths.IndexOf(filepaths.First());
+                Karol_main_part_done(this, new EventArgs());
             }
         }
 
-        public void refresh_display()
-        {
-            if(filenames.Count != 0)
-            {
-                outputTextBox.Text = string.Empty;
-                foreach(string name in filenames) outputTextBox.AppendText(name + @";" + Environment.NewLine);
-            }
-        }
 
+        /*
         private void openFileSelect(object sender, System.EventArgs e)
         {
             Stream myStream = null;
@@ -311,9 +341,9 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                             // Insert code to read the stream here.
                             foreach (string name in openFileDialog1.FileNames)
                             {
-                                if (!filenames.Contains(name))
+                                if (filepaths.Find(x => x.Item2.Equals(name)) == null)
                                 {
-                                    filenames.Add(name);
+                                    filepaths.Add(name);
                                     outputTextBox.AppendText(name + @";" + Environment.NewLine);
                                 }
                             }
@@ -325,6 +355,17 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                     MessageBox.Show("Error: Could not read image file from disk. Original error: " + ex.Message + Environment.NewLine);
                 }
             }
+        }
+        */
+
+        private void openFileSelect(object sender, System.EventArgs e)
+        {
+            //Nie używane w wersji ostatecznej, pliki do przeróbki zapewnia katalog.
+        }
+
+        public void display_refresh()
+        {
+            foreach (Tuple<int,string> file in filepaths) outputTextBox.AppendText(file.Item2 + Environment.NewLine);
         }
 
 

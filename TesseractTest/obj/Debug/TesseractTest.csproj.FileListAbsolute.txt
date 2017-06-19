@@ -52,3 +52,6 @@ C:\Users\Karol\Documents\GitHub\PRI-Repo\TesseractTest\bin\Debug\Tesseract.dll
 C:\Users\Karol\Documents\GitHub\PRI-Repo\TesseractTest\bin\Debug\Tesseract.xml
 C:\Users\Karol\Documents\GitHub\PRI-Repo\TesseractTest\obj\Debug\TesseractTest.Form2.resources
 C:\Users\Karol\Documents\GitHub\PRI-Repo\TesseractTest\bin\Debug\Itenso.TimePeriod.dll
+C:\Users\Qbd\Documents\GitHub\PRI-Repo\PRI-Repo\TesseractTest\bin\Debug\TesseractTest.exe.config
+C:\Users\Qbd\Documents\GitHub\PRI-Repo\PRI-Repo\TesseractTest\obj\Debug\TesseractTest.exe
+C:\Users\Qbd\Documents\GitHub\PRI-Repo\PRI-Repo\TesseractTest\obj\Debug\TesseractTest.pdb

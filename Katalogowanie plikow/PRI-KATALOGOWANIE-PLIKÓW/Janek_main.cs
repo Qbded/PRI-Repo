@@ -32,7 +32,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
         Dictionary<Tuple<string, string>, string> metadata;
         Dictionary<string, string> fileLabels;
         List<string> excludedMetadata;
-        public List<string> names;
+        public List<Tuple<int, string>> names;
         List<string> selectedLabels;
         List<int> length;
         bool equals;
@@ -64,7 +64,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             length = new List<int>();
             result_directories = new List<Tuple<int, string>>();
             result_files = new List<Tuple<int, string>>();
-            names = new List<string>();
+            names = new List<Tuple<int, string>>();
             excludedMetadata = new List<string>();
             metadata = new Dictionary<Tuple<string, string>, string>();
             fileLabels = new Dictionary<string, string>();
@@ -101,7 +101,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             {
                 this.Increment(ref _index);
                 if (_index == names.Count) _index = 0;
-                activate = names[_index];
+                activate = names[_index].Item2;
                 this.StopToolStripMenuItem_Click(sender, e);
                 this.Form1_TextChanged(sender, e);
                 this.PlayPauseToolStripMenuItem_Click(sender, e);
@@ -111,7 +111,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             {
                 this.Decrement(ref _index);
                 if (_index < 0) _index = names.Count-1;
-                activate = names[_index];
+                activate = names[_index].Item2;
                 this.StopToolStripMenuItem_Click(sender, e);
                 this.Form1_TextChanged(sender, e);
                 this.PlayPauseToolStripMenuItem_Click(sender, e);
@@ -366,10 +366,10 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                         ? Convert.ToInt16(m) / 10 : Convert.ToInt16(m);
                     try
                     {
-                        folded.Add(names[mdiv10]);
+                        folded.Add(names[mdiv10].Item2);
                         // tutaj zamieniamy polecenie przesunięcia pliku na dodanie do listy razem z ID folderu rodzicicielskiego:
                         string name_to_add = string.Empty;
-                        name_to_add = names[mdiv10].Split('\\').Last();
+                        name_to_add = names[mdiv10].Item2.Split('\\').Last();
                         Tuple<int, string> file_to_move = new Tuple<int, string>(
                             i,
                             name_to_add
@@ -492,11 +492,11 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             foreach (var name in names.Distinct())
             {
                 List<double> parameters = new List<double>();
-                if (name.EndsWith(".mp3"))
+                if (name.Item2.EndsWith(".mp3"))
                 {
-                    Mp3ToWavConverter.Convert(name);
+                    Mp3ToWavConverter.Convert(name.Item2);
                 }
-                wOf = new WaveOf(name.Replace(".mp3", ".wav"));
+                wOf = new WaveOf(name.Item2.Replace(".mp3", ".wav"));
 
                 parameters.Add(wOf["Q1-Minimum"]);
                 parameters.Add(wOf["Q1-Maximum"]);
@@ -519,11 +519,11 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             //int index = 0;
             foreach (var name in names.Distinct())
             {
-                if (name.EndsWith(".mp3"))
+                if (name.Item2.EndsWith(".mp3"))
                 {
                     //var _files = Directory.GetFiles(name.Substring(0, name.LastIndexOf("\\") + 1), "*", SearchOption.TopDirectoryOnly);
                     // Zmiana w wywalaniu plików wav na których pracowaliśmy - wywalać tylko te, które zostały stworzone do celów analizy!
-                    if (System.IO.File.Exists(name.Replace(".mp3", ".wav"))) System.IO.File.Delete(name.Replace(".mp3", ".wav"));
+                    if (System.IO.File.Exists(name.Item2.Replace(".mp3", ".wav"))) System.IO.File.Delete(name.Item2.Replace(".mp3", ".wav"));
                     
                     /*
                     foreach (var file in _files)
@@ -550,7 +550,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             foreach (var obj in nested)
             {
                 List<string> summary = new List<string>();
-                summary.Add(names[index]);
+                summary.Add(names[index].Item2);
 
                 foreach (var item in obj)
                 {
@@ -571,7 +571,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
 
         private void bnChooseFolder_Click(object sender, EventArgs e)
         {
-
+            /* Nie używany w ostatecznej wersji.
             if (names.Count == 0)
             {
                 using (FolderBrowserDialog open = new FolderBrowserDialog())
@@ -588,14 +588,15 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                     }
                 }
             }
+            */
 
             var extractors = new List<TikaOnDotNet.TextExtraction.TextExtractor>();
 
             foreach (var name in names.Distinct())
             {
                 extractors.Add(new TikaOnDotNet.TextExtraction.TextExtractor());
-                if (name.EndsWith(".mp3") && !System.IO.File.Exists(name.Replace(".mp3", ".wav")))
-                        Mp3ToWavConverter.Convert(name);
+                if (name.Item2.EndsWith(".mp3") && !System.IO.File.Exists(name.Item2.Replace(".mp3", ".wav")))
+                        Mp3ToWavConverter.Convert(name.Item2);
             }
 
             foreach (var ext in extractors)
@@ -604,10 +605,10 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                 {
                     try
                     {
-                        var ex = ext.Extract(name);
+                        var ex = ext.Extract(name.Item2);
                         foreach (var _e in ex.Metadata)
                         {
-                            metadata.Add(new Tuple<string, string>(_e.Key, _e.Value), name);
+                            metadata.Add(new Tuple<string, string>(_e.Key, _e.Value), name.Item2);
                             foreach (var item in metadata.Values)
                                 extensionsInLv.Add(item.Substring(item.LastIndexOf(".")));
                         }
@@ -828,6 +829,17 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             this.PlayPauseToolStripMenuItem.Text = "&Wznów/Wstrzymaj" + " [" + time + "]";
         }
     }
+
+
+
+
+
+
+
+
+
+
+
 
 
     // Kod legacy, najwyrazniej carry-over z starej wersji programu
