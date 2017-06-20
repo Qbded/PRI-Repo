@@ -109,10 +109,13 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
         {
             string thumbnailPath = program_path + @"\temp\thumbnail.png";
             var options = new ConversionOptions { Seek = TimeSpan.FromSeconds(inputFile.Metadata.Duration.Seconds / 10) };
-            thumbnailFile = new MediaFile(thumbnailPath);
-            engine.GetThumbnail(inputFile, thumbnailFile, options);
-            this.videoThumbnail.ImageLocation = Path.GetFullPath(thumbnailPath);
-            this.videoThumbnail.Load();
+            if (!File.Exists(thumbnailPath))
+            {
+                thumbnailFile = new MediaFile(thumbnailPath);
+                engine.GetThumbnail(inputFile, thumbnailFile, options);
+                this.videoThumbnail.ImageLocation = Path.GetFullPath(thumbnailPath);
+                this.videoThumbnail.Load();
+            }
 
             this.thumbnailLabel.Text = Path.GetFileName(inputFile.Filename);
         }
