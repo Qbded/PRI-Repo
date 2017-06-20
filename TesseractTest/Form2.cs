@@ -13,6 +13,7 @@ using MediaToolkit.Model;
 using MediaToolkit.Options;
 using MediaToolkit.Util;
 using System.Globalization;
+using TesseractTest.classes;
 
 namespace TesseractTest
 {
@@ -45,10 +46,10 @@ namespace TesseractTest
     MediaFile thumbnailFile;
     Engine engine;
     ExtractionOptions extractionOptions;
-    bool proceed;
+    public bool proceed;
     
 
-    public Form2(ref VideoFile videoFile, ref MediaFile inputFile, ref ExtractionOptions extractionOptions, ref bool proceed)
+    public Form2(ref VideoFile videoFile, ref MediaFile inputFile, ref ExtractionOptions extractionOptions)
     {
       this.videoFile = videoFile;
       this.inputFile = inputFile;
@@ -68,6 +69,21 @@ namespace TesseractTest
       setThumbnail();
       getFramesToAnalyzeCount(this, new EventArgs());
     }
+
+
+    //public Tuple<TimeSpan, TimeSpan> getTimeLapse(string startTimeString, string finishTimeString)
+    //{
+    //  CultureInfo cultureInfo = new CultureInfo("pl-PL");
+    //  string format = @"hh\:mm\:ss";
+    //  TimeSpan pointA = TimeSpan.ParseExact(startTimeString, format, cultureInfo);
+    //  TimeSpan pointB = TimeSpan.ParseExact(finishTimeString, format, cultureInfo);
+
+    //  if(pointB > pointA)
+    //  {
+    //    return new Tuple<TimeSpan, TimeSpan>(pointA, pointB);
+    //  }
+    //  return new Tuple<TimeSpan, TimeSpan>(pointB, pointA);
+    //}
 
 
     public decimal getSamplingFrequency()
@@ -106,7 +122,7 @@ namespace TesseractTest
     private void setThumbnail()
     {
       string thumbnailPath = Directory.GetCurrentDirectory() + @"\temp\thumbnail.png";
-      var options = new ConversionOptions { Seek = TimeSpan.FromSeconds(inputFile.Metadata.Duration.Seconds / 10) };
+      var options = new ConversionOptions { Seek = TimeSpan.FromSeconds(inputFile.Metadata.Duration.TotalSeconds / 10) };
       thumbnailFile = new MediaFile(thumbnailPath);
       engine.GetThumbnail(inputFile, thumbnailFile, options);
       this.videoThumbnail.ImageLocation = Path.GetFullPath(thumbnailPath);
@@ -129,7 +145,7 @@ namespace TesseractTest
       videoFile.setLanguage(getLanguage());
       extractionOptions.setSamplingFrequency(getSamplingFrequency());
       extractionOptions.setLanguage(getLanguage());
-      //getTimeRanges();
+      getTimeRanges();
       proceed = true;
 
       this.Close();
@@ -167,8 +183,51 @@ namespace TesseractTest
 
     private void addTimeRangeButton_Click(object sender, EventArgs e)
     {
-      if (timeRangeInput1.MaskCompleted && timeRangeInput2.MaskCompleted) { timeRangeListview.Items.Add(new ListViewItem(new[] { timeRangeInput1.Text , timeRangeInput2.Text })); }
-      if (timeRangeListview.Items.Count != 0 && okButton.Enabled == false) { okButton.Enabled = true; }
+      if (timeRangeInput1.MaskCompleted && timeRangeInput2.MaskCompleted) {
+        CultureInfo cultureInfo = new CultureInfo("pl-PL");
+        string format = @"hh\:mm\:ss";
+        TimeSpan start = TimeSpan.ParseExact(timeRangeInput1.Text, format, cultureInfo);
+        TimeSpan finish = TimeSpan.ParseExact(timeRangeInput2.Text, format, cultureInfo);
+        string durationWithLeadingZeros = "";
+        durationWithLeadingZeros += inputFile.Metadata.Duration.Hours < 10 ? "0" + inputFile.Metadata.Duration.Hours : inputFile.Metadata.Duration.Hours.ToString();
+        durationWithLeadingZeros += ":";
+        durationWithLeadingZeros += inputFile.Metadata.Duration.Minutes < 10 ? "0" + inputFile.Metadata.Duration.Minutes : inputFile.Metadata.Duration.Minutes.ToString();
+        durationWithLeadingZeros += ":";
+        durationWithLeadingZeros += inputFile.Metadata.Duration.Seconds < 10 ? "0" + inputFile.Metadata.Duration.Seconds : inputFile.Metadata.Duration.Seconds.ToString();
+
+        if (finish.CompareTo(start) < 0)
+        {
+          TimeSpan temp = start;
+          start = finish;
+          finish = temp;
+        }
+
+        if (timeRangeInput1.Text != timeRangeInput2.Text)
+        {
+          if (start.CompareTo(inputFile.Metadata.Duration) < 0)
+          {
+            if (finish.CompareTo(inputFile.Metadata.Duration) <= 0)
+            {
+              timeRangeListview.Items.Add(new ListViewItem(new[] { start.ToString(), finish.ToString() }));
+              if (timeRangeListview.Items.Count != 0 && okButton.Enabled == false) { okButton.Enabled = true; }
+              timeRangeInput1.Clear();
+              timeRangeInput2.Clear();
+            }
+            else
+            {
+              timeRangeListview.Items.Add(new ListViewItem(new[] { start.ToString(), durationWithLeadingZeros }));
+              if (timeRangeListview.Items.Count != 0 && okButton.Enabled == false) { okButton.Enabled = true; }
+              timeRangeInput1.Clear();
+              timeRangeInput2.Clear();
+            }
+          }
+          else
+          {
+            MessageBox.Show("Wykroczono poza zakres trwania pliku video (" + durationWithLeadingZeros + ")");
+          }
+        }
+      }
+      else { MessageBox.Show("Nieprawidłowy format wprowadonego czasu"); }
     }
 
 
@@ -201,7 +260,7 @@ namespace TesseractTest
         TimeSpan start = new TimeSpan(0, 0, 0);
         TimeSpan finish = inputFile.Metadata.Duration;
         //Console.WriteLine(start.ToString());
-        extractionOptions.addTimeRange(new Tuple<TimeSpan, TimeSpan>(start, finish));
+        extractionOptions.addTimeRange(new TimeRange(start, finish));
       }
       else
       {
@@ -211,14 +270,20 @@ namespace TesseractTest
         foreach(ListViewItem tr in listItems)
         {
           try {
-            TimeSpan start = TimeSpan.ParseExact(tr.SubItems[0].ToString(), format, cultureInfo);
-            TimeSpan finish = TimeSpan.ParseExact(tr.SubItems[1].ToString(), format, cultureInfo);
-            Console.WriteLine(start.ToString());
-            extractionOptions.addTimeRange(new Tuple<TimeSpan, TimeSpan>(start, finish));
+            TimeSpan start = TimeSpan.ParseExact(tr.SubItems[0].Text, format, cultureInfo);
+            TimeSpan finish = TimeSpan.ParseExact(tr.SubItems[1].Text, format, cultureInfo);
+            //Console.WriteLine("new timeRange start: " + start.ToString());
+            if(start.CompareTo(inputFile.Metadata.Duration) < 0)
+            {
+              if(finish.CompareTo(inputFile.Metadata.Duration) <= 0)
+              {
+                extractionOptions.addTimeRange(new TimeRange(start, finish));
+              }
+            }
           }
           catch(Exception except)
           {
-            Console.WriteLine("Ecxeption in getTimeRanges(), ", except.ToString());
+            Console.WriteLine("Exception in getTimeRanges(), " +  except.Message);
           }
         }
       }

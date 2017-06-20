@@ -41,6 +41,7 @@
             // 
             // openFileDialogButton
             // 
+            this.openFileDialogButton.Enabled = false;
             this.openFileDialogButton.Location = new System.Drawing.Point(21, 12);
             this.openFileDialogButton.Name = "openFileDialogButton";
             this.openFileDialogButton.Size = new System.Drawing.Size(219, 45);
@@ -113,7 +114,7 @@
             this.cancelFileProcessingButton.UseVisualStyleBackColor = true;
             this.cancelFileProcessingButton.Click += new System.EventHandler(this.cancelFileProcessing);
             // 
-            // Form1
+            // Karol_main
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
@@ -127,8 +128,9 @@
             this.Controls.Add(this.outputTextBox);
             this.Controls.Add(this.openFileDialogButton);
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedToolWindow;
-            this.Name = "Form1";
-            this.Text = "Tesseract test";
+            this.Name = "Karol_main";
+            this.Text = "Ekstracja tekstu";
+            this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.Karol_main_FormClosing);
             this.Load += new System.EventHandler(this.Form1_Load);
             this.ResumeLayout(false);
             this.PerformLayout();

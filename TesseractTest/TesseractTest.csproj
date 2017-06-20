@@ -76,6 +76,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="classes\ExtractionOptions.cs" />
+    <Compile Include="classes\TimeRange.cs" />
     <Compile Include="Form1.cs">
       <SubType>Form</SubType>
     </Compile>

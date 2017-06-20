@@ -16,7 +16,6 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
         public string[] extends { get; set; }
         public DirectoryInfo target_directory { get; set; }
         public List<string[]> metadata_extracted { get; set; }
-        public long max_file_size_bytes { get; set; }
         public int file_total_count { get; set; }
         public int file_supported_count { get; set; }
         public int current_file { get; set; }
@@ -43,7 +42,6 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
 
             BGW_metadata_extractor.WorkerReportsProgress = true;
             BGW_metadata_extractor.WorkerSupportsCancellation = true;
-            max_file_size_bytes = (64 * 1024 * 1024); // Maksymalny rozmiar w bajtach pliku poddawanego katalogowaniu, na razie ustaliłem na sztywno 64 MB.
             file_total_count = 0;
             file_supported_count = 0;
             current_file = 0;
@@ -94,7 +92,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                     BGW_metadata_extractor.ReportProgress(current_file);
                     for (int i = 0; i < extends.Length; i++)
                     {
-                        if (file.Extension == extends[i] && file.Length <= max_file_size_bytes)
+                        if (file.Extension == extends[i]) //&& file.Length <= max_file_size_bytes)
                         {
                             List<string> extracted_metadata_container = new List<string>();
                             string[] extracted_metadata_string_container = new string[0];
@@ -102,10 +100,10 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
 
 
                             // Podstawowe i uniwersalne metadane:
-                            extracted_metadata_container.Add(Path.GetFileNameWithoutExtension(file.Name));
-                            extracted_metadata_container.Add(file.Extension);
-                            extracted_metadata_container.Add(file.FullName);
-                            extracted_metadata_container.Add("" + file.Length);
+                            extracted_metadata_container.Add(Path.GetFileNameWithoutExtension(file.Name)); // Nazwa
+                            extracted_metadata_container.Add(file.Extension); // Rozszerzenie
+                            extracted_metadata_container.Add(file.FullName); // Pełna ścieżka do pliku
+                            extracted_metadata_container.Add("" + file.Length); // Długość pliku (w bajtach)
                             extracted_metadata_container.Add(file.CreationTime.ToString());
                             extracted_metadata_container.Add(file.LastWriteTime.ToString());
                             

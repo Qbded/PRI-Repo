@@ -95,6 +95,7 @@
             this.Controls.Add(this.tableLayoutPanel1);
             this.Name = "Special_function_window";
             this.Text = "Opcje specjalne";
+            this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.Special_function_window_FormClosing);
             this.Load += new System.EventHandler(this.Special_function_window_Load);
             this.tableLayoutPanel1.ResumeLayout(false);
             this.ResumeLayout(false);

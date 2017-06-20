@@ -332,6 +332,7 @@
             this.Margin = new System.Windows.Forms.Padding(2);
             this.Name = "Janek_main";
             this.Text = "Katalogowanie plików dźwiękowych [bezczynny]";
+            this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.Janek_main_FormClosing);
             this.TextChanged += new System.EventHandler(this.Form1_TextChanged);
             this.contextMenuStrip1.ResumeLayout(false);
             this.ResumeLayout(false);

@@ -28,7 +28,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
         // Przechowywanie danych wyjściowych z podprogramów.
         public List<Tuple<int, string>> audio_sorter_folders_returned;
         public List<Tuple<int, string>> audio_sorter_files_returned;
-        public List<Tuple<string, string>> extractor_texts_returned;
+        public List<Tuple<int, string, string>> extractor_texts_returned;
 
         // Parametr informujący o tym co zwracamy do programu głównego.
         public int return_index = 0;
@@ -48,14 +48,14 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             // Informujemy Main_form o tym że któraś z opcji zwróciła wynik.
             OnDataAvalible(this, EventArgs.Empty);
             this.Close();
+            this.Dispose();
         }
-
         void Karol_main_OnDataAvalible(object sender, EventArgs e)
         {
             // Obsługa zdarzenia powrotu z formu Karola - dostajemy listę Tuple<string,string> zawierającą nazwę pliku dla którego przeprowadzaliśmy analizę i
             // tekst wyekstrachowany z filmu przydzielony plikowi.
 
-            extractor_texts_returned = new List<Tuple<string, string>>();
+            extractor_texts_returned = new List<Tuple<int, string, string>>();
 
             extractor_texts_returned = extractor_window.text_extraction_results.ToList();
 
@@ -64,6 +64,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             // Informujemy Main_form o tym że któraś z opcji zwróciła wynik.
             OnDataAvalible(this, EventArgs.Empty);
             this.Close();
+            this.Dispose();
         }
 
         
@@ -86,9 +87,9 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             }
         }
 
-        private List<string> prepare_data(List<string> extensions)
+        private List<Tuple<int, string>> prepare_data(List<string> extensions)
         {
-            List<string> result = new List<string>();
+            List<Tuple<int, string>> result = new List<Tuple<int, string>>();
             List<ListViewItem> file_list = new List<ListViewItem>();
             List<ListViewItem> folder_list = new List<ListViewItem>();
 
@@ -102,7 +103,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                 if (extensions.Exists(x => x.Equals(current.SubItems[1].Text)))
                 {
                     DataTable file_path_container = new DataTable();
-                    FbDataAdapter file_path_grabber = new FbDataAdapter("SELECT PATH " +
+                    FbDataAdapter file_path_grabber = new FbDataAdapter("SELECT ID,PATH " +
                                                                         "FROM " + current.ToolTipText + " " +
                                                                         "WHERE ID = @Id;"
                                                                         ,
@@ -115,7 +116,8 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
 
                     if (file_path_container.Rows.Count == 1)
                     {
-                        result.Add((string)file_path_container.Rows[0].ItemArray[0]);
+                        result.Add(new Tuple<int, string>((int)file_path_container.Rows[0].ItemArray[0],
+                                                          (string)file_path_container.Rows[0].ItemArray[1]));
                     }
                 }
                 file_list.Remove(current);
@@ -157,7 +159,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                 // Bierzemy teraz zawartość foldera przeszukiwanego.
                 for (int i = 1; i < database_tables.Count; i++)
                 {
-                    FbDataAdapter database_grab_directory_content = new FbDataAdapter("SELECT PATH,EXTENSION " +
+                    FbDataAdapter database_grab_directory_content = new FbDataAdapter("SELECT ID,PATH,EXTENSION " +
                                                                     "FROM " + database_tables[i].Item2 + " " +
                                                                     "WHERE DIR_ID = @Target_directory_id;"
                                                                     ,
@@ -170,8 +172,9 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
 
                     for (int j = 0; j < database_folder_content.Rows.Count; j++)
                     {
-                        if(extensions.Exists(x => x.Equals(database_folder_content.Rows[j].ItemArray[1])))
-                        result.Add((string)database_folder_content.Rows[j].ItemArray[0]);
+                        if(extensions.Exists(x => x.Equals(database_folder_content.Rows[j].ItemArray[2])))
+                        result.Add(new Tuple<int, string>((int)database_folder_content.Rows[j].ItemArray[0],
+                                                          (string)database_folder_content.Rows[j].ItemArray[1]));
                     }
                 }
                 // Po wyłuskaniu zawartości usuwamy folder z listy do przeszukiwania.
@@ -183,27 +186,29 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
         private void BT_extract_from_images_Click(object sender, EventArgs e)
         {
             // Wywołuje część Karola przekazując do niej odpowiednio przygotowaną listę argumentów z plików wybranych w katalogu.
-            List<string> data_to_feed = new List<string>();
+            List<Tuple<int, string>> data_to_feed = new List<Tuple<int, string>>();
             List<string> extensions_to_extract = new List<string>();
             extensions_to_extract.Add(".avi");
             extensions_to_extract.Add(".wmv");
             data_to_feed = prepare_data(extensions_to_extract);
-            if (data_to_feed.Count == 0) MessageBox.Show("Wybrany zakres nie zawiera plików, które można poddawać tej analizie (tylko dla plików .avi)!");
+            if (data_to_feed.Count() == 0) MessageBox.Show("Wybrany zakres nie zawiera plików, które można poddawać tej analizie (tylko dla plików .avi)!");
             else
             {
                 extractor_window = new Karol_main();
-                extractor_window.filenames = data_to_feed;
+                extractor_window.Owner = this;
+                extractor_window.filepaths = data_to_feed;
                 extractor_window.program_path = program_path;
-                extractor_window.refresh_display();
+                extractor_window.display_refresh();
                 extractor_window.OnDataAvalible += new EventHandler(Karol_main_OnDataAvalible);
                 extractor_window.Show();
+                Controls_set_lock(true);
             }
         }
 
         private void BT_compare_audio_files_Click(object sender, EventArgs e)
         {
             // Wywołuje część Janka, przekazując do niej odpowiednio przygotowaną listę argumentów z plików wybranych w katalogu.
-            List<string> data_to_feed = new List<string>();
+            List<Tuple<int, string>> data_to_feed = new List<Tuple<int, string>>();
             List<string> extensions_to_extract = new List<string>();
             extensions_to_extract.Add(".mp3");
             extensions_to_extract.Add(".wav");
@@ -212,15 +217,34 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             else
             {
                 audio_sorter_window = new Janek_main();
+                audio_sorter_window.Owner = this;
                 audio_sorter_window.names = data_to_feed;
                 audio_sorter_window.OnDataAvalible += new EventHandler(Janek_main_OnDataAvalible);
                 audio_sorter_window.Show();
+                Controls_set_lock(true);
             }
         }
 
+        // Przeszukuje katalog.
         private void BT_search_catalog_Click(object sender, EventArgs e)
         {
 
+        }
+
+        // Blokuje kontrolki okna, true powoduje zablokowanie, false odblokowanie
+        public void Controls_set_lock(bool lock_status)
+        {
+            Enabled = !lock_status;
+            BT_compare_audio_files.Enabled = !lock_status;
+            BT_extract_from_images.Enabled = !lock_status;
+            BT_search_catalog.Enabled = !lock_status;
+            if (lock_status == true) Hide();
+            else Show();
+        }
+
+        private void Special_function_window_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            this.Owner.Show();
         }
     }
 }
