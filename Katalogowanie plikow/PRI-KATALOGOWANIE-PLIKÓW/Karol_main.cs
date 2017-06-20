@@ -273,7 +273,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             form2.Owner = this;
             form2.ShowDialog();
             proceed = form2.proceed;
-            System.IO.File.Delete(program_path + @"\temp\thumbnail.png");
+            if(File.Exists(program_path + @"\temp\thumbnail.png")) System.IO.File.Delete(program_path + @"\temp\thumbnail.png");
             extractionOptions.DEBUG_displayTimeRanges();
             if (proceed)
             {
