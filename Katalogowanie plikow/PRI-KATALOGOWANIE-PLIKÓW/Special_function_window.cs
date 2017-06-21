@@ -189,7 +189,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             List<Tuple<int, string>> data_to_feed = new List<Tuple<int, string>>();
             List<string> extensions_to_extract = new List<string>();
             extensions_to_extract.Add(".avi");
-            extensions_to_extract.Add(".wmv");
+            extensions_to_extract.Add(".mp4");
             data_to_feed = prepare_data(extensions_to_extract);
             if (data_to_feed.Count() == 0) MessageBox.Show("Wybrany zakres nie zawiera plików, które można poddawać tej analizie (tylko dla plików .avi)!");
             else
