@@ -134,7 +134,7 @@
             this.TP_catalog.Location = new System.Drawing.Point(4, 29);
             this.TP_catalog.Name = "TP_catalog";
             this.TP_catalog.Padding = new System.Windows.Forms.Padding(3);
-            this.TP_catalog.Size = new System.Drawing.Size(447, 393);
+            this.TP_catalog.Size = new System.Drawing.Size(447, 394);
             this.TP_catalog.TabIndex = 2;
             this.TP_catalog.Text = "Katalog";
             this.TP_catalog.UseVisualStyleBackColor = true;
@@ -152,7 +152,7 @@
             this.Catalog_page_main_layout.RowCount = 2;
             this.Catalog_page_main_layout.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 42F));
             this.Catalog_page_main_layout.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
-            this.Catalog_page_main_layout.Size = new System.Drawing.Size(441, 387);
+            this.Catalog_page_main_layout.Size = new System.Drawing.Size(441, 388);
             this.Catalog_page_main_layout.TabIndex = 4;
             // 
             // Catalog_page_top_table_layout
@@ -215,7 +215,7 @@
             this.LV_catalog_display.LabelWrap = false;
             this.LV_catalog_display.Location = new System.Drawing.Point(3, 45);
             this.LV_catalog_display.Name = "LV_catalog_display";
-            this.LV_catalog_display.Size = new System.Drawing.Size(435, 339);
+            this.LV_catalog_display.Size = new System.Drawing.Size(435, 340);
             this.LV_catalog_display.TabIndex = 0;
             this.LV_catalog_display.TabStop = false;
             this.LV_catalog_display.UseCompatibleStateImageBehavior = false;

@@ -48,7 +48,6 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
         ExtractionOptions extractionOptions;
         public bool proceed;
 
-
         public Karol_progress(ref VideoFile videoFile, ref MediaFile inputFile, ref ExtractionOptions extractionOptions, ref string program_path, ref bool proceed)
         {
             this.videoFile = videoFile;
@@ -108,6 +107,8 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
         private void setThumbnail()
         {
             string thumbnailPath = program_path + @"\temp\thumbnail.png";
+            DirectoryInfo thumbnailDir = new DirectoryInfo(program_path + @"\temp");
+            if (!thumbnailDir.Exists) thumbnailDir.Create();
             var options = new ConversionOptions { Seek = TimeSpan.FromSeconds(inputFile.Metadata.Duration.Seconds / 10) };
             if (!File.Exists(thumbnailPath))
             {

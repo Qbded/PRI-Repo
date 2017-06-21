@@ -234,6 +234,12 @@
     <Compile Include="Karol_progress.Designer.cs">
       <DependentUpon>Karol_progress.cs</DependentUpon>
     </Compile>
+    <Compile Include="Properties_window.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Properties_window.Designer.cs">
+      <DependentUpon>Properties_window.cs</DependentUpon>
+    </Compile>
     <Compile Include="Special_function_window.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -278,6 +284,9 @@
       <AutoGen>True</AutoGen>
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
+    <EmbeddedResource Include="Properties_window.resx">
+      <DependentUpon>Properties_window.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="Special_function_window.resx">
       <DependentUpon>Special_function_window.cs</DependentUpon>
     </EmbeddedResource>

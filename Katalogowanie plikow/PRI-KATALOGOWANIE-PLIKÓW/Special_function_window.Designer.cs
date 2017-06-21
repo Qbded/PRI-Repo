@@ -78,6 +78,7 @@
             // BT_search_catalog
             // 
             this.BT_search_catalog.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.BT_search_catalog.Enabled = false;
             this.BT_search_catalog.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.BT_search_catalog.Location = new System.Drawing.Point(3, 159);
             this.BT_search_catalog.Name = "BT_search_catalog";

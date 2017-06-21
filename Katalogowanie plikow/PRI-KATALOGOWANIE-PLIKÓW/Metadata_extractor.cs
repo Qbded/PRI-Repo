@@ -13,6 +13,8 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
 {
     public partial class Metadata_extractor : Form
     {
+        public event EventHandler OnDataAvalible;
+
         public string[] extends { get; set; }
         public DirectoryInfo target_directory { get; set; }
         public List<string[]> metadata_extracted { get; set; }
@@ -285,6 +287,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                 Main_form parent = (Main_form)this.Owner;
                 parent.metadata = metadata_extracted;
                 MessageBox.Show("Ekstrakcja metadanych zakonczona!");
+                OnDataAvalible(this, new EventArgs());
                 this.Close();
             }
         }

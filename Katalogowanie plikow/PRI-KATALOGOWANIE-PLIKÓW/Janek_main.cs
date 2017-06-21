@@ -287,7 +287,6 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
         private void bnCatalogue_Click(object sender, EventArgs e)
         {
             int _i = 0, _j = 1;
-            bnCatalogue.Enabled = false;
 
             double[] nToArray_i, nToArray_j;
             Dictionary<string, double> similarities = new Dictionary<string, double>();
@@ -397,7 +396,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             {
                 // Dajemy znać formowi wywołującemu (tutaj Special_function_window) że dane są gotowe do odbioru.
                 OnDataAvalible(this, EventArgs.Empty);
-                MessageBox.Show("Zakończono proces katalogowania.");
+                MessageBox.Show("Zakończono proces porównywania podobieństwa.");
                 this.Close();
                 this.Dispose();
             }
@@ -591,6 +590,8 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                 }
             }
             */
+
+            bnChooseFolder.Enabled = false;
 
             var extractors = new List<TikaOnDotNet.TextExtraction.TextExtractor>();
 

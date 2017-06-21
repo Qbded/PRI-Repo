@@ -87,7 +87,6 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
 
         private void Karol_main_all_done(object sender, EventArgs e)
         {
-            MessageBox.Show("Ekstrakcja zakonczona!");
             OnDataAvalible(this, EventArgs.Empty);
             this.Close();
             this.Dispose();
