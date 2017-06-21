@@ -290,7 +290,9 @@
     <EmbeddedResource Include="Special_function_window.resx">
       <DependentUpon>Special_function_window.cs</DependentUpon>
     </EmbeddedResource>
-    <None Include="packages.config" />
+    <None Include="packages.config">
+      <SubType>Designer</SubType>
+    </None>
     <None Include="pol.traineddata" />
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>

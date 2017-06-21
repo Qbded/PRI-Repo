@@ -76,6 +76,7 @@
             // 
             // BT_extract_metadata
             // 
+            this.BT_extract_metadata.Enabled = false;
             this.BT_extract_metadata.Location = new System.Drawing.Point(136, 15);
             this.BT_extract_metadata.Name = "BT_extract_metadata";
             this.BT_extract_metadata.Size = new System.Drawing.Size(122, 31);

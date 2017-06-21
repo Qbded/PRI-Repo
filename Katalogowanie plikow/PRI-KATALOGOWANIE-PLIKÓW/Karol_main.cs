@@ -117,21 +117,42 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             processFilesButton.Enabled = true;
             cancelFileProcessingButton.Enabled = false;
 
-            if (!e.Result.Equals(string.Empty))
+            if(e.Cancelled)
             {
-                Tuple<int, string, string> data_to_return = new Tuple<int, string, string>(text_extraction_results.Last().Item1,
-                                                                                           text_extraction_results.Last().Item2,
-                                                                                           (string)e.Result);
-                text_extraction_results[text_extraction_results.IndexOf(text_extraction_results.Last())] = data_to_return;
+                current_file++;
+
+                processFilesButton.Enabled = false;
+                openFileDialogButton.Enabled = false;
+                cancelFileProcessingButton.Enabled = true;
+
+                if (text_extraction_results.Count == filepaths.Count)
+                {
+                    if (!text_extraction_results.Last().Item2.Equals(string.Empty)) Karol_main_all_done(this, new EventArgs());
+                }
+                else Karol_main_part_done(this, new EventArgs());
             }
-
-            current_file++;
-
-            if (text_extraction_results.Count == filepaths.Count)
+            else
             {
-                if(!text_extraction_results.Last().Item2.Equals(string.Empty)) Karol_main_all_done(this, new EventArgs());
+                if (!e.Result.Equals(string.Empty))
+                {
+                    Tuple<int, string, string> data_to_return = new Tuple<int, string, string>(text_extraction_results.Last().Item1,
+                                                                                               text_extraction_results.Last().Item2,
+                                                                                               (string)e.Result);
+                    text_extraction_results[text_extraction_results.IndexOf(text_extraction_results.Last())] = data_to_return;
+                }
+
+                current_file++;
+
+                processFilesButton.Enabled = false;
+                openFileDialogButton.Enabled = false;
+                cancelFileProcessingButton.Enabled = true;
+
+                if (text_extraction_results.Count == filepaths.Count)
+                {
+                    if (!text_extraction_results.Last().Item2.Equals(string.Empty)) Karol_main_all_done(this, new EventArgs());
+                }
+                else Karol_main_part_done(this, new EventArgs());
             }
-            else Karol_main_part_done(this, new EventArgs());
         }
 
         void cancelFileProcessing(object sender, EventArgs e)
@@ -218,44 +239,55 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                 TimeSpan timeLapsed = new TimeSpan(0);
                 foreach (TimeRange timeRange in extractionOptions.timeRanges)
                 {
-                    TimeSpan timePointer = timeRange.start;
-                    TimeSpan timeStep = new TimeSpan((long)(10000000 * extractionOptions.getSamplingFrequency()));
-                    // Saves the frame located on the x-th second of the video.
-                    while (timePointer.CompareTo(timeRange.finish) < 0)
+                    if (e.Cancel == false)
                     {
-                        if (bgwFileProcessor.CancellationPending == true)
+                        TimeSpan timePointer = timeRange.start;
+                        TimeSpan timeStep = new TimeSpan((long)(10000000 * extractionOptions.getSamplingFrequency()));
+                        // Saves the frame located on the x-th second of the video.
+                        while (timePointer.CompareTo(timeRange.finish) < 0)
                         {
-                            e.Cancel = true;
-                        }
-                        var options = new ConversionOptions { Seek = TimeSpan.FromMilliseconds(timePointer.TotalMilliseconds) };
-                        engine.GetThumbnail(input, outputFile, options);
-                        file.addTags(extractTagsFromFrame(framePath, file.getLanguage()));
-                        timePointer = timePointer.Add(timeStep);
-                        timeLapsed = timeLapsed.Add(timeStep);
+                            if (bgwFileProcessor.CancellationPending == true)
+                            {
+                                e.Cancel = true;
+                                break;
+                            }
+                            var options = new ConversionOptions { Seek = TimeSpan.FromMilliseconds(timePointer.TotalMilliseconds) };
+                            engine.GetThumbnail(input, outputFile, options);
+                            file.addTags(extractTagsFromFrame(framePath, file.getLanguage()));
+                            timePointer = timePointer.Add(timeStep);
+                            timeLapsed = timeLapsed.Add(timeStep);
 
-                        bgwFileProcessor.ReportProgress((int)(Math.Floor(100 * (timeLapsed.TotalSeconds / totalDuration.TotalSeconds))));
-                        //Console.WriteLine("Progress at " + (int)(Math.Floor(100 * (timePointer.TotalSeconds / input.Metadata.Duration.TotalSeconds))) + "% (" + timePointer.TotalSeconds / input.Metadata.Duration.TotalSeconds + "%)");
-                        //outputTextBox.AppendText("Time step: " + timeStep.Hours + ":" + timeStep.Minutes + ":" + timeStep.Seconds + "." + timeStep.Milliseconds + "/" + Environment.NewLine);
-                        //outputTextBox.AppendText("" + timePointer.Hours + ":" + timePointer.Minutes + ":" + timePointer.Seconds + "." + timePointer.Milliseconds + "/" + Environment.NewLine);
+                            bgwFileProcessor.ReportProgress((int)(Math.Floor(100 * (timeLapsed.TotalSeconds / totalDuration.TotalSeconds))));
+                            //Console.WriteLine("Progress at " + (int)(Math.Floor(100 * (timePointer.TotalSeconds / input.Metadata.Duration.TotalSeconds))) + "% (" + timePointer.TotalSeconds / input.Metadata.Duration.TotalSeconds + "%)");
+                            //outputTextBox.AppendText("Time step: " + timeStep.Hours + ":" + timeStep.Minutes + ":" + timeStep.Seconds + "." + timeStep.Milliseconds + "/" + Environment.NewLine);
+                            //outputTextBox.AppendText("" + timePointer.Hours + ":" + timePointer.Minutes + ":" + timePointer.Seconds + "." + timePointer.Milliseconds + "/" + Environment.NewLine);
+                        }
+                    } else
+                    {
+                        break;
                     }
                 }
             }
 
-            string resultDirectory = program_path + @"\result\";
-            if (!Directory.Exists(resultDirectory))
+            if (e.Cancel == false)
             {
-                Directory.CreateDirectory(resultDirectory);
-            }
-            StreamWriter sw = new StreamWriter(resultDirectory + Path.GetFileNameWithoutExtension(file.getFilePath()) + @"_tags.txt");
-            foreach (string tag in file.getTags())
-            {
-                Console.WriteLine(tag);
-                sw.WriteLineAsync(tag);
-                sw.Flush();
-            }
-            sw.Close();
 
-            result = program_path + @"\result\" + Path.GetFileNameWithoutExtension(file.getFilePath()) + @"_tags.txt";
+                string resultDirectory = program_path + @"\result\";
+                if (!Directory.Exists(resultDirectory))
+                {
+                    Directory.CreateDirectory(resultDirectory);
+                }
+                StreamWriter sw = new StreamWriter(resultDirectory + Path.GetFileNameWithoutExtension(file.getFilePath()) + @"_tags.txt");
+                foreach (string tag in file.getTags())
+                {
+                    Console.WriteLine(tag);
+                    sw.WriteLineAsync(tag);
+                    sw.Flush();
+                }
+                sw.Close();
+
+                result = program_path + @"\result\" + Path.GetFileNameWithoutExtension(file.getFilePath()) + @"_tags.txt";
+            }
 
             return result;
 

@@ -31,7 +31,15 @@
             this.TC_properties_container = new System.Windows.Forms.TabControl();
             this.TP_properties_basic = new System.Windows.Forms.TabPage();
             this.TP_properties_advanced = new System.Windows.Forms.TabPage();
+            this.LV_metadata_basic = new System.Windows.Forms.ListView();
+            this.LV_metadata_advanced = new System.Windows.Forms.ListView();
+            this.metadata_basic_field = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+            this.metadata_basic_value = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+            this.metadata_advanced_field = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+            this.metadata_advanced_value = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.TC_properties_container.SuspendLayout();
+            this.TP_properties_basic.SuspendLayout();
+            this.TP_properties_advanced.SuspendLayout();
             this.SuspendLayout();
             // 
             // TC_properties_container
@@ -47,6 +55,7 @@
             // 
             // TP_properties_basic
             // 
+            this.TP_properties_basic.Controls.Add(this.LV_metadata_basic);
             this.TP_properties_basic.Location = new System.Drawing.Point(4, 22);
             this.TP_properties_basic.Name = "TP_properties_basic";
             this.TP_properties_basic.Padding = new System.Windows.Forms.Padding(3);
@@ -57,6 +66,7 @@
             // 
             // TP_properties_advanced
             // 
+            this.TP_properties_advanced.Controls.Add(this.LV_metadata_advanced);
             this.TP_properties_advanced.Location = new System.Drawing.Point(4, 22);
             this.TP_properties_advanced.Name = "TP_properties_advanced";
             this.TP_properties_advanced.Padding = new System.Windows.Forms.Padding(3);
@@ -64,6 +74,50 @@
             this.TP_properties_advanced.TabIndex = 1;
             this.TP_properties_advanced.Text = "Zaawansowane";
             this.TP_properties_advanced.UseVisualStyleBackColor = true;
+            // 
+            // LV_metadata_basic
+            // 
+            this.LV_metadata_basic.Columns.AddRange(new System.Windows.Forms.ColumnHeader[] {
+            this.metadata_basic_field,
+            this.metadata_basic_value});
+            this.LV_metadata_basic.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.LV_metadata_basic.Location = new System.Drawing.Point(3, 3);
+            this.LV_metadata_basic.Name = "LV_metadata_basic";
+            this.LV_metadata_basic.Size = new System.Drawing.Size(270, 230);
+            this.LV_metadata_basic.TabIndex = 0;
+            this.LV_metadata_basic.UseCompatibleStateImageBehavior = false;
+            this.LV_metadata_basic.View = System.Windows.Forms.View.Details;
+            // 
+            // LV_metadata_advanced
+            // 
+            this.LV_metadata_advanced.Columns.AddRange(new System.Windows.Forms.ColumnHeader[] {
+            this.metadata_advanced_field,
+            this.metadata_advanced_value});
+            this.LV_metadata_advanced.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.LV_metadata_advanced.HeaderStyle = System.Windows.Forms.ColumnHeaderStyle.Nonclickable;
+            this.LV_metadata_advanced.Location = new System.Drawing.Point(3, 3);
+            this.LV_metadata_advanced.MultiSelect = false;
+            this.LV_metadata_advanced.Name = "LV_metadata_advanced";
+            this.LV_metadata_advanced.Size = new System.Drawing.Size(270, 230);
+            this.LV_metadata_advanced.TabIndex = 0;
+            this.LV_metadata_advanced.UseCompatibleStateImageBehavior = false;
+            this.LV_metadata_advanced.View = System.Windows.Forms.View.Details;
+            // 
+            // metadata_basic_field
+            // 
+            this.metadata_basic_field.Text = "Nazwa pola";
+            // 
+            // metadata_basic_value
+            // 
+            this.metadata_basic_value.Text = "Wartość pola";
+            // 
+            // metadata_advanced_field
+            // 
+            this.metadata_advanced_field.Text = "Nazwa pola";
+            // 
+            // metadata_advanced_value
+            // 
+            this.metadata_advanced_value.Text = "Wartość pola";
             // 
             // Properties_window
             // 
@@ -73,7 +127,10 @@
             this.Controls.Add(this.TC_properties_container);
             this.Name = "Properties_window";
             this.Text = "Właściwości";
+            this.VisibleChanged += new System.EventHandler(this.Properties_window_VisibleChanged);
             this.TC_properties_container.ResumeLayout(false);
+            this.TP_properties_basic.ResumeLayout(false);
+            this.TP_properties_advanced.ResumeLayout(false);
             this.ResumeLayout(false);
 
         }
@@ -83,5 +140,11 @@
         private System.Windows.Forms.TabControl TC_properties_container;
         private System.Windows.Forms.TabPage TP_properties_basic;
         private System.Windows.Forms.TabPage TP_properties_advanced;
+        private System.Windows.Forms.ListView LV_metadata_basic;
+        private System.Windows.Forms.ListView LV_metadata_advanced;
+        private System.Windows.Forms.ColumnHeader metadata_basic_field;
+        private System.Windows.Forms.ColumnHeader metadata_basic_value;
+        private System.Windows.Forms.ColumnHeader metadata_advanced_field;
+        private System.Windows.Forms.ColumnHeader metadata_advanced_value;
     }
 }

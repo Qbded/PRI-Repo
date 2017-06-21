@@ -433,7 +433,11 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                     if (validation_result[i] == 2) validation_return_string_container[i] = "Tabela " + database_tables[i].Item2 + " jest skonstruowana poprawnie! \n";
                 }
 
-                if (validation_result.All(x => x.Equals(2)) == true) database_validated_successfully = true;
+                if (validation_result.All(x => x.Equals(2)) == true)
+                {
+                    database_validated_successfully = true;
+                    BT_extract_metadata.Enabled = true;
+                }
 
                 for (int i = 0; i < validation_return_string_container.Length; i++)
                 {
@@ -456,7 +460,9 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                 database_build(database_connection_string_builder.ConnectionString);
 
                 MessageBox.Show("Zakonczono budowę bazy!");
+
                 database_validated_successfully = true;
+                BT_extract_metadata.Enabled = true;
             }
         }
 
@@ -483,6 +489,8 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             }
         }
 
+
+        // Działa nie do końca poprawnie, zjada dane w ALTERNATE_PATHS... no time to debug, czas przejść do 
         private void metadata_extractor_OnDataAvalible(object sender, EventArgs e)
         {
             // Tutaj końcowo przeprowadzimy katalogowanie, a nie przez checkbox'a.
@@ -504,33 +512,108 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                 // Pobierz zawartośc bazy danych - dokładniej wszystko to co zostało już skatalogowane
                 for (int i = 1; i < database_tables.Count(); i++)
                 {
+                    DataTable current_worked_table = new DataTable();
                     FbDataAdapter table_grabber = new FbDataAdapter("SELECT * " +
                                                                     "FROM " + database_tables[i].Item2 + ";"
                                                                     ,
                                                                     new FbConnection(database_connection_string_builder.ConnectionString));
-                    switch (i)
+
+                    table_grabber.Fill(current_worked_table);
+
+                    // Wyrzucamy z katalogu wszystko, co już nie ma przełożenia na żadny plik rzeczywisty
+                    if (current_worked_table.Rows.Count != 0)
                     {
-                        case 1:
-                            table_grabber.Fill(metadata_text_container);
-                            break;
-                        case 2:
-                            table_grabber.Fill(metadata_document_container);
-                            break;
-                        case 3:
-                            table_grabber.Fill(metadata_complex_container);
-                            break;
-                        case 4:
-                            table_grabber.Fill(metadata_image_container);
-                            break;
-                        case 5:
-                            table_grabber.Fill(metadata_multimedia_container);
-                            break;
-                        default:
-                            MessageBox.Show("ERROR: Przy czytaniu danych z tabeli wyszliśmy poza zakres database_tables!");
-                            break;
+                        int current_worked_id = 0;
+                        FileInfo file_check;
+                        foreach (DataRow row in current_worked_table.Rows)
+                        {
+                            bool file_found = false;
+                            string current_filepath = string.Empty;
+                            current_worked_id = (int)row.ItemArray[0];
+                            current_filepath = (string)row.ItemArray[6];
+                            file_check = new FileInfo(current_filepath);
+                            if (file_check.Exists == false)
+                            {
+                                List<string> alternate_paths;
+                                if (row.ItemArray[7].GetType().Name.Equals("DBNull") || row.ItemArray[7].Equals(string.Empty)) alternate_paths = new List<string>();
+                                else alternate_paths = ((string)row.ItemArray[7]).Split('|').ToList();
+                                if (alternate_paths.Count != 0)
+                                {
+                                    foreach (string alternate_filepath in alternate_paths)
+                                    {
+                                        current_filepath = alternate_filepath;
+                                        file_check = new FileInfo(alternate_filepath);
+                                        if (file_check.Exists == true)
+                                        {
+                                            // Znaleźliśmy co chcieliśmy, modyfikujemy zmienna path w naszej zmiennej aby wskazywała na nasz działający path z ALTERNATE_PATHS
+                                            FbCommand new_path_setter = new FbCommand("UPDATE " + database_tables[i].Item2 + " " +
+                                                                                      "SET PATH = @New_path, ALTERNATE_PATH = @New_alternate_paths " +
+                                                                                      "WHERE ID = @Id;"
+                                                                                      ,
+                                                                                      new FbConnection(database_connection_string_builder.ConnectionString));
+
+                                            alternate_paths.Remove(alternate_filepath);
+
+                                            new_path_setter.Parameters.AddWithValue("@Id", current_worked_id);
+                                            new_path_setter.Parameters.AddWithValue("@New_path", current_filepath);
+                                            new_path_setter.Parameters.AddWithValue("@New_alternate_paths", alternate_paths);
+
+                                            new_path_setter.Connection.Open();
+                                            new_path_setter.ExecuteNonQuery();
+                                            new_path_setter.Connection.Close();
+
+                                            file_found = true;
+                                            break;
+                                        }
+                                    }
+                                }
+                                if (file_found == false)
+                                {
+                                    // Nie znalazł pliku we wszystkich możliwych miejscach - usuwamy go z bazy
+                                    FbCommand metadata_remover = new FbCommand("DELETE FROM " + database_tables[i].Item2 + " " +
+                                                                               "WHERE ID = @Id;"
+                                                                               ,
+                                                                               new FbConnection(database_connection_string_builder.ConnectionString));
+
+                                    metadata_remover.Parameters.AddWithValue("@Id", current_worked_id);
+
+                                    metadata_remover.Connection.Open();
+                                    metadata_remover.ExecuteNonQuery();
+                                    metadata_remover.Connection.Close();
+                                }
+                            }
+                        }
+
+                        FbDataAdapter table_after_cleanup_grabber = new FbDataAdapter("SELECT * " +
+                                                                                      "FROM " + database_tables[i].Item2 + ";"
+                                                                                      ,
+                                                                                      new FbConnection(database_connection_string_builder.ConnectionString));
+
+                        switch (i)
+                        {
+                            case 1:
+                                table_after_cleanup_grabber.Fill(metadata_text_container);
+                                break;
+                            case 2:
+                                table_after_cleanup_grabber.Fill(metadata_document_container);
+                                break;
+                            case 3:
+                                table_after_cleanup_grabber.Fill(metadata_complex_container);
+                                break;
+                            case 4:
+                                table_after_cleanup_grabber.Fill(metadata_image_container);
+                                break;
+                            case 5:
+                                table_after_cleanup_grabber.Fill(metadata_multimedia_container);
+                                break;
+                            default:
+                                MessageBox.Show("ERROR: Przy czytaniu danych z tabeli wyszliśmy poza zakres database_tables!");
+                                break;
+                        }
                     }
                 }
 
+                // Przejście do decyzji odnoście danych zawartych w metadata - w zależności od tego czy katalog jest pusty, czy coś już w nim jest.
                 if (metadata_text_container.Rows.Count == 0 &&
                     metadata_document_container.Rows.Count == 0 &&
                     metadata_complex_container.Rows.Count == 0 &&
@@ -562,11 +645,9 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
 
                 if (matches.Count > 0) matches.Remove(current_metadata); // Check coby nie zwinął samego siebie :P
 
-
-
                 foreach (string[] match in matches)
                 {
-                    if (alternate_path == string.Empty) alternate_path += match.ElementAt(4);
+                    if (alternate_path == string.Empty || alternate_path =="") alternate_path += match.ElementAt(4);
                     else alternate_path += '|' + match.ElementAt(4);
                     metadata_working_set.Remove(match);
                 }
@@ -642,9 +723,12 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
 
                                 filepaths_all_from_DB.Add((string)search_result_container.Rows[j].ItemArray[4]);
                                 filepaths_alternate_from_DB = ((string)search_result_container.Rows[j].ItemArray[5]).Split('|').ToArray();
-                                foreach (string filepath in filepaths_alternate_from_DB)
+                                if (!filepaths_alternate_from_DB.Contains(string.Empty))
                                 {
-                                    filepaths_all_from_DB.Add(filepath);
+                                    foreach (string filepath in filepaths_alternate_from_DB)
+                                    {
+                                        filepaths_all_from_DB.Add(filepath);
+                                    }
                                 }
 
                                 if (filepaths_all_from_DB.Contains(metadata_working_set[i].ElementAt(4)))
@@ -657,10 +741,12 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                                 {
                                     // Plik jest już w bazie, ale w nowym miejscu - musimy zmodyfikować zawartość alt_pathu dla danego rekordu.
                                     string alternate_paths_new = string.Empty;
-
-                                    foreach (string filepath in filepaths_alternate_from_DB)
+                                    if (!(filepaths_alternate_from_DB.Contains(string.Empty)))
                                     {
-                                        alternate_paths_new += filepath + '|';
+                                        foreach (string filepath in filepaths_alternate_from_DB)
+                                        {
+                                            alternate_paths_new += filepath + '|';
+                                        }
                                     }
 
                                     alternate_paths_new += metadata_working_set[i].ElementAt(4);
@@ -1521,6 +1607,9 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             {
                 MessageBox.Show("Niepoprawny wynik walidacji połączenia i zawartości bazy danych, nie można wyświetlić katalogu!");
                 LV_catalog_display.Enabled = false;
+                BT_previous.Enabled = false;
+                BT_specials.Enabled = false;
+                TB_catalog_path_current.Enabled = false;
             }
             else
             {
@@ -1531,6 +1620,9 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                     catalog_folder_path_list.Add(@"\");
                     TB_catalog_path_current.Text = catalog_folder_path_list.Last();
                     LV_catalog_display.Enabled = true;
+                    BT_previous.Enabled = true;
+                    BT_specials.Enabled = true;
+                    TB_catalog_path_current.Enabled = false;
                 }
                 else
                 {
@@ -1544,6 +1636,9 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                     catalog_folder_path_list.Add(@"\");
                     TB_catalog_path_current.Text = catalog_folder_path_list.Last();
                     LV_catalog_display.Enabled = true;
+                    BT_previous.Enabled = true;
+                    BT_specials.Enabled = true;
+                    TB_catalog_path_current.Enabled = false;
                 }
             }
         }
@@ -1730,18 +1825,18 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                 {
                     // Otwieramy plik
                     string target_location = database_virtual_filepath_get(int.Parse(super_parent.FocusedItem.Name), super_parent.FocusedItem.ToolTipText);
-                    if(target_location != string.Empty)
+                    if (target_location != string.Empty)
                     {
-                        System.Diagnostics.Process.Start(target_location);
+                        try
+                        {
+                            System.Diagnostics.Process.Start(target_location);
+                        }
+                        catch (Exception ex)
+                        {
+                            MessageBox.Show(ex.Message);
+                        }
                     }
                 }
-            }
-            if (e.ClickedItem.Text.Equals("Wytnij"))
-            {
-                LV_catalog_display_data_to_manipulate = LV_catalog_display_item_selection;
-                LV_catalog_display_data_to_manipulate_orgin_directory_id = catalog_folder_id_list.Last();
-                cut = true;
-                if (copy == true) copy = false;
             }
             if (e.ClickedItem.Text.Equals("Kopiuj"))
             {
@@ -1779,7 +1874,41 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             }
             if (e.ClickedItem.Text.Equals("Właściwości"))
             {
+                ListViewItem current_file = super_parent.FocusedItem;
+                if (current_file.SubItems[1].Text.Equals("Folder"))
+                {
+                    // Otwieramy folder
+                    MessageBox.Show("Foldery nie obsługują wyświetlania właściwości.");
+                }
+                else
+                {
+                    int index_at = 0;
+                    List<string> file_metadata_names = new List<string>();
+                    DataTable file_metadata_content_container = new DataTable();
+                    FbDataAdapter file_metadata_content_extractor = new FbDataAdapter("SELECT * " +
+                                                                          "FROM " + current_file.ToolTipText + " " +
+                                                                          "WHERE ID = @Id;"
+                                                                          ,
+                                                                          new FbConnection(database_connection_string_builder.ConnectionString));
 
+                    file_metadata_content_extractor.SelectCommand.Parameters.AddWithValue("@Id", int.Parse(current_file.Name));
+                    file_metadata_content_extractor.Fill(file_metadata_content_container);
+
+                    index_at = database_tables.FindIndex(x => x.Item2.Equals(current_file.ToolTipText));
+                    var relevant_columns = database_columns.FindAll(x => x.Item1.Equals(index_at));
+                    foreach (var column in relevant_columns)
+                    {
+                        file_metadata_names.Add(column.Item2);
+                    }
+                    
+
+                    
+
+                    Properties_window item_properties = new Properties_window();
+                    item_properties.data_passed = file_metadata_content_container;
+                    item_properties.names_passed = file_metadata_names;
+                    item_properties.Show();
+                }
             }
         }
 
@@ -1934,7 +2063,6 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                     folder_context_menu_strip.Items.Add("Kopiuj");
                     folder_context_menu_strip.Items.Add("Usuń");
                     folder_context_menu_strip.Items.Add("Zmień nazwę");
-                    folder_context_menu_strip.Items.Add("Właściwości");
                     folder_context_menu_strip.ItemClicked += element_context_menu_item_select;
                     if (context_menu_position.Y < context_menu_position.Y) context_menu_position.Y = context_menu_position.Y - folder_context_menu_strip.Height - 25;
                     parent.ContextMenuStrip = folder_context_menu_strip;
@@ -2012,9 +2140,9 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                         {
                             System.Diagnostics.Process.Start(target_location);
                         }
-                        catch (Exception _e)
+                        catch (Exception ex)
                         {
-                            MessageBox.Show(_e.Message);
+                            MessageBox.Show(ex.Message);
                         }
                     }
                 }
