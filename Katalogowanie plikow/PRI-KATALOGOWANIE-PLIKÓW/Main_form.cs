@@ -546,17 +546,26 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                                         if (file_check.Exists == true)
                                         {
                                             // Znaleźliśmy co chcieliśmy, modyfikujemy zmienna path w naszej zmiennej aby wskazywała na nasz działający path z ALTERNATE_PATHS
+                                            string alternate_filepath_to_add = string.Empty;
+
                                             FbCommand new_path_setter = new FbCommand("UPDATE " + database_tables[i].Item2 + " " +
-                                                                                      "SET PATH = @New_path, ALTERNATE_PATH = @New_alternate_paths " +
+                                                                                      "SET PATH = @New_path, ALTERNATE_PATHS = @New_alternate_paths " +
                                                                                       "WHERE ID = @Id;"
                                                                                       ,
                                                                                       new FbConnection(database_connection_string_builder.ConnectionString));
 
                                             alternate_paths.Remove(alternate_filepath);
 
+                                            for(int j = 0; j < alternate_paths.Count; j++)
+                                            {
+                                                if(j == 0) alternate_filepath_to_add += alternate_paths.ElementAt(j);
+                                                else alternate_filepath_to_add += '|' + alternate_paths.ElementAt(j);
+                                            }
+
+
                                             new_path_setter.Parameters.AddWithValue("@Id", current_worked_id);
                                             new_path_setter.Parameters.AddWithValue("@New_path", current_filepath);
-                                            new_path_setter.Parameters.AddWithValue("@New_alternate_paths", alternate_paths);
+                                            new_path_setter.Parameters.AddWithValue("@New_alternate_paths", alternate_filepath_to_add);
 
                                             new_path_setter.Connection.Open();
                                             new_path_setter.ExecuteNonQuery();
