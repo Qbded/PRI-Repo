@@ -36,8 +36,6 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
         List<string> selectedLabels;
         List<int> length;
         bool equals;
-        // const string path = @"C:\Users\lenovo\Documents\Visual Studio 2012\Projects\PRI-KATALOGOWANIE-PLIKÓW\PRI-KATALOGOWANIE-PLIKÓW\metadata.xml";
-        // const string pathTxt = @"C:\Users\lenovo\Documents\Visual Studio 2012\Projects\PRI-KATALOGOWANIE-PLIKÓW\PRI-KATALOGOWANIE-PLIKÓW\$$$.txt";
         WaveOf wOf;
         AForge.Math.Metrics.CosineSimilarity sim;
         List<List<double>> nested;

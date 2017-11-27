@@ -8,14 +8,14 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using Shipwreck.Phash;
 
 namespace PRI_KATALOGOWANIE_PLIKÓW
 {
     public partial class Metadata_extractor : Form
     {
         public event EventHandler OnDataAvalible;
-
-        public string[] extends { get; set; }
+        public List<Tuple<int,string>> extends { get; set; }
         public DirectoryInfo target_directory { get; set; }
         public List<string[]> metadata_extracted { get; set; }
         public int file_total_count { get; set; }
@@ -102,132 +102,111 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                     {
                         current_file++;
                         BGW_metadata_extractor.ReportProgress(current_file);
-                        for (int i = 0; i < extends.Length; i++)
+                        var extension_identified = extends.Find(x => x.Item2.Equals(file.Extension));
+                        if(extension_identified != null)
                         {
-                            if (file.Extension == extends[i]) //&& file.Length <= max_file_size_bytes)
+                            List<string> extracted_metadata_container = new List<string>();
+                            string[] extracted_metadata_string_container = new string[0];
+
+                            string destination_table = "";
+                            List<Tuple<int, int, string>> target_ordering_set = new List<Tuple<int, int, string>>();
+
+                            bool error = false;
+
+                            file_supported_count++;
+
+
+                            // Podstawowe i uniwersalne metadane:
+                            extracted_metadata_container.Add(Path.GetFileNameWithoutExtension(file.Name)); // Nazwa
+                            extracted_metadata_container.Add(file.Extension); // Rozszerzenie
+                            extracted_metadata_container.Add(file.FullName); // Pełna ścieżka do pliku
+                            extracted_metadata_container.Add("" + file.Length); // Długość pliku (w bajtach)
+                            extracted_metadata_container.Add(file.CreationTime.ToString());
+                            extracted_metadata_container.Add(file.LastWriteTime.ToString());
+
+
+
+                            switch (extension_identified.Item1)
                             {
-                                List<string> extracted_metadata_container = new List<string>();
-                                string[] extracted_metadata_string_container = new string[0];
-                                file_supported_count++;
-
-
-                                // Podstawowe i uniwersalne metadane:
-                                extracted_metadata_container.Add(Path.GetFileNameWithoutExtension(file.Name)); // Nazwa
-                                extracted_metadata_container.Add(file.Extension); // Rozszerzenie
-                                extracted_metadata_container.Add(file.FullName); // Pełna ścieżka do pliku
-                                extracted_metadata_container.Add("" + file.Length); // Długość pliku (w bajtach)
-                                extracted_metadata_container.Add(file.CreationTime.ToString());
-                                extracted_metadata_container.Add(file.LastWriteTime.ToString());
-
-
-                                // Metadane plików tekstowych ekstrahujemy tutaj
-                                if (file.Extension == ".txt" ||
-                                    file.Extension == ".csv" ||
-                                    file.Extension == ".tsv" ||
-                                    file.Extension == ".fb2" ||
-                                    file.Extension == ".xml"
-                                    )
-                                {
-                                    extracted_metadata_container.AddRange(extract_metadata(file, text_ordering_set));
-                                    extracted_metadata_string_container = new string[extracted_metadata_container.Count + 1];
-                                    extracted_metadata_string_container[0] = "metadata_text";
-                                    for (int j = 1; j <= extracted_metadata_container.Count; j++)
-                                    {
-                                        extracted_metadata_string_container[j] = extracted_metadata_container[j - 1];
-                                    }
-                                }
-                                // Specjalny przypadek - pliki .doc - mogą być traktowane albo jak tekstówki, albo jak dokumenty
-                                if (file.Extension == ".doc")
-                                {
+                                case 0:
+                                    // Znaleziony plik jest plikiem tekstowym:
+                                    destination_table = "metadata_text";
+                                    target_ordering_set = text_ordering_set;
+                                    break;
+                                case 1:
+                                    // Znaleziony plik jest dokumentem:
+                                    destination_table = "metadata_document";
+                                    target_ordering_set = document_ordering_set;
+                                    break;
+                                case 2:
+                                    // Znaleziony plik jest plikiem złożonym:
+                                    destination_table = "metadata_complex";
+                                    target_ordering_set = complex_ordering_set;
+                                    break;
+                                case 3:
+                                    // Znaleziony plik jest plikiem graficznym:
+                                    destination_table = "metadata_image";
+                                    target_ordering_set = image_ordering_set;
+                                    break;
+                                case 4:
+                                    // Znaleziony plik jest plikiem multimedialnym:
+                                    destination_table = "metadata_multimedia";
+                                    target_ordering_set = multimedia_ordering_set;
+                                    break;
+                                case 5:
+                                    // Znaleziony plik ma rozszerzenie .doc - przydzielamy do odpowiedniego typu na podstawie wyekstrachowanego typu:
                                     var test_extract = extract_metadata(file, document_ordering_set);
                                     if (test_extract.First().Contains("text/plain;"))
                                     {
-                                        extracted_metadata_container.AddRange(extract_metadata(file, text_ordering_set));
-                                        extracted_metadata_string_container = new string[extracted_metadata_container.Count + 1];
-                                        extracted_metadata_string_container[0] = "metadata_text";
-                                        for (int j = 1; j <= extracted_metadata_container.Count; j++)
-                                        {
-                                            extracted_metadata_string_container[j] = extracted_metadata_container[j - 1];
-                                        }
+                                        destination_table = "metadata_text";
+                                        target_ordering_set = text_ordering_set;
                                     }
                                     else
                                     {
-                                        extracted_metadata_container.AddRange(test_extract);
-                                        extracted_metadata_string_container = new string[extracted_metadata_container.Count + 1];
-                                        extracted_metadata_string_container[0] = "metadata_document";
-                                        for (int j = 1; j <= extracted_metadata_container.Count; j++)
-                                        {
-                                            extracted_metadata_string_container[j] = extracted_metadata_container[j - 1];
-                                        }
+                                        destination_table = "metadata_document";
+                                        target_ordering_set = document_ordering_set;
                                     }
-                                }
-                                // Metadane dokumentów ekstrahujemy tutaj
-                                if (file.Extension == ".docx" ||
-                                    file.Extension == ".odt" ||
-                                    file.Extension == ".ods" ||
-                                    file.Extension == ".odp" ||
-                                    file.Extension == ".xls" ||
-                                    file.Extension == ".xlsx" ||
-                                    file.Extension == ".pdf" ||
-                                    file.Extension == ".ppt" ||
-                                    file.Extension == ".pptx"
-                                    )
+                                    break;
+                                default:
+                                    //ERROR - Nigdy nie powinniśmy się tutaj znaleść!
+                                    error = true;
+                                    MessageBox.Show("Błąd podczas identyfikacji rozszerzenia!");
+                                    break;
+                            }
+
+                            if (error == false)
+                            {
+                                extracted_metadata_container.AddRange(extract_metadata(file, target_ordering_set));
+                                if(destination_table.Equals("metadata_image")) extracted_metadata_string_container = new string[extracted_metadata_container.Count + 2];
+                                else extracted_metadata_string_container = new string[extracted_metadata_container.Count + 1];
+                                extracted_metadata_string_container[0] = destination_table;
+
+                                for (int j = 1; j <= extracted_metadata_container.Count; j++)
                                 {
-                                    extracted_metadata_container.AddRange(extract_metadata(file, document_ordering_set));
-                                    extracted_metadata_string_container = new string[extracted_metadata_container.Count + 1];
-                                    extracted_metadata_string_container[0] = "metadata_document";
-                                    for (int j = 1; j <= extracted_metadata_container.Count; j++)
-                                    {
-                                        extracted_metadata_string_container[j] = extracted_metadata_container[j - 1];
-                                    }
+                                    extracted_metadata_string_container[j] = extracted_metadata_container[j - 1];
                                 }
-                                // Metadane plików .htm i .html ekstrahujemy tutaj
-                                if (file.Extension == ".htm" ||
-                                    file.Extension == ".html"
-                                    )
+
+                                if (destination_table.Equals("metadata_image")) 
                                 {
-                                    extracted_metadata_container.AddRange(extract_metadata(file, complex_ordering_set));
-                                    extracted_metadata_string_container = new string[extracted_metadata_container.Count + 1];
-                                    extracted_metadata_string_container[0] = "metadata_complex";
-                                    for (int j = 1; j <= extracted_metadata_container.Count; j++)
+                                    FileStream Hashstream = new FileStream(file.FullName, FileMode.Open);
+                                    ulong PHash = 0;
+                                    try
                                     {
-                                        extracted_metadata_string_container[j] = extracted_metadata_container[j - 1];
+                                        PHash = Shipwreck.Phash.ImagePhash.ComputeDctHash(Hashstream);
                                     }
-                                }
-                                // Metadane obrazków/zdjęć ekstrahujemy tutaj
-                                if (file.Extension == ".jpg" ||
-                                    file.Extension == ".jpeg" ||
-                                    file.Extension == ".tiff" ||
-                                    file.Extension == ".bmp"
-                                    )
-                                {
-                                    extracted_metadata_container.AddRange(extract_metadata(file, image_ordering_set));
-                                    extracted_metadata_string_container = new string[extracted_metadata_container.Count + 1];
-                                    extracted_metadata_string_container[0] = "metadata_image";
-                                    for (int j = 1; j <= extracted_metadata_container.Count; j++)
+                                    catch
                                     {
-                                        extracted_metadata_string_container[j] = extracted_metadata_container[j - 1];
+                                        //DEBUG: Jeżeli obraz wygeneruje błąd - wyświetlamy o tym informację w oknie.
+                                        MessageBox.Show("Błąd przy liczeniu p-hash dla pliku " + file.Name);
                                     }
-                                }
-                                // Metadane plików multimedialnych ekstrahujemy tutaj
-                                if (file.Extension == ".mp4" ||
-                                    file.Extension == ".avi" ||
-                                    file.Extension == ".mp3" ||
-                                    file.Extension == ".wav"
-                                    )
-                                {
-                                    extracted_metadata_container.AddRange(extract_metadata(file, multimedia_ordering_set));
-                                    extracted_metadata_string_container = new string[extracted_metadata_container.Count + 1];
-                                    extracted_metadata_string_container[0] = "metadata_multimedia";
-                                    for (int j = 1; j <= extracted_metadata_container.Count; j++)
-                                    {
-                                        extracted_metadata_string_container[j] = extracted_metadata_container[j - 1];
-                                    }
+                                    extracted_metadata_string_container[extracted_metadata_container.Count + 1] = PHash.ToString(); // Dodajemy PHash na koniec.
                                 }
 
                                 result.Add(extracted_metadata_string_container);
                                 BGW_metadata_extractor.ReportProgress(0);
                             }
+
+
                         }
                     }
 
@@ -362,7 +341,6 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
 
         private string[] extract_metadata(FileInfo file, List< Tuple<int,int,string> > ordering_set)
         {
-
             TikaOnDotNet.TextExtraction.TextExtractor extractor = new TikaOnDotNet.TextExtraction.TextExtractor();
             string[] result_container = new string[0];
             if (ordering_set.Count != 0) result_container = new string[ordering_set[ordering_set.Count - 1].Item1 + 1];
@@ -553,7 +531,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                 this.document_ordering_set.Add(new Tuple<int, int, string>(21, 2, "extended-properties:AppVersion"));
             }
 
-            //Work in progress, niekompletne
+            //Test deployment - bierze wszystkie dane dostępne w .htm/.html, dla .xml nie ma metadanych dostępnych dla parserów...
             if (this.complex_ordering_set.Count == 0)
             {
                 this.complex_ordering_set.Clear();
@@ -564,41 +542,218 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
 
                 this.complex_ordering_set.Add(new Tuple<int, int, string>(2, 2, "title"));
                 this.complex_ordering_set.Add(new Tuple<int, int, string>(2, 2, "dc:title"));
-
-                //Trzeba jakoś zrobić łapanie 64 pierwszych metadanych, na razie nie beda brane pod uwage podczas katalogowania.
             }
 
-            //Work in progress, niekompletne
+            //Test deployment - bierze dane z ekstraktora, p-hash nie jest sprawdzany tutaj, a dodawany do bazy dopiero w momencie zwrotu danych z ekstraktora.
             if (this.image_ordering_set.Count == 0)
             {
                 this.image_ordering_set.Clear();
-                /*
+                
                 this.image_ordering_set.Add(new Tuple<int, int, string>(0, 1, "Content-Type"));
 
-                this.image_ordering_set.Add(new Tuple<int, int, string>(1, 1, "Content-Encoding"));
+                this.image_ordering_set.Add(new Tuple<int, int, string>(1, 7, "Comments"));
+                this.image_ordering_set.Add(new Tuple<int, int, string>(1, 7, "JPEG Comment"));
+                this.image_ordering_set.Add(new Tuple<int, int, string>(1, 7, "w:comments"));
+                this.image_ordering_set.Add(new Tuple<int, int, string>(1, 7, "comment"));
+                this.image_ordering_set.Add(new Tuple<int, int, string>(1, 7, "Image Description"));
+                this.image_ordering_set.Add(new Tuple<int, int, string>(1, 7, "dc:description"));
+                this.image_ordering_set.Add(new Tuple<int, int, string>(1, 7, "description"));
 
-                this.image_ordering_set.Add(new Tuple<int, int, string>(2, 2, "title"));
-                this.image_ordering_set.Add(new Tuple<int, int, string>(2, 2, "dc:title"));
-                */
-                
+                this.image_ordering_set.Add(new Tuple<int, int, string>(2, 3, "Compression Type"));
+                this.image_ordering_set.Add(new Tuple<int, int, string>(2, 3, "Compression"));
+                this.image_ordering_set.Add(new Tuple<int, int, string>(2, 3, "Compression CompressionTypeName"));
+
+                this.image_ordering_set.Add(new Tuple<int, int, string>(3, 3, "tiff:ImageWidth"));
+                this.image_ordering_set.Add(new Tuple<int, int, string>(3, 3, "width"));
+
+                this.image_ordering_set.Add(new Tuple<int, int, string>(4, 3, "tiff:ImageLength"));
+                this.image_ordering_set.Add(new Tuple<int, int, string>(4, 3, "height"));
             }
 
-            //Work in progress, niekompletne
+            //Test deployment, bierze co znajdzie w zadanym typie pliku (.avi i .wav niestety dają praktycznie nic, wina Tiki).
             if (this.multimedia_ordering_set.Count == 0)
             {
                 this.multimedia_ordering_set.Clear();
-                /*
+                
                 this.multimedia_ordering_set.Add(new Tuple<int, int, string>(0, 1, "Content-Type"));
 
-                this.multimedia_ordering_set.Add(new Tuple<int, int, string>(1, 1, "Content-Encoding"));
+                this.multimedia_ordering_set.Add(new Tuple<int, int, string>(1, 2, "title"));
+                this.multimedia_ordering_set.Add(new Tuple<int, int, string>(1, 2, "dc:title"));
 
-                this.multimedia_ordering_set.Add(new Tuple<int, int, string>(2, 2, "title"));
-                this.multimedia_ordering_set.Add(new Tuple<int, int, string>(2, 2, "dc:title"));
-                */
+                this.multimedia_ordering_set.Add(new Tuple<int, int, string>(2, 1, "xmpDM:trackNumber"));
+
+                this.multimedia_ordering_set.Add(new Tuple<int, int, string>(3, 1, "xmpDM:album"));
+
+                this.multimedia_ordering_set.Add(new Tuple<int, int, string>(4, 1, "xmpDM:releaseDate"));
+
+                this.multimedia_ordering_set.Add(new Tuple<int, int, string>(5, 3, "Author"));
+                this.multimedia_ordering_set.Add(new Tuple<int, int, string>(5, 3, "meta:author"));
+                this.multimedia_ordering_set.Add(new Tuple<int, int, string>(5, 3, "xmpDM:artist"));
+
+                this.multimedia_ordering_set.Add(new Tuple<int, int, string>(6, 1, "xmpDM:genre"));
+
+                this.multimedia_ordering_set.Add(new Tuple<int, int, string>(7, 1, "xmpDM:duration"));
+
+                this.multimedia_ordering_set.Add(new Tuple<int, int, string>(8, 2, "xmpDM:audioSampleRate"));
+                this.multimedia_ordering_set.Add(new Tuple<int, int, string>(8, 2, "samplerate"));
+
+                this.multimedia_ordering_set.Add(new Tuple<int, int, string>(9, 1, "xmpDM:audioCompressor"));
+
+                this.multimedia_ordering_set.Add(new Tuple<int, int, string>(10, 1, "tiff:ImageWidth"));
+
+                this.multimedia_ordering_set.Add(new Tuple<int, int, string>(11, 1, "tiff:ImageLength"));
+
+                this.multimedia_ordering_set.Add(new Tuple<int, int, string>(12, 1, "xmpDM:videoFrameRate"));
+
+                this.multimedia_ordering_set.Add(new Tuple<int, int, string>(13, 1, "xmpDM:videoCompressor"));
+
+                this.multimedia_ordering_set.Add(new Tuple<int, int, string>(14, 1, "xmpDM:logComment"));
             }
-
-
-
         }
     }
 }
+
+
+
+//Legacy:
+
+/*
+                    for (int i = 0; i < extends.Length; i++)
+                    {
+                        if (file.Extension == extends[i]) //&& file.Length <= max_file_size_bytes)
+                        {
+                            List<string> extracted_metadata_container = new List<string>();
+                            string[] extracted_metadata_string_container = new string[0];
+                            file_supported_count++;
+
+
+                            // Podstawowe i uniwersalne metadane:
+                            extracted_metadata_container.Add(Path.GetFileNameWithoutExtension(file.Name)); // Nazwa
+                            extracted_metadata_container.Add(file.Extension); // Rozszerzenie
+                            extracted_metadata_container.Add(file.FullName); // Pełna ścieżka do pliku
+                            extracted_metadata_container.Add("" + file.Length); // Długość pliku (w bajtach)
+                            extracted_metadata_container.Add(file.CreationTime.ToString());
+                            extracted_metadata_container.Add(file.LastWriteTime.ToString());
+
+
+                            // Metadane plików tekstowych ekstrahujemy tutaj
+                            if (file.Extension == ".txt" ||
+                                file.Extension == ".csv" ||
+                                file.Extension == ".tsv" ||
+                                file.Extension == ".fb2"
+                                )
+                            {
+                                extracted_metadata_container.AddRange(extract_metadata(file, text_ordering_set));
+                                extracted_metadata_string_container = new string[extracted_metadata_container.Count + 1];
+                                extracted_metadata_string_container[0] = "metadata_text";
+                                for (int j = 1; j <= extracted_metadata_container.Count; j++)
+                                {
+                                    extracted_metadata_string_container[j] = extracted_metadata_container[j - 1];
+                                }
+                            }
+                            // Specjalny przypadek - pliki .doc - mogą być traktowane albo jak tekstówki, albo jak dokumenty
+                            if (file.Extension == ".doc")
+                            {
+                                var test_extract = extract_metadata(file, document_ordering_set);
+                                if (test_extract.First().Contains("text/plain;"))
+                                {
+                                    extracted_metadata_container.AddRange(extract_metadata(file, text_ordering_set));
+                                    extracted_metadata_string_container = new string[extracted_metadata_container.Count + 1];
+                                    extracted_metadata_string_container[0] = "metadata_text";
+                                    for (int j = 1; j <= extracted_metadata_container.Count; j++)
+                                    {
+                                        extracted_metadata_string_container[j] = extracted_metadata_container[j - 1];
+                                    }
+                                }
+                                else
+                                {
+                                    extracted_metadata_container.AddRange(test_extract);
+                                    extracted_metadata_string_container = new string[extracted_metadata_container.Count + 1];
+                                    extracted_metadata_string_container[0] = "metadata_document";
+                                    for (int j = 1; j <= extracted_metadata_container.Count; j++)
+                                    {
+                                        extracted_metadata_string_container[j] = extracted_metadata_container[j - 1];
+                                    }
+                                }
+                            }
+                            // Metadane dokumentów ekstrahujemy tutaj
+                            if (file.Extension == ".docx" ||
+                                file.Extension == ".odt" ||
+                                file.Extension == ".ods" ||
+                                file.Extension == ".odp" ||
+                                file.Extension == ".xls" ||
+                                file.Extension == ".xlsx" ||
+                                file.Extension == ".pdf" ||
+                                file.Extension == ".ppt" ||
+                                file.Extension == ".pptx"
+                                )
+                            {
+                                extracted_metadata_container.AddRange(extract_metadata(file, document_ordering_set));
+                                extracted_metadata_string_container = new string[extracted_metadata_container.Count + 1];
+                                extracted_metadata_string_container[0] = "metadata_document";
+                                for (int j = 1; j <= extracted_metadata_container.Count; j++)
+                                {
+                                    extracted_metadata_string_container[j] = extracted_metadata_container[j - 1];
+                                }
+                            }
+                            // Metadane plików .htm i .html ekstrahujemy tutaj
+                            if (file.Extension == ".htm" ||
+                                file.Extension == ".html" ||
+                                file.Extension == ".xml"
+                                )
+                            {
+                                extracted_metadata_container.AddRange(extract_metadata(file, complex_ordering_set));
+                                extracted_metadata_string_container = new string[extracted_metadata_container.Count + 1];
+                                extracted_metadata_string_container[0] = "metadata_complex";
+                                for (int j = 1; j <= extracted_metadata_container.Count; j++)
+                                {
+                                    extracted_metadata_string_container[j] = extracted_metadata_container[j - 1];
+                                }
+                            }
+                            // Metadane obrazków/zdjęć ekstrahujemy tutaj
+                            if (file.Extension == ".jpg" ||
+                                file.Extension == ".jpeg" ||
+                                file.Extension == ".tiff" ||
+                                file.Extension == ".bmp"
+                                )
+                            {
+                                extracted_metadata_container.AddRange(extract_metadata(file, image_ordering_set));
+                                extracted_metadata_string_container = new string[extracted_metadata_container.Count + 2]; // +2 bo mamy PHash.
+                                extracted_metadata_string_container[0] = "metadata_image";
+                                for (int j = 1; j <= extracted_metadata_container.Count; j++)
+                                {
+                                    extracted_metadata_string_container[j] = extracted_metadata_container[j - 1];
+                                }
+                                FileStream Hashstream = new FileStream(file.FullName,FileMode.Open);
+                                ulong PHash = 0;
+                                try
+                                {
+                                    PHash = Shipwreck.Phash.ImagePhash.ComputeDctHash(Hashstream);
+                                }
+                                catch (Exception error)
+                                {
+                                    //DEBUG: Jeżeli obraz wygeneruje błąd - wyświetlamy o tym informację w oknie.
+                                    MessageBox.Show("Błąd przy liczeniu p-hash dla pliku " + file.Name + "\n Szczegóły: " + error.Data);
+                                }
+                                extracted_metadata_string_container[extracted_metadata_container.Count + 1] = PHash.ToString(); // Dodajemy PHash na koniec.
+                            }
+                            // Metadane plików multimedialnych ekstrahujemy tutaj
+                            if (file.Extension == ".mp4" ||
+                                file.Extension == ".avi" ||
+                                file.Extension == ".mp3" ||
+                                file.Extension == ".wav"
+                                )
+                            {
+                                extracted_metadata_container.AddRange(extract_metadata(file, multimedia_ordering_set));
+                                extracted_metadata_string_container = new string[extracted_metadata_container.Count + 1];
+                                extracted_metadata_string_container[0] = "metadata_multimedia";
+                                for (int j = 1; j <= extracted_metadata_container.Count; j++)
+                                {
+                                    extracted_metadata_string_container[j] = extracted_metadata_container[j - 1];
+                                }
+                            }
+
+                            result.Add(extracted_metadata_string_container);
+                            BGW_metadata_extractor.ReportProgress(0);
+                        }
+                    } */
