@@ -313,13 +313,11 @@
     <EmbeddedResource Include="Metadata_extractor.resx">
       <DependentUpon>Metadata_extractor.cs</DependentUpon>
     </EmbeddedResource>
-<<<<<<< HEAD
     <EmbeddedResource Include="NewPasswordForm.resx">
       <DependentUpon>NewPasswordForm.cs</DependentUpon>
-=======
+	</EmbeddedResource>
     <EmbeddedResource Include="Obrazy_main.resx">
       <DependentUpon>Obrazy_main.cs</DependentUpon>
->>>>>>> 48be13ee48d07716d271b50195cffca69965f796
     </EmbeddedResource>
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>
