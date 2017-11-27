@@ -15,6 +15,7 @@ using System.Xml;
 using System.Security.Cryptography;
 using System.Xml.Linq;
 using FirebirdSql.Data.FirebirdClient;
+using PRI_KATALOGOWANIE_PLIKÓW.classes;
 
 namespace PRI_KATALOGOWANIE_PLIKÓW
 {
@@ -329,6 +330,29 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
     // Obsługa logiki wymaganej przez WPF i resizing okna.
         public Main_form()
         {
+            // Only allow app to run after successful login 
+            // or password setting
+            if (new LoginManager().PasswordIsSet())
+            {
+                LoginForm loginForm = new LoginForm();
+                DialogResult authorized = loginForm.ShowDialog();
+                if (!(authorized == DialogResult.OK))
+                {
+                    Application.Exit();
+                    Environment.Exit(0);
+                }
+            } 
+            else
+            {
+                NewPasswordForm newPasswordForm = new NewPasswordForm();
+                DialogResult registered = newPasswordForm.ShowDialog();
+                if(!(registered == DialogResult.OK))
+                {
+                    Application.Exit();
+                    Environment.Exit(0);
+                }
+            }
+
             InitializeComponent();
 
             DetermineFilepaths();

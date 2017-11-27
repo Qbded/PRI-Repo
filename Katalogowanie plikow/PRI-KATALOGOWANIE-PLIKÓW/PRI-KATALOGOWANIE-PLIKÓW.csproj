@@ -210,7 +210,9 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="classes\ConfigManager.cs" />
     <Compile Include="classes\ExtractionOptions.cs" />
+    <Compile Include="classes\LoginManager.cs" />
     <Compile Include="classes\Mp3ToWavConverter.cs" />
     <Compile Include="classes\Statistics.cs" />
     <Compile Include="classes\TimeRange.cs" />
@@ -233,6 +235,18 @@
     </Compile>
     <Compile Include="Karol_progress.Designer.cs">
       <DependentUpon>Karol_progress.cs</DependentUpon>
+    </Compile>
+    <Compile Include="LoginForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="LoginForm.Designer.cs">
+      <DependentUpon>LoginForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="NewPasswordForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="NewPasswordForm.Designer.cs">
+      <DependentUpon>NewPasswordForm.cs</DependentUpon>
     </Compile>
     <Compile Include="Properties_window.cs">
       <SubType>Form</SubType>
@@ -269,11 +283,17 @@
     <EmbeddedResource Include="Karol_progress.resx">
       <DependentUpon>Karol_progress.cs</DependentUpon>
     </EmbeddedResource>
+    <EmbeddedResource Include="LoginForm.resx">
+      <DependentUpon>LoginForm.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="Main_form.resx">
       <DependentUpon>Main_form.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Metadata_extractor.resx">
       <DependentUpon>Metadata_extractor.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="NewPasswordForm.resx">
+      <DependentUpon>NewPasswordForm.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>
