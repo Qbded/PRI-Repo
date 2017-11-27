@@ -39,7 +39,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
          * System.Datetime Item6 - przechowuje datę ostatniego katalogowanie dla pliku (czyt. kiedy został ostatnim razem zmieniony podczas katalogowania).
          * int Item7 - przechowuje rozmiar pliku.
         */
-        public List<Tuple<int, string>> directories_grabbed { get; set; } 
+        public List<Tuple<int, string>> directories_grabbed { get; set; }
         public List<Tuple<int, string, string, string, System.DateTime, System.DateTime, long>> files_grabbed { get; set; }
 
         // Tutaj przechowujemy connection string do bazy danych.
@@ -64,26 +64,52 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
         // Tutaj przechowujemy skrypty tworzące bazę danych, nie muszą być koniecznie globalne dla całego okna, ale chwilowo dla wygody takimi je uczyniłem.
         private List<string> creation_scripts { get; set; }
 
-        // Wcześniejsze zmienne globalne jeszcze z kodu Janka, jedynie dodałem w extends kropki przed nazwami rozszerzeń.
-        public string[] extends = { ".txt", ".csv", ".doc", ".docx", ".odt", ".ods", ".odp", ".xls", ".xlsx", ".pdf", ".ppt", ".pptx", ".pps", ".fb2", ".htm", ".html", ".tsv", ".xml", ".jpg", ".jpeg", ".tiff", ".bmp", ".mp4", ".avi", ".mp3", ".wav"};
+        // Lista z obsługiwanymi rozszerzeniami.
+        public List<Tuple<int, string>> extends = new List<Tuple<int, string>>() {
+                                                                               // Formaty plików tekstowych - identyfikator 0:
+                                                                               new Tuple<int, string>(0, ".txt"),
+                                                                               new Tuple<int, string>(0, ".csv"),
+                                                                               new Tuple<int, string>(0, ".tsv"),
+                                                                               new Tuple<int, string>(0, ".fb2"),
+                                                                               // Formaty dokumentów - identyfikator 1:
+                                                                               new Tuple<int, string>(1, ".docx"),
+                                                                               new Tuple<int, string>(1, ".odt"),
+                                                                               new Tuple<int, string>(1, ".ods"),
+                                                                               new Tuple<int, string>(1, ".odp"),
+                                                                               new Tuple<int, string>(1, ".xls"),
+                                                                               new Tuple<int, string>(1, ".xlsx"),
+                                                                               new Tuple<int, string>(1, ".pdf"),
+                                                                               new Tuple<int, string>(1, ".ppt"),
+                                                                               new Tuple<int, string>(1, ".pptx"),
+                                                                               // Formaty plików złożonych - identyfikator 2:
+                                                                               new Tuple<int, string>(2, ".htm"),
+                                                                               new Tuple<int, string>(2, ".html"),
+                                                                               new Tuple<int, string>(2, ".xml"),
+                                                                               // Formaty plików graficznych - identyfikator 3:
+                                                                               new Tuple<int, string>(3, ".jpg"),
+                                                                               new Tuple<int, string>(3, ".jpeg"),
+                                                                               new Tuple<int, string>(3, ".tiff"),
+                                                                               new Tuple<int, string>(3, ".bmp"),
+                                                                               // Formaty plików multimedialnych - identyfikator 4:
+                                                                               new Tuple<int, string>(4, ".mp4"),
+                                                                               new Tuple<int, string>(4, ".avi"),
+                                                                               new Tuple<int, string>(4, ".mp3"),
+                                                                               new Tuple<int, string>(4, ".wav"),
+                                                                               // Identyfikator 5 służy dla plików .doc - są przypadkiem szczególnym:
+                                                                               new Tuple<int, string>(5, ".doc")
+                                                                               };
 
-        // Z tych zmiennych nie korzystałem nigdy...
-        /*
-        private string regex = @"((u|s|wy){0,1}(tw((órz)|(orzyć)|(orzenie))))(\s)(etykiet(y|ę){0,1})(\s)((<[a-ząęśćżźół\#]+\$>)+)(\s)((dla){0,1})(\s)((każde){0,1}((go)|j){0,1})(\s){0,1}((grupy){0,1})(\s){0,1}((((plik)|(obiekt))(u|ów))|(lokacji))(\s)(((\*{0,1})\.{0,1}[a-z0-9]{3,4}\s{0,1})+)";
-        private string regexCreate = @"(create)(\s)(label)(\s)((<[a-ząęśćżźół\#]+\$>)+)(\s)((for){0,1})(\s)((every)|(all)|(each){0,1})(\s){0,1}((group of files)|(files' group){0,1})(\s)(((\*{0,1})\.{0,1}[a-z0-9]{3,4}\s{0,1})+)";
-        private string[] exampleCommands = { "utwórz etykietę <x$> dla pliku *.mp3", "utwórz etykietę <x$> dla obiektu *.mp3", "utwórz etykietę <x$> dla lokacji *.mp3", "utwórz etykiety <x$><y$> dla grupy plików *.mp3 *wav", "utwórz etykiety <x$><y$> dla plików *.mp3 *wav", "utwórz etykiety <x$><y$> plików *.mp3 *wav", "utwórz etykiety <x$><y$> dla obiektów *.mp3 *wav", "utwórz etykiety <x$><y$> dla lokacji *.mp3 *wav" };
-        private string[] exampleCommandsCreate = { "create label <x$> for every file *.mp3", "create label <x$> for each file *.mp3", "create label <x$> for all file *.mp3", "create label <x$> for file *.mp3", "create label <x$><y$> for files' group *.mp3 *wav", "create label <x$><y$> for group of file *.mp3 *wav", };
-        int randResult = 0;
-        int randResultCreate = 0;
-        List<string> excludedMetadata;
-        */
+        
+        
 
+        
         // Ścieżki do poszczególnych plików niezbędnych do działania programu:
         private string program_path = null;
         private string output_path = null;
         private string xml_path = null;
         private string txt_path = null;
-        private string database_path = null;
+        private string database_file_path = null;
+        private string database_engine_path = null;
 
         // Zmienne stanu programu:
         private bool database_validated_successfully = false;
@@ -142,10 +168,11 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             this.output_path = target_directory + @"\output\";
             this.xml_path = target_directory + @"\metadata.xml"; // XML'ka Janka,
             this.txt_path = target_directory + @"\$$$.txt"; // Plik testowy Janka,
-            this.database_path = target_directory + @"\db\catalog.fdb"; // Lokacja katalogu tworzonego przez program
+            this.database_file_path = target_directory + @"\db\catalog.fdb"; // Lokacja katalogu tworzonego przez program
+            this.database_engine_path = target_directory + @"\bin\firebird_server\fbclient.dll"; // Lokacja silnika bazodanowego w wersji embedded
         }
 
-    /* Tworzenie reprezentacji bazy danych (jej tabel i kolumn) w programie
+        /* Tworzenie reprezentacji bazy danych (jej tabel i kolumn) w programie
          * 
          * Dodajemy do list: database_tables i database_columns; wartości wyznaczone empirycznie na podstawie danych testowych.
          * 
@@ -168,13 +195,13 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
 
             // Tutaj tworzymy dane o kolumnach bazy danych:
 
-            // Kolumny tabeli virtual_folder:
+            // Definicja kolumn tabeli virtual_folder:
             database_columns.Add(new Tuple<int, string, string>(0, @"ID", @"INT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY"));
             database_columns.Add(new Tuple<int, string, string>(0, @"NAME", @"VARCHAR(512) CHARACTER SET UTF8 NOT NULL"));
             database_columns.Add(new Tuple<int, string, string>(0, @"DIR_ID", @"INT")); // null dozwolony tylko dla katalogu nadrzędnego.
             database_columns.Add(new Tuple<int, string, string>(0, @"MODIFIABLE", @"BOOLEAN NOT NULL"));
 
-            // Kolumny tabeli metadata_text:
+            // Definicja kolumn ogólnych tabeli metadata_text:
             database_columns.Add(new Tuple<int, string, string>(1, @"ID", @"INT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY"));
             database_columns.Add(new Tuple<int, string, string>(1, @"DIR_ID", @"INT NOT NULL REFERENCES virtual_folder"));
             database_columns.Add(new Tuple<int, string, string>(1, @"CATALOGING_DATE", @"TIMESTAMP DEFAULT CURRENT_TIME"));
@@ -186,10 +213,11 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             database_columns.Add(new Tuple<int, string, string>(1, @"SIZE", @"BIGINT NOT NULL"));
             database_columns.Add(new Tuple<int, string, string>(1, @"FS_CREATION_TIME", @"TIMESTAMP NOT NULL"));
             database_columns.Add(new Tuple<int, string, string>(1, @"FS_LAST_WRITE_TIME", @"TIMESTAMP NOT NULL"));
+            // Definicja kolumn specyficznych dla metadata_text:
             database_columns.Add(new Tuple<int, string, string>(1, @"CONTENT_TYPE", @"VARCHAR(80)"));
             database_columns.Add(new Tuple<int, string, string>(1, @"CONTENT_ENCODING", @"VARCHAR(64)"));
 
-            // Kolumny tabeli metadata_document
+            // Definicja kolumn ogólnych tabeli metadata_document:
             database_columns.Add(new Tuple<int, string, string>(2, @"ID", @"INT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY"));
             database_columns.Add(new Tuple<int, string, string>(2, @"DIR_ID", @"INT NOT NULL REFERENCES virtual_folder"));
             database_columns.Add(new Tuple<int, string, string>(2, @"CATALOGING_DATE", @"TIMESTAMP DEFAULT CURRENT_TIME"));
@@ -201,6 +229,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             database_columns.Add(new Tuple<int, string, string>(2, @"SIZE", @"BIGINT NOT NULL"));
             database_columns.Add(new Tuple<int, string, string>(2, @"FS_CREATION_TIME", @"TIMESTAMP NOT NULL"));
             database_columns.Add(new Tuple<int, string, string>(2, @"FS_LAST_WRITE_TIME", @"TIMESTAMP NOT NULL"));
+            // Definicja kolumn specyficznych dla metadata_document:
             database_columns.Add(new Tuple<int, string, string>(2, @"CONTENT_TYPE",  @"VARCHAR(80)"));
             database_columns.Add(new Tuple<int, string, string>(2, @"CREATION_TIME", @"TIMESTAMP"));
             database_columns.Add(new Tuple<int, string, string>(2, @"LAST_WRITE_TIME", @"TIMESTAMP"));
@@ -224,7 +253,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             database_columns.Add(new Tuple<int, string, string>(2, @"APPLICATION_NAME", @"VARCHAR(64) CHARACTER SET UTF8"));
             database_columns.Add(new Tuple<int, string, string>(2, @"APPLICATION_VERSION", @"VARCHAR(64) CHARACTER SET UTF8"));
 
-            //Kolumny tabeli metadata_complex
+            //Definicja kolumn ogólnych tabeli metadata_complex:
             database_columns.Add(new Tuple<int, string, string>(3, @"ID", @"INT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY"));
             database_columns.Add(new Tuple<int, string, string>(3, @"DIR_ID", @"INT NOT NULL REFERENCES virtual_folder"));
             database_columns.Add(new Tuple<int, string, string>(3, @"CATALOGING_DATE", @"TIMESTAMP DEFAULT CURRENT_TIME"));
@@ -236,9 +265,12 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             database_columns.Add(new Tuple<int, string, string>(3, @"SIZE", @"BIGINT NOT NULL"));
             database_columns.Add(new Tuple<int, string, string>(3, @"FS_CREATION_TIME", @"TIMESTAMP NOT NULL"));
             database_columns.Add(new Tuple<int, string, string>(3, @"FS_LAST_WRITE_TIME", @"TIMESTAMP NOT NULL"));
+            // Definicja kolumn specyficznych dla metadata_complex:
             database_columns.Add(new Tuple<int, string, string>(3, @"CONTENT_TYPE", @"VARCHAR(80)"));
             database_columns.Add(new Tuple<int, string, string>(3, @"CONTENT_ENCODING", @"VARCHAR(64)"));
             database_columns.Add(new Tuple<int, string, string>(3, @"TITLE", @"VARCHAR(512)"));
+            // Dalsze kolumny przechowywałyby dane z pliku, nam zależy tylko na metadanych!
+            /*
             database_columns.Add(new Tuple<int, string, string>(3, @"VM_COUNT", @"INT"));
 
             for (int i = 0; i < 64; i++)
@@ -246,8 +278,9 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                 database_columns.Add(new Tuple<int, string, string>(3, @"VM_" + i.ToString() + @"_NAME", @"VARCHAR(64) CHARACTER SET UTF8"));
                 database_columns.Add(new Tuple<int, string, string>(3, @"VM_" + i.ToString() + @"_DATA", @"VARCHAR(128) CHARACTER SET UTF8"));
             }
+            */
 
-            //Kolumny tabeli metadata_image
+            // Definicja kolumn ogólnych tabeli metadata_image:
             database_columns.Add(new Tuple<int, string, string>(4, @"ID", @"INT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY"));
             database_columns.Add(new Tuple<int, string, string>(4, @"DIR_ID", @"INT NOT NULL REFERENCES virtual_folder"));
             database_columns.Add(new Tuple<int, string, string>(4, @"CATALOGING_DATE", @"TIMESTAMP DEFAULT CURRENT_TIME"));
@@ -259,7 +292,15 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             database_columns.Add(new Tuple<int, string, string>(4, @"SIZE", @"BIGINT NOT NULL"));
             database_columns.Add(new Tuple<int, string, string>(4, @"FS_CREATION_TIME", @"TIMESTAMP NOT NULL"));
             database_columns.Add(new Tuple<int, string, string>(4, @"FS_LAST_WRITE_TIME", @"TIMESTAMP NOT NULL"));
-            //Kolumny tabeli metadata_multimedia
+            // Definicja kolumn specyficznych dla metadata_image:
+            database_columns.Add(new Tuple<int, string, string>(4, @"CONTENT_TYPE", @"VARCHAR(80) CHARACTER SET UTF8"));
+            database_columns.Add(new Tuple<int, string, string>(4, @"COMMENT", @"BLOB SUB_TYPE TEXT CHARACTER SET UTF8"));
+            database_columns.Add(new Tuple<int, string, string>(4, @"COMPRESSION_TYPE", @"VARCHAR(80) CHARACTER SET UTF8"));
+            database_columns.Add(new Tuple<int, string, string>(4, @"WIDTH", @"INT"));
+            database_columns.Add(new Tuple<int, string, string>(4, @"HEIGHT", @"INT"));
+            database_columns.Add(new Tuple<int, string, string>(4, @"PHASH", @"BIGINT"));
+
+            //Definicja kolumn ogólnych tabeli metadata_multimedia
             database_columns.Add(new Tuple<int, string, string>(5, @"ID", @"INT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY"));
             database_columns.Add(new Tuple<int, string, string>(5, @"DIR_ID", @"INT NOT NULL REFERENCES virtual_folder"));
             database_columns.Add(new Tuple<int, string, string>(5, @"CATALOGING_DATE", @"TIMESTAMP DEFAULT CURRENT_TIME"));
@@ -271,6 +312,22 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             database_columns.Add(new Tuple<int, string, string>(5, @"SIZE", @"BIGINT NOT NULL"));
             database_columns.Add(new Tuple<int, string, string>(5, @"FS_CREATION_TIME", @"TIMESTAMP NOT NULL"));
             database_columns.Add(new Tuple<int, string, string>(5, @"FS_LAST_WRITE_TIME", @"TIMESTAMP NOT NULL"));
+            // Definicja kolumn specyficznych dla metadata_multimedia:
+            database_columns.Add(new Tuple<int, string, string>(5, @"CONTENT_TYPE", @"VARCHAR(80) CHARACTER SET UTF8"));
+            database_columns.Add(new Tuple<int, string, string>(5, @"TITLE", @"VARCHAR(256) CHARACTER SET UTF8"));
+            database_columns.Add(new Tuple<int, string, string>(5, @"TRACK_NUMBER", @"INT"));
+            database_columns.Add(new Tuple<int, string, string>(5, @"ALBUM", @"VARCHAR(256) CHARACTER SET UTF8"));
+            database_columns.Add(new Tuple<int, string, string>(5, @"RELEASE_DATE", @"VARCHAR(64) CHARACTER SET UTF8"));
+            database_columns.Add(new Tuple<int, string, string>(5, @"AUTHOR", @"VARCHAR(256) CHARACTER SET UTF8"));
+            database_columns.Add(new Tuple<int, string, string>(5, @"GENRE", @"VARCHAR(256) CHARACTER SET UTF8"));
+            database_columns.Add(new Tuple<int, string, string>(5, @"DURATION", @"VARCHAR(32) CHARACTER SET UTF8"));
+            database_columns.Add(new Tuple<int, string, string>(5, @"SAMPLING_RATE", @"INT"));
+            database_columns.Add(new Tuple<int, string, string>(5, @"AUDIO_COMPRESSOR", @"VARCHAR(128) CHARACTER SET UTF8"));
+            database_columns.Add(new Tuple<int, string, string>(5, @"WIDTH", @"INT"));
+            database_columns.Add(new Tuple<int, string, string>(5, @"HEIGHT", @"INT"));
+            database_columns.Add(new Tuple<int, string, string>(5, @"FRAME_RATE", @"VARCHAR(6) CHARACTER SET UTF8"));
+            database_columns.Add(new Tuple<int, string, string>(5, @"VIDEO_COMPRESSOR", @"VARCHAR(128) CHARACTER SET UTF8"));
+            database_columns.Add(new Tuple<int, string, string>(5, @"COMMENT", @"BLOB SUB_TYPE TEXT CHARACTER SET UTF8"));
             database_columns.Add(new Tuple<int, string, string>(5, @"EXTRACTED_TEXT", @"BLOB SUB_TYPE TEXT CHARACTER SET UTF8"));
         }
 
@@ -318,15 +375,15 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
         void PrepareConnectionString()
         {
             database_connection_string_builder = new FbConnectionStringBuilder();
-            database_connection_string_builder.DataSource = "localhost"; // Identyfikator sieciowy - do kogo sie laczymy. Moze byc postaci adres IP+Port.
-            database_connection_string_builder.UserID = "SYSDBA"; // Defaultowy uzytkownik z najwyzszymi uprawnieniami do systemu bazodanowego, tworzony podczas instalacji
-            database_connection_string_builder.Password = "5o9orjoh"; // Haslo nadane podczas instalacji Firebird'a użytkownikowi SYSDBA, uzupełnić w zależności u kogo jest jakie
-            database_connection_string_builder.Database = database_path;
+            database_connection_string_builder.ServerType = FbServerType.Embedded;
+            database_connection_string_builder.UserID = "SYSDBA"; // Defaultowy uzytkownik z najwyzszymi uprawnieniami do systemu bazodanowego.
+            database_connection_string_builder.Password = ""; // Haslo nie jest sprawdzane w wersji embedded, można dać tu cokolwiek.
+            database_connection_string_builder.Database = database_file_path;
+            database_connection_string_builder.ClientLibrary = database_engine_path;
             database_connection_string_builder.Charset = "UTF8";
-            database_connection_string_builder.ServerType = FbServerType.Default;
         }
 
-    // Obsługa logiki wymaganej przez WPF i resizing okna.
+        // Obsługa logiki wymaganej przez WPF i resizing okna.
         public Main_form()
         {
             InitializeComponent();
@@ -415,7 +472,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
          */
         private void BT_test_database_click(object sender, EventArgs e)
         {
-            if (File.Exists(database_path))
+            if (File.Exists(database_file_path))
             {
                 int[] validation_result = new int[database_tables.Count];
                 string[] validation_return_string_container = new string[database_tables.Count];
@@ -447,7 +504,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             }
             else
             {
-                MessageBox.Show("Nie znalazłem bazy, tworze nową w katalogu:\n" + database_path);
+                MessageBox.Show("Nie znalazłem bazy, tworze nową w katalogu:\n" + database_file_path);
 
                 if (!Directory.Exists(program_path + @"\db"))
                 {
@@ -490,7 +547,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
         }
 
 
-        // Działa nie do końca poprawnie, zjada dane w ALTERNATE_PATHS... no time to debug, czas przejść do 
+        // Działa nie do końca poprawnie, zjada dane w ALTERNATE_PATHS... no time to debug!
         private void metadata_extractor_OnDataAvalible(object sender, EventArgs e)
         {
             // Tutaj końcowo przeprowadzimy katalogowanie, a nie przez checkbox'a.
@@ -546,26 +603,17 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                                         if (file_check.Exists == true)
                                         {
                                             // Znaleźliśmy co chcieliśmy, modyfikujemy zmienna path w naszej zmiennej aby wskazywała na nasz działający path z ALTERNATE_PATHS
-                                            string alternate_filepath_to_add = string.Empty;
-
                                             FbCommand new_path_setter = new FbCommand("UPDATE " + database_tables[i].Item2 + " " +
-                                                                                      "SET PATH = @New_path, ALTERNATE_PATHS = @New_alternate_paths " +
+                                                                                      "SET PATH = @New_path, ALTERNATE_PATH = @New_alternate_paths " +
                                                                                       "WHERE ID = @Id;"
                                                                                       ,
                                                                                       new FbConnection(database_connection_string_builder.ConnectionString));
 
                                             alternate_paths.Remove(alternate_filepath);
 
-                                            for(int j = 0; j < alternate_paths.Count; j++)
-                                            {
-                                                if(j == 0) alternate_filepath_to_add += alternate_paths.ElementAt(j);
-                                                else alternate_filepath_to_add += '|' + alternate_paths.ElementAt(j);
-                                            }
-
-
                                             new_path_setter.Parameters.AddWithValue("@Id", current_worked_id);
                                             new_path_setter.Parameters.AddWithValue("@New_path", current_filepath);
-                                            new_path_setter.Parameters.AddWithValue("@New_alternate_paths", alternate_filepath_to_add);
+                                            new_path_setter.Parameters.AddWithValue("@New_alternate_paths", alternate_paths);
 
                                             new_path_setter.Connection.Open();
                                             new_path_setter.ExecuteNonQuery();
@@ -1477,7 +1525,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                                                                    "WHERE rdb$view_blr IS NULL AND (rdb$system_flag is NULL OR rdb$system_flag = 0);"
                                                                    ,
                                                                    new FbConnection(database_connection_string));
-            
+
             // Kopiujemy wyniki zapytania do naszej database_tables żeby móc z nich korzystać wewnątrz programu
             database_grab_tables.Fill(database_tables_grabbed);
 
@@ -1584,7 +1632,12 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                 }
             }
             LV_catalog_display.VirtualListSize = directories_grabbed.Count + files_grabbed.Count;
-            if(LV_catalog_display.VirtualListSize >=1) LV_catalog_display.RedrawItems(0, LV_catalog_display.VirtualListSize-1, false);
+            if (LV_catalog_display.FocusedItem != null)
+            {
+                LV_catalog_display.FocusedItem.Selected = false;
+                LV_catalog_display.FocusedItem.Focused = false;
+            }
+            if (LV_catalog_display.VirtualListSize >=1) LV_catalog_display.RedrawItems(0, LV_catalog_display.VirtualListSize-1, false);
         }
 
         // Wywołuje się przed LV_catalog_display_item_selected, służy do obsługi SHIFT+LMB w wybieraniu przedziałów.
@@ -1624,9 +1677,12 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             {
                 if (LV_catalog_display.Enabled == false)
                 {
-                    LV_catalog_display_folder_content_display(1);
-                    catalog_folder_id_list.Add(1);
-                    catalog_folder_path_list.Add(@"\");
+                    if (catalog_folder_id_list.Count == 0)
+                    {
+                        LV_catalog_display_folder_content_display(1);
+                        catalog_folder_id_list.Add(1);
+                        catalog_folder_path_list.Add(@"\");
+                    }
                     TB_catalog_path_current.Text = catalog_folder_path_list.Last();
                     LV_catalog_display.Enabled = true;
                     BT_previous.Enabled = true;
@@ -1635,15 +1691,19 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                 }
                 else
                 {
-                    // Wyczyść wcześniejszą zawartość i zregeneruj
+                    /*
                     TB_catalog_path_current.Text = string.Empty;
                     if (LV_catalog_display_cache != null) Array.Clear(LV_catalog_display_cache, 0, LV_catalog_display_cache.Length);
                     catalog_folder_id_list.Clear();
                     catalog_folder_path_list.Clear();
-                    LV_catalog_display_folder_content_display(1);
-                    catalog_folder_id_list.Add(1);
-                    catalog_folder_path_list.Add(@"\");
-                    TB_catalog_path_current.Text = catalog_folder_path_list.Last();
+                    */
+                    if (catalog_folder_id_list.Count == 0)
+                    {
+                        LV_catalog_display_folder_content_display(1);
+                        catalog_folder_id_list.Add(1);
+                        catalog_folder_path_list.Add(@"\");
+                    }
+                    //TB_catalog_path_current.Text = catalog_folder_path_list.Last();
                     LV_catalog_display.Enabled = true;
                     BT_previous.Enabled = true;
                     BT_specials.Enabled = true;
@@ -1879,6 +1939,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             if (e.ClickedItem.Text.Equals("Zmień nazwę"))
             {
                 // parent.Text - ID obiektu który wysłał polecenie zmiany nazwy
+                super_parent.LabelEdit = true;
                 super_parent.Items[int.Parse(parent.Text)].BeginEdit();
             }
             if (e.ClickedItem.Text.Equals("Właściwości"))
@@ -2050,7 +2111,8 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                         database_file_renamer.Connection.Close();
                     }
                 }
-            }      
+            }
+            parent.LabelEdit = false;   
         }
 
         // Obsługuje zdarzenie pojedynczego kliknięcia myszą.
@@ -2138,6 +2200,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                 {
                     // Otwieramy folder
                     LV_catalog_display_change_directory(target);
+                    LV_catalog_display_item_selection.Clear();
                 }
                 else
                 {
@@ -2176,15 +2239,27 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             else MessageBox.Show("Jestem już w folderze głównym.");
         }
 
-        // Obsługa powrotu danych z opcji specjalnych (gdy programy tam zawarte zwracają wynik):
+        // Obsługa zdarzenia powrotu z wyboru opcji specjalnych - używana przez wszystkie okna specjalne, głównie zajmują się dodawaniem
+        // wyniku do bazy danych w odpowiadający dla okna zwracającego sposób.
         void Special_function_window_OnDataAvalible(object sender, EventArgs e)
         {
-            // Obsługa zdarzenia powrotu z wyboru opcji specjalnych - używana przez zarówno kod Janka jak i kod Karola, głównie zajmują się dodawaniem
-            // wyniku do bazy danych w odpowiedni sposób.
-            int operation_index = 0, counter = 0, working_directory = 0;
+            
+            int operation_index = 0, counter = 0, working_directory = 0, iter_count;
+
+            // Dane zwracane z części Janka:
             List<Tuple<int, string>> audio_sorter_folders_to_add;
             List<Tuple<int, string>> audio_sorter_files_to_add;
+
+            // Dane zwracane z części Karola:
             List<Tuple<int, string, string>> extractor_texts_to_add;
+
+            // Dane zwracane z części Kuby:
+            List<Tuple<int, string>> image_processor_folders_to_add;
+            List<Tuple<int, string>> image_processor_files_to_add;
+            List<Tuple<int, string>> searcher_folders_to_add;
+            List<Tuple<int, string>> searcher_files_to_add;
+
+
             List<Tuple<int, int, string, string, string>> all_files_selected = new List<Tuple<int, int, string, string, string>>();
 
             var folders_in_selection = LV_catalog_display_item_selection.Where(x => x.SubItems[1].Text.Equals("Folder"));
@@ -2213,7 +2288,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             operation_index = special_option_selector.return_index;
             switch (operation_index)
             {
-                case 1:
+                case 0:
                     extractor_texts_to_add = new List<Tuple<int, string, string>>();
                     extractor_texts_to_add = special_option_selector.extractor_texts_returned;
 
@@ -2295,14 +2370,14 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                         MessageBox.Show(report_line_1st + report_line_2nd, "Raport z ekstrakcji");
                     }
                     break;
-                case 2:
+                case 1:
                     audio_sorter_folders_to_add = new List<Tuple<int, string>>();
                     audio_sorter_files_to_add = new List<Tuple<int, string>>();
 
                     audio_sorter_folders_to_add = special_option_selector.audio_sorter_folders_returned;
                     audio_sorter_files_to_add = special_option_selector.audio_sorter_files_returned;
-
-                    int iter_count = audio_sorter_folders_to_add.Count;
+                    
+                    iter_count = audio_sorter_folders_to_add.Count;
                     for(int i = 0; i<iter_count; i++)
                     {
                         Tuple<int, string> processed_folder = audio_sorter_folders_to_add.ElementAt(i);
@@ -2358,9 +2433,99 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                     }
                     LV_catalog_display_folder_content_display(catalog_folder_id_list.Last());   
                     break;
+                case 2:
+                    image_processor_folders_to_add = new List<Tuple<int, string>>();
+                    image_processor_files_to_add = new List<Tuple<int, string>>();
+
+                    image_processor_folders_to_add = special_option_selector.image_processor_folders_returned;
+                    image_processor_files_to_add = special_option_selector.image_processor_files_returned;
+
+                    //Nie sprawdzamy czy nie ma repeatów w folderach, jako że są one tworzone inaczej niż w częśći Janka.
+
+                    //Nie usuwamy także powtórzeń z listy plików - po prostu nie ma tam żadnych.
+
+                    foreach (Tuple<int, string> folder in image_processor_folders_to_add)
+                    {
+                        if (image_processor_folders_to_add.FindAll(x => x.Item1.Equals(folder.Item1)).Count() > 0)
+                        {
+                            int new_id = 0;
+
+                            database_virtual_folder_make(folder.Item2, catalog_folder_id_list.Last(), true);
+                            DataTable new_folder_ID_container = new DataTable();
+                            FbDataAdapter new_folder_ID_grabber = new FbDataAdapter("SELECT ID " +
+                                                                                    "FROM " + database_tables[0].Item2 + " " +
+                                                                                    "WHERE NAME = @Name " +
+                                                                                    "AND DIR_ID = @Target_directory_id;"
+                                                                                    ,
+                                                                                    new FbConnection(database_connection_string_builder.ConnectionString));
+
+                            new_folder_ID_grabber.SelectCommand.Parameters.AddWithValue("@Name", folder.Item2);
+                            new_folder_ID_grabber.SelectCommand.Parameters.AddWithValue("@Target_directory_id", working_directory);
+
+
+                            new_folder_ID_grabber.Fill(new_folder_ID_container);
+                            if (new_folder_ID_container.Rows.Count == 1)
+                            {
+                                new_id = (int)new_folder_ID_container.Rows[0].ItemArray[0];
+                            }
+
+                            foreach (Tuple<int, string> file in image_processor_files_to_add.FindAll(x => x.Item1.Equals(folder.Item1)))
+                            {
+                                if (new_id == 0) new_id = catalog_folder_id_list.Last();
+                                Tuple<int, int, string, string, string> found_file = all_files_selected.Find(x => (x.Item3 + x.Item5).Equals(file.Item2));
+                                if (found_file != null) database_virtual_file_copy(found_file.Item2, new_id, found_file.Item4, found_file.Item3, found_file.Item5);
+                            }
+                        }
+                    }
+                    LV_catalog_display_folder_content_display(catalog_folder_id_list.Last());
+                    break;
                 case 3:
+                    searcher_folders_to_add = new List<Tuple<int, string>>();
+                    searcher_files_to_add = new List<Tuple<int, string>>();
+
+                    searcher_folders_to_add = special_option_selector.searcher_folders_returned;
+                    searcher_files_to_add = special_option_selector.searcher_files_returned;
+
+                    MessageBox.Show("Przeszukanie wskazanego zbioru danych zakonczone!\n Liczba znalezionych plików: " + searcher_files_to_add.Count);
+
+                    //Nie sprawdzamy czy nie ma repeatów w folderach, jako że są one tworzone inaczej niż w częśći Janka.
+
+                    //Nie usuwamy także powtórzeń z listy plików - po prostu nie ma tam żadnych.
+
+                    foreach (Tuple<int, string> folder in searcher_folders_to_add)
+                    {
+                        if (searcher_folders_to_add.FindAll(x => x.Item1.Equals(folder.Item1)).Count() > 0)
+                        {
+                            int new_id = 0;
+
+                            database_virtual_folder_make(folder.Item2, catalog_folder_id_list.Last(), true);
+                            DataTable new_folder_ID_container = new DataTable();
+                            FbDataAdapter new_folder_ID_grabber = new FbDataAdapter("SELECT ID " +
+                                                                                    "FROM " + database_tables[0].Item2 + " " +
+                                                                                    "WHERE NAME = @Name " +
+                                                                                    "AND DIR_ID = @Target_directory_id;"
+                                                                                    ,
+                                                                                    new FbConnection(database_connection_string_builder.ConnectionString));
+
+                            new_folder_ID_grabber.SelectCommand.Parameters.AddWithValue("@Name", folder.Item2);
+                            new_folder_ID_grabber.SelectCommand.Parameters.AddWithValue("@Target_directory_id", working_directory);
 
 
+                            new_folder_ID_grabber.Fill(new_folder_ID_container);
+                            if (new_folder_ID_container.Rows.Count == 1)
+                            {
+                                new_id = (int)new_folder_ID_container.Rows[0].ItemArray[0];
+                            }
+
+                            foreach (Tuple<int, string> file in searcher_files_to_add.FindAll(x => x.Item1.Equals(folder.Item1)))
+                            {
+                                if (new_id == 0) new_id = catalog_folder_id_list.Last();
+                                Tuple<int, int, string, string, string> found_file = all_files_selected.Find(x => (x.Item3 + x.Item5).Equals(file.Item2));
+                                if (found_file != null) database_virtual_file_copy(found_file.Item2, new_id, found_file.Item4, found_file.Item3, found_file.Item5);
+                            }
+                        }
+                    }
+                    LV_catalog_display_folder_content_display(catalog_folder_id_list.Last());
                     break;
                 default:
                     break;
@@ -2382,6 +2547,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             special_option_selector.items_to_work_on = sent_items;
             special_option_selector.working_directory = catalog_folder_id_list.Last();
             special_option_selector.program_path = program_path;
+            special_option_selector.extends = extends;
             special_option_selector.OnDataAvalible += new EventHandler(Special_function_window_OnDataAvalible);
             special_option_selector.Show();
             this.Hide();
@@ -2454,6 +2620,9 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
 
         /*
         // Kod legacy, w zasadzie nie widziałem nigdzie jego użycia
+        
+        public string[] extends = { ".txt", ".csv", ".doc", ".docx", ".odt", ".ods", ".odp", ".xls", ".xlsx", ".pdf", ".ppt", ".pptx", ".pps", ".fb2", ".htm", ".html", ".tsv", ".xml", ".jpg", ".jpeg", ".tiff", ".bmp", ".mp4", ".avi", ".mp3", ".wav"};
+        
         private void Form1_KeyDown(object sender, KeyEventArgs e)
         {
 

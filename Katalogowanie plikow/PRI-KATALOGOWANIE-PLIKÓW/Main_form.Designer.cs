@@ -212,7 +212,6 @@
             this.Rozmiar});
             this.LV_catalog_display.Dock = System.Windows.Forms.DockStyle.Fill;
             this.LV_catalog_display.Enabled = false;
-            this.LV_catalog_display.LabelEdit = true;
             this.LV_catalog_display.LabelWrap = false;
             this.LV_catalog_display.Location = new System.Drawing.Point(3, 45);
             this.LV_catalog_display.Name = "LV_catalog_display";

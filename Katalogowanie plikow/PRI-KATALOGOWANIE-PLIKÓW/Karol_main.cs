@@ -20,6 +20,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
     public partial class Karol_main : Form
     {
         public event EventHandler OnDataAvalible;
+        public List<string> names;
         public List<Tuple<int, string>> filepaths;
         public string program_path;
         BackgroundWorker bgwFileProcessor;
@@ -407,7 +408,8 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
 
         public void display_refresh()
         {
-            foreach (Tuple<int,string> file in filepaths) outputTextBox.AppendText(file.Item2 + Environment.NewLine);
+            //foreach (Tuple<int,string> file in filepaths) outputTextBox.AppendText(file.Item2 + Environment.NewLine);
+            foreach (string name in names) outputTextBox.AppendText(name + Environment.NewLine);
         }
 
 
