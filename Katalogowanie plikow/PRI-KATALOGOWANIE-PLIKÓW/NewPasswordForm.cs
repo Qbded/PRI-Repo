@@ -28,7 +28,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                 && !repeatPasswordInput.Text.Equals("")
                 && newPasswordInput.Text.Equals(repeatPasswordInput.Text))
             {
-                LoginManager loginManager = new LoginManager();
+                AppInstanceLoginManager loginManager = new AppInstanceLoginManager();
                 loginManager.SetPassword(newPasswordInput.Text);
                 this.DialogResult = DialogResult.OK;
             }

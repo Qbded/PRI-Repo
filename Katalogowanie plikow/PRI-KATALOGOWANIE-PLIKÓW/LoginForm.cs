@@ -30,7 +30,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
 
         private void VerifyPassword(String password)
         {
-            LoginManager loginManager = new LoginManager();
+            AppInstanceLoginManager loginManager = new AppInstanceLoginManager();
             bool verified = loginManager.VerifyPassword(password);
             if (verified)
             {
