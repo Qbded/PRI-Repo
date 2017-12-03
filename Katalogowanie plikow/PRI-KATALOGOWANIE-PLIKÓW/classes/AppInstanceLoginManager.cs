@@ -29,7 +29,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes
         private byte[] GetPasswordHash()
         {
             String passwordHashString = 
-                ConfigManager.ReadValue(ConfigManager.PASSWORD_HASH_KEY);
+                ConfigManager.ReadString(ConfigManager.PASSWORD_HASH_KEY);
             if(passwordHashString == null || passwordHashString.Length <= 0)
             {
                 return null;
@@ -44,7 +44,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes
         private byte[] GetPasswordSalt()
         {
             String passwordSaltString =
-                ConfigManager.ReadValue(ConfigManager.PASSWORD_SALT_KEY);
+                ConfigManager.ReadString(ConfigManager.PASSWORD_SALT_KEY);
             if(passwordSaltString == null || passwordSaltString.Length <= 0)
             {
                 return null;
@@ -93,7 +93,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes
             }
             else
             {
-                salt = StringToBytes(ConfigManager.ReadValue(
+                salt = StringToBytes(ConfigManager.ReadString(
                     ConfigManager.PASSWORD_SALT_KEY));
             }
 
@@ -151,6 +151,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes
             if (passwordHash.SequenceEqual(newPasswordHash))
             {
                 Console.WriteLine("Password is valid");
+                AppCryptoDataStorage.Password = newPassword;
                 return true;
             }
             else
@@ -202,6 +203,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes
             ConfigManager.WriteValue(
                 ConfigManager.PASSWORD_HASH_KEY,
                 BytesToString(hash));
+            AppCryptoDataStorage.Password = newPassword;
         }
 
 

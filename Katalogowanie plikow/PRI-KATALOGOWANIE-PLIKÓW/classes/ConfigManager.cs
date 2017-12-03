@@ -11,6 +11,8 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes
     {
         public static readonly String PASSWORD_HASH_KEY = "passwordHash";
         public static readonly String PASSWORD_SALT_KEY = "passwordSalt";
+        public static readonly String DB_ENCR_SALT_KEY = "dbEnc_salt";
+        public static readonly String DB_ENCR_IV_KEY = "dbEnc_IV";
 
 
         private static readonly String configFileLocation =
@@ -21,12 +23,18 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes
             "DBLocation",
 
             PASSWORD_HASH_KEY,
-            PASSWORD_SALT_KEY
+            PASSWORD_SALT_KEY,
+
+            DB_ENCR_IV_KEY,
+            DB_ENCR_SALT_KEY
         };
 
         private static readonly String[] configDefaultValueArray =
         {
             AppDomain.CurrentDomain.BaseDirectory + "/db/DB.db",
+
+            "",
+            "",
 
             "",
             ""
@@ -78,6 +86,11 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes
             configuration = null;
         }
 
+        public static void WriteValue(String key, byte[] value)
+        {
+            WriteValue(key, BytesToString(value));
+        }
+
 
         public static void RemoveValue(String key)
         {
@@ -100,12 +113,12 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes
 
 
         /// <summary>
-        /// Returns value from config file, or and empty string
+        /// Returns string value from config file, or empty string
         /// if value is not set
         /// </summary>
         /// <param name="key"></param>
         /// <returns></returns>
-        public static String ReadValue(String key)
+        public static String ReadString(String key)
         {
             Configuration configuration =
                 ConfigurationManager.OpenExeConfiguration(
@@ -121,6 +134,18 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes
             {
                 return settings[key].Value.ToString();
             }
+        }
+
+        /// <summary>
+        /// Returns byte array representation of value from config file,
+        /// or null string if value is not set
+        /// </summary>
+        /// <param name="key"></param>
+        /// <returns></returns>
+        public static byte[] ReadByte(String key)
+        {
+            String value = ReadString(key);
+            return StringToBytes(value);
         }
 
 
@@ -187,6 +212,37 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes
             }
             Console.WriteLine("New configFile created at " + 
                 configFileLocation);
+        }
+
+
+        /// <summary>
+        /// Converts base64 string to byte array
+        /// </summary>
+        /// <param name="s">Base64 string</param>
+        /// <returns>Returns byte[], or null if s is empty</returns>
+        private static byte[] StringToBytes(String s)
+        {
+            if (s == null || s.Length <= 0)
+            {
+                return null;
+            }
+            //return System.Text.Encoding.UTF8.GetBytes(s);
+            return Convert.FromBase64String(s);
+        }
+
+        /// <summary>
+        /// Converts byte array to base64 string
+        /// </summary>
+        /// <param name="b"></param>
+        /// <returns>Returns base64 string, or an empty string if b is null</returns>
+        private static String BytesToString(byte[] b)
+        {
+            if (b == null)
+            {
+                return "";
+            }
+            //return System.Text.Encoding.UTF8.GetString(b);
+            return Convert.ToBase64String(b);
         }
     }
 }
