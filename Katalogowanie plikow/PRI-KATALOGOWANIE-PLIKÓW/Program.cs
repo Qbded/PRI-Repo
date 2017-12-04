@@ -14,7 +14,6 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
         {
             AppDomain.CurrentDomain.ProcessExit +=
                 new EventHandler(OnProcessExit);
-            //new DatabaseEncryptor().DecryptDatabaseFile();
 
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
@@ -24,7 +23,10 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
 
         static void OnProcessExit(object sender, EventArgs e)
         {
-            //new DatabaseEncryptor().EncryptDatabaseFile();
+            if (AppCryptoDataStorage.UserAuthorized)
+            {
+                //new DatabaseEncryptor().EncryptDatabaseFile();
+            }
         }
     }
 }

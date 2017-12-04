@@ -9,5 +9,6 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes
     static class AppCryptoDataStorage
     {
         public static String Password { set; get; }
+        public static bool UserAuthorized = false;
     }
 }

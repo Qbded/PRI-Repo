@@ -390,6 +390,8 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             // Only allow app to run after successful login 
             // or password setting
             new AppInstanceLoginManager().DisplayLoginRegisterForm();
+            AppCryptoDataStorage.UserAuthorized = true;
+            //new DatabaseEncryptor().DecryptDatabaseFile();
 
             InitializeComponent();
 
