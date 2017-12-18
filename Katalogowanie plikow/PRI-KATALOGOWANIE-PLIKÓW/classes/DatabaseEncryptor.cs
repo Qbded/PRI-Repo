@@ -35,6 +35,8 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes
                 //MessageBox.Show("Program w wersji ostatecznej!");
                 target_directory = directory_grabber.Parent.FullName.ToString(); // przejście do folderu o poziom w górę
             }
+
+            //TODO Pobieranie lokacji bazy danych z pliku config
             decryptedFileDirectory = target_directory + @"\db\catalog.fdb"; // Lokacja katalogu tworzonego przez program
             encryptedFileDirectory = target_directory + @"\db\encrypted_catalog";
         }
@@ -42,6 +44,12 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes
 
         public void EncryptDatabaseFile()
         {
+            if (!File.Exists(decryptedFileDirectory))
+            {
+                //Database is not dectypted
+                return;
+            }
+
             String password = AppCryptoDataStorage.Password;
 
             byte[] salt = ConfigManager.ReadByte(
@@ -89,11 +97,19 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes
                     cryptoStream.WriteByte((byte)data);
                 }
             }
+
+            File.Delete(decryptedFileDirectory);
         }
 
 
         public void DecryptDatabaseFile()
         {
+            if (!File.Exists(encryptedFileDirectory))
+            {
+                // Database is not encrypted or does not exist
+                return;
+            }
+
             String password = AppCryptoDataStorage.Password;
 
             byte[] salt = ConfigManager.ReadByte(
@@ -143,6 +159,8 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes
                     outputFileStream.WriteByte((byte)data);
                 }
             }
+
+            File.Delete(encryptedFileDirectory);
         }
 
 
