@@ -14,32 +14,81 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes
         public static readonly String DB_ENCR_SALT_KEY = "dbEnc_salt";
         public static readonly String DB_ENCR_IV_KEY = "dbEnc_IV";
 
+        public static readonly String DATABASE_ENGINE_LOCATION = "DBEngineLocation";
+        public static readonly String LOCAL_DATABASE_LOCATION = "CatalogLocation";
+        public static readonly String EXTERNAL_DATABASES_LOCATION = "ExternalCatalogsLocation";
+
+        public static readonly String PROGRAM_LOCATION = "ProgramLocation";
+        public static readonly String OUTPUT_LOCATION = "OutputLocation";
 
         private static readonly String configFileLocation =
             AppDomain.CurrentDomain.SetupInformation.ConfigurationFile;
 
+        private static System.IO.DirectoryInfo applicationLocation =
+            new System.IO.DirectoryInfo(AppDomain.CurrentDomain.BaseDirectory);
+
         private static readonly String[] configKeyArray =
         {
-            "DBLocation",
-
             PASSWORD_HASH_KEY,
             PASSWORD_SALT_KEY,
 
-            DB_ENCR_IV_KEY,
-            DB_ENCR_SALT_KEY
+	        DB_ENCR_IV_KEY,
+            DB_ENCR_SALT_KEY,
+
+
+            DATABASE_ENGINE_LOCATION,
+            LOCAL_DATABASE_LOCATION,
+            EXTERNAL_DATABASES_LOCATION,
+
+            PROGRAM_LOCATION,
+            OUTPUT_LOCATION
         };
 
-        private static readonly String[] configDefaultValueArray =
+        private static String[] configDefaultValueArray =
         {
-            AppDomain.CurrentDomain.BaseDirectory + "/db/DB.db",
-
             "",
             "",
 
-            "",
-            ""
+	        "",
+	        "",
+            
+            applicationLocation.FullName.ToString() + @"\bin\firebird_server\fbclient.dll",
+            applicationLocation.FullName.ToString() + @"\db\catalog.fdb",
+            applicationLocation.FullName.ToString() + @"\db\externals\",
+
+            applicationLocation.FullName.ToString(),
+            applicationLocation.FullName.ToString() + @"\output\"
         };
 
+        private static void determineDirectoryStructure()
+        {
+            if(applicationLocation.Name == "Debug" || applicationLocation.Name == "Release")
+            {
+                //Program jest uruchamiany z folderu projektowego visual studio - macierzysty folder dla programu jest dwa foldery wyżej.
+                applicationLocation = applicationLocation.Parent.Parent;
+            }
+            else
+            {
+                //Program jest uruchamiany wedle ustalonej struktury programu - z katalogu bin, stąd idziemy tylko jeden folder do góry.
+                applicationLocation = applicationLocation.Parent;
+            }
+
+            configDefaultValueArray = new String[] 
+            {
+                "",
+                "",
+
+		        "",
+		        "",
+
+                applicationLocation.FullName.ToString() + @"\bin\firebird_server\fbclient.dll",
+                applicationLocation.FullName.ToString() + @"\db\CATALOG.FDB",
+                applicationLocation.FullName.ToString() + @"\db\externals\",
+
+                applicationLocation.FullName.ToString(),
+                applicationLocation.FullName.ToString() + @"\output\"
+            };
+        }
 
         //public ConfigManager()
         //{
@@ -200,6 +249,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes
 
         public static void CreateNewConfigFile()
         {
+            determineDirectoryStructure();
             if (ConfigFileExists())
             {
                 System.IO.File.Delete(configFileLocation);

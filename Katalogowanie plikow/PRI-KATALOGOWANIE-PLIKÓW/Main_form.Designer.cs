@@ -51,6 +51,9 @@
             this.toolStripMenuItem1 = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripMenuItem2 = new System.Windows.Forms.ToolStripMenuItem();
             this.toolTip1 = new System.Windows.Forms.ToolTip(this.components);
+            this.Widoczność_w_sieci = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+            this.Kopiowalność_w_sieci = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+            this.Kopiowalność_bez_pytania = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.tabPage1.SuspendLayout();
             this.tabControl1.SuspendLayout();
             this.TP_catalog.SuspendLayout();
@@ -209,7 +212,10 @@
             this.Typ,
             this.Ostatnia_modyfikacja,
             this.Ostatnie_katalogowanie,
-            this.Rozmiar});
+            this.Rozmiar,
+            this.Widoczność_w_sieci,
+            this.Kopiowalność_w_sieci,
+            this.Kopiowalność_bez_pytania});
             this.LV_catalog_display.Dock = System.Windows.Forms.DockStyle.Fill;
             this.LV_catalog_display.Enabled = false;
             this.LV_catalog_display.LabelWrap = false;
@@ -279,6 +285,18 @@
             this.toolStripMenuItem2.Size = new System.Drawing.Size(384, 22);
             this.toolStripMenuItem2.Text = "Zapisz raport katgalogowania";
             // 
+            // Widoczność_w_sieci
+            // 
+            this.Widoczność_w_sieci.Text = "Czy jest widoczny w sieci?";
+            // 
+            // Kopiowalność_w_sieci
+            // 
+            this.Kopiowalność_w_sieci.Text = "Czy użytkownicy sieci mogą prosić o jego skopiowanie?";
+            // 
+            // Kopiowalność_bez_pytania
+            // 
+            this.Kopiowalność_bez_pytania.Text = "Czy użytkownicy sieci mogą skopiować go bez pytania?";
+            // 
             // Main_form
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -328,6 +346,9 @@
         private System.Windows.Forms.ColumnHeader Ostatnie_katalogowanie;
         private System.Windows.Forms.TableLayoutPanel Catalog_page_main_layout;
         private System.Windows.Forms.TableLayoutPanel Catalog_page_top_table_layout;
+        private System.Windows.Forms.ColumnHeader Widoczność_w_sieci;
+        private System.Windows.Forms.ColumnHeader Kopiowalność_w_sieci;
+        private System.Windows.Forms.ColumnHeader Kopiowalność_bez_pytania;
     }
 }
 

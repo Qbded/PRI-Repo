@@ -392,7 +392,9 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                     {
                         foreach (var parameter_value in search_parameters_values)
                         {
-                            if (parameter_value.Item2 == 1) database_grab_directory_content.SelectCommand.Parameters.AddWithValue(parameter_value.Item1, parameter_value.Item3);
+                            if (parameter_value.Item2 == 1 || 
+                                parameter_value.Item2 == 2)
+                                database_grab_directory_content.SelectCommand.Parameters.AddWithValue(parameter_value.Item1, parameter_value.Item3);
                             else database_grab_directory_content.SelectCommand.Parameters.AddWithValue(parameter_value.Item1, int.Parse(parameter_value.Item3));
                         }
                     }
@@ -556,6 +558,14 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
         private void Special_function_window_FormClosing(object sender, FormClosingEventArgs e)
         {
             this.Owner.Show();
+        }
+
+        private void BT_external_catalog_create_Click(object sender, EventArgs e)
+        {
+            return_index = 4;
+            OnDataAvalible(this, EventArgs.Empty);
+            this.Close();
+            this.Dispose();
         }
     }
 }

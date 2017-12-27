@@ -35,6 +35,16 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
         //    1 to oznaczenie na TextBox
         // 5. Item5 (string[]) - po kolei definiowane są w tej tablicy wyświetlane użytkownikowi nazwy dla wartości
         private List<Tuple<int, int, string[], int[], string[]>> values_group_templates;
+
+        // Konstrukcja listy wartości dla wpisanych wartości zmiennych typu DATETIME:
+        // 1. Item1 (string) - nazwa parametru macierzystego dla którego przechowujemy człony zmiennej DATETIME,
+        // 2. Item2 (int) - dzień w zmiennej datetime,
+        // 3. Item3 (int) - miesiąc w zmiennej datetime,
+        // 4. Item4 (int) - rok w zmiennej datetime.
+        // Są dwie wartości specjalne dla zmiennych int w Item2 do Item4, są to:
+        //  0 - oznacza że zmienna jest nieużywana
+        // -1 - oznacza że zmienna została zweryfikowana niepoprawnie 
+        private List<Tuple<string, int, int, int>> date_values;
         
     // Wartości zwracane do Special_function_window:
         
@@ -57,7 +67,6 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
         //    4 to rok.
         // 3. Item3 (string) - dane dla parametru uzupełnione przez użytkownika w GUI.
         public List<Tuple<string, int, string>> parameters_values_returned;
-
 
         private void TL_datasource_Initialise()
         {
@@ -266,7 +275,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             return parameters;
         }
         
-        private Control[] values_Prepare(int type_index)
+        private Control[] values_Prepare(string name, int type_index)
         {
             Control[] values = new Control[0];
             
@@ -302,7 +311,9 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                                 break;
                             case 2:
                                 // Zmienna datetime - badamy czy wartości wpisane w dzień, miesiąc i rok są w rozsądnych zakresach.
-                                switch(used_value_template.Item3[i])
+                                constructed_textbox.Name = used_value_template.Item3[i];
+                                constructed_textbox.Tag = name;
+                                switch (used_value_template.Item3[i])
                                 {
                                     case "TB_DAY":
                                         // Sprawdzanie dla dni - tylko czy są w zakresie 1 do 31 obustronnie domkniętym.
@@ -331,8 +342,6 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                                 MessageBox.Show("ERROR - id użytego schematu jest niezdefiniowane!");
                                 break;
                         }
-                        
-                        
                         values[i] = constructed_textbox;
                     }
                     
@@ -360,30 +369,196 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             }
         }
 
+        // Wywoływane z poziomu day/month/year_input_TextChanged - gdy chociaż jeden jest zwalidowany poprawnie i reszta jest co najmniej nieustawiona to zwraca true.
+        private bool datetime_values_validated_check(Tuple<string, int, int, int> checked_datetime)
+        {
+            bool one_validated = false, result = false;
+            if (checked_datetime.Item2 > 0 || checked_datetime.Item3 > 0 || checked_datetime.Item4 > 0) one_validated = true;
+            if (checked_datetime.Item2 >= 0 && checked_datetime.Item3 >= 0 && checked_datetime.Item4 >= 0 && one_validated) result = true;
+
+            if(result == true)
+            {
+                foreach (Control textbox_candidate in this.TL_values.Controls)
+                {
+                    TextBox analysed_textbox;
+                    try
+                    {
+                        analysed_textbox = (TextBox)textbox_candidate;
+                        if(analysed_textbox.Tag.Equals(checked_datetime.Item1))
+                        {
+                            if(analysed_textbox.Enabled == true && analysed_textbox.Text.Length > 0) analysed_textbox.BackColor = Color.Green;
+                        }
+                    }
+                    catch
+                    {
+
+                    }
+                }
+            }
+
+            return result;
+        }
+
         private void day_input_TextChanged(object sender, EventArgs e)
         {
             TextBox caller = (TextBox)sender;
+
             int parsed_value;
+            DateTime parsed_date;
 
             try
             {
                 parsed_value = int.Parse(caller.Text);
+                if (parsed_value == 0) parsed_value = -1;
             }
             catch
             {
                 parsed_value = -1;
             }
 
-            if (caller.Text.Length == 0) caller.BackColor = Color.White;
+            var values_used = date_values.Find(x => x.Item1.Equals(caller.Tag));
+            if (values_used != null)
+            {
+                // Sprawdzam czy mamy zdefiniowany miesiąc
+                if (values_used.Item3 > 0)
+                {
+                    try
+                    {
+                        // Jeżeli przy okazji mamy zdefiniowany rok to sprawdzamy od razu pełną datę.
+                        if (values_used.Item4 > 0) parsed_date = new DateTime(values_used.Item4, values_used.Item3, parsed_value);
+                        // Jeżeli nie - bierzemy rok przestępny i sprawdzamy z nim.
+                        else parsed_date = new DateTime(2020, values_used.Item3, parsed_value);
+
+                        // Jeżeli dotrzemy do kodu poniżej to data została zweryfikowana poprawnie.
+
+                        date_values[date_values.IndexOf(values_used)] = new Tuple<string, int, int, int>(values_used.Item1,parsed_value,values_used.Item3,values_used.Item4);
+                        caller.BackColor = Color.Green;
+                        values_used = date_values.Find(x => x.Item1.Equals(caller.Tag));
+                        if (datetime_values_validated_check(values_used)) this.BT_execute.Enabled = true;
+                    }
+                    catch
+                    {
+                        // Coś było nie halo - zakładam że dzień nie pasował do roku (czyt. 29 luty w rok nieprzestępny lub >29 luty).
+                        caller.BackColor = Color.Red;
+                        date_values[date_values.IndexOf(values_used)] = new Tuple<string, int, int, int>(values_used.Item1, parsed_value, values_used.Item3, values_used.Item4);
+                        this.BT_execute.Enabled = false;
+                    }
+                }
+                else
+                {
+                    // Miesiąc nie jest zdefiniowany - sprawdzamy tylko czy jest mniejszy/równy od 31.
+                    if (parsed_value >= 1 && parsed_value <= 31)
+                    {
+                        caller.BackColor = Color.Green;
+                        date_values[date_values.IndexOf(values_used)] = new Tuple<string, int, int, int>(values_used.Item1, parsed_value, values_used.Item3, values_used.Item4);
+                        values_used = values_used = date_values.Find(x => x.Item1.Equals(caller.Tag));
+                        if (datetime_values_validated_check(values_used)) this.BT_execute.Enabled = true;
+                    }
+                    else
+                    {
+                        // Nie mieści się w wartościach - zwracamy -1
+                        caller.BackColor = Color.Red;
+                        date_values[date_values.IndexOf(values_used)] = new Tuple<string, int, int, int>(values_used.Item1, -1, values_used.Item3, values_used.Item4);
+                        this.BT_execute.Enabled = false;
+                    }
+                }
+                
+                // Przypadek gdy pole zostało wyczyszczone - traktujemy je tak jakby nie było ustawione.
+                if (caller.Text.Length == 0)
+                {
+                    int index = date_values.IndexOf(values_used);
+                    if (index >= 0) date_values[index] = new Tuple<string, int, int, int>(values_used.Item1, 0, values_used.Item3, values_used.Item4);
+                    caller.BackColor = Color.White;
+                    this.BT_execute.Enabled = true;
+                }
+            }
             else
             {
-                if (parsed_value >= 1 && parsed_value <= 31) caller.BackColor = Color.Green;
-            else caller.BackColor = Color.Red;
+                // Lądujemy tutaj jeżeli program nie był w stanie odnaleść odpowiedniego kontenera wartości:
+                MessageBox.Show("ERROR - nie znaleźliśmy odpowiedniego kontenera wartości!");
             }
         }
 
         private void month_input_TextChanged(object sender, EventArgs e)
         {
+            TextBox caller = (TextBox)sender;
+
+            int parsed_value;
+            DateTime parsed_date;
+
+            try
+            {
+                parsed_value = int.Parse(caller.Text);
+                if (parsed_value == 0) parsed_value = -1;
+            }
+            catch
+            {
+                parsed_value = -1;
+            }
+
+            var values_used = date_values.Find(x => x.Item1.Equals(caller.Tag));
+            if (values_used != null)
+            {
+                // Sprawdzam czy mamy zdefiniowany dzień
+                if (values_used.Item2 > 0)
+                {
+                    try
+                    {
+                        // Jeżeli przy okazji mamy zdefiniowany rok to sprawdzamy od razu pełną datę.
+                        if (values_used.Item4 > 0) parsed_date = new DateTime(values_used.Item4, parsed_value, values_used.Item2);
+                        // Jeżeli nie - bierzemy rok przestępny i sprawdzamy z nim.
+                        else parsed_date = new DateTime(2020, parsed_value, values_used.Item2);
+
+                        // Jeżeli dotrzemy do kodu poniżej to data została zweryfikowana poprawnie.
+
+                        date_values[date_values.IndexOf(values_used)] = new Tuple<string, int, int, int>(values_used.Item1, values_used.Item2, parsed_value, values_used.Item4);
+                        caller.BackColor = Color.Green;
+                        values_used = date_values.Find(x => x.Item1.Equals(caller.Tag));
+                        if (datetime_values_validated_check(values_used)) this.BT_execute.Enabled = true;
+                    }
+                    catch
+                    {
+                        // Coś było nie halo - zakładam że miesiąc nie pasował do podanej daty (czyt. 31 dniowy miesiąc dla dnia 29/30).
+                        caller.BackColor = Color.Red;
+                        date_values[date_values.IndexOf(values_used)] = new Tuple<string, int, int, int>(values_used.Item1, values_used.Item2, parsed_value, values_used.Item4);
+                        this.BT_execute.Enabled = false;
+                    }
+                }
+                else
+                {
+                    // Dzień nie jest zdefiniowany - sprawdzamy tylko czy jest mniejszy/równy od 12.
+                    if (parsed_value >= 1 && parsed_value <= 12)
+                    {
+                        caller.BackColor = Color.Green;
+                        date_values[date_values.IndexOf(values_used)] = new Tuple<string, int, int, int>(values_used.Item1, values_used.Item2, parsed_value, values_used.Item4);
+                        values_used = date_values.Find(x => x.Item1.Equals(caller.Tag));
+                        if (datetime_values_validated_check(values_used)) this.BT_execute.Enabled = true;
+                    }
+                    else
+                    {
+                        // Nie mieści się w wartościach - zwracamy -1
+                        caller.BackColor = Color.Red;
+                        date_values[date_values.IndexOf(values_used)] = new Tuple<string, int, int, int>(values_used.Item1, values_used.Item2, -1, values_used.Item4);
+                        this.BT_execute.Enabled = false;
+                    }
+                }
+
+                // Przypadek gdy pole zostało wyczyszczone - traktujemy je tak jakby nie było ustawione.
+                if (caller.Text.Length == 0)
+                {
+                    int index = date_values.IndexOf(values_used);
+                    if (index >= 0) date_values[index] = new Tuple<string, int, int, int>(values_used.Item1, values_used.Item2, 0, values_used.Item4);
+                    caller.BackColor = Color.White;
+                    this.BT_execute.Enabled = true;
+                }
+            }
+            else
+            {
+                // Lądujemy tutaj jeżeli program nie był w stanie odnaleść odpowiedniego kontenera wartości:
+                MessageBox.Show("ERROR - nie znaleźliśmy odpowiedniego kontenera wartości!");
+            }
+
+            /*
             TextBox caller = (TextBox)sender;
             int parsed_value;
 
@@ -402,10 +577,89 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                 if (parsed_value >= 1 && parsed_value <= 12) caller.BackColor = Color.Green;
                 else caller.BackColor = Color.Red;
             }
+            */
         }
 
         private void year_input_TextChanged(object sender, EventArgs e)
         {
+            TextBox caller = (TextBox)sender;
+
+            int parsed_value;
+            DateTime parsed_date;
+
+            try
+            {
+                parsed_value = int.Parse(caller.Text);
+                if (parsed_value == 0) parsed_value = -1;
+            }
+            catch
+            {
+                parsed_value = -1;
+            }
+
+            var values_used = date_values.Find(x => x.Item1.Equals(caller.Tag));
+            if (values_used != null)
+            {
+                // Sprawdzam czy mamy także zdefiniowany dzień i miesiąc
+                if (values_used.Item2 > 0 && values_used.Item3 > 0)
+                {
+                    // Tak, mamy pełną datę - parsujemy i sprawdzamy
+                    try
+                    {
+                        parsed_date = new DateTime(parsed_value, values_used.Item3, values_used.Item2);
+
+                        // Jeżeli dotrzemy do kodu poniżej to walidacja przebiegła poprawnie
+
+                        date_values[date_values.IndexOf(values_used)] = new Tuple<string, int, int, int>(values_used.Item1, values_used.Item2, values_used.Item3, parsed_value);
+                        caller.BackColor = Color.Green;
+                        values_used = date_values.Find(x => x.Item1.Equals(caller.Tag));
+                        if (datetime_values_validated_check(values_used)) this.BT_execute.Enabled = true;
+                    }
+                    catch
+                    {
+                        // Coś było nie tak - prawdopodobnie wpisano rok nieprzestępny dla 29 lutego.
+                        // Przekazujemy mimo tego pełną wartość roku bo błąd nie jest w tym polu (jest niepoprawnie zdefiniowany dzień)!
+
+                        caller.BackColor = Color.Red;
+                        date_values[date_values.IndexOf(values_used)] = new Tuple<string, int, int, int>(values_used.Item1, values_used.Item2, values_used.Item3, parsed_value);
+                        this.BT_execute.Enabled = false;
+                    }
+                }
+                else
+                {
+                    // Nie mamy pełnej daty - sprawdzamy tylko czy jest w zakresie 1 do 9999
+                    if (parsed_value >= 1 && parsed_value <= 9999)
+                    {
+                        caller.BackColor = Color.Green;
+                        date_values[date_values.IndexOf(values_used)] = new Tuple<string, int, int, int>(values_used.Item1, values_used.Item2, values_used.Item3, parsed_value);
+                        values_used = date_values.Find(x => x.Item1.Equals(caller.Tag));
+                        if (datetime_values_validated_check(values_used)) this.BT_execute.Enabled = true;
+                    }
+                    else
+                    {
+                        // Nie mieści się w wartościach - zwracamy -1
+                        caller.BackColor = Color.Red;
+                        date_values[date_values.IndexOf(values_used)] = new Tuple<string, int, int, int>(values_used.Item1, values_used.Item2, values_used.Item3, -1);
+                        this.BT_execute.Enabled = false;
+                    }
+                }
+
+                // Przypadek gdy pole zostało wyczyszczone - traktujemy je tak jakby nie było ustawione.
+                if (caller.Text.Length == 0)
+                {
+                    int index = date_values.IndexOf(values_used);
+                    if(index >= 0) date_values[index] = new Tuple<string, int, int, int>(values_used.Item1, values_used.Item2, values_used.Item3, 0);
+                    caller.BackColor = Color.White;
+                    this.BT_execute.Enabled = true;
+                }
+            }
+            else
+            {
+                // Lądujemy tutaj jeżeli program nie był w stanie odnaleść odpowiedniego kontenera wartości:
+                MessageBox.Show("ERROR - nie znaleźliśmy odpowiedniego kontenera wartości!");
+            }
+
+            /*
             TextBox caller = (TextBox)sender;
             int parsed_value;
 
@@ -423,6 +677,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                 if (parsed_value < 1 || parsed_value > 9999) { caller.BackColor = Color.Red;  }
                 else caller.BackColor = Color.Green;
             }
+            */
         }
 
         private void number_input_KeyDown(object sender, KeyEventArgs e)
@@ -529,7 +784,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             Control[] old_controls = new Control[TL_values.Controls.Count];
             TL_values.Controls.CopyTo(old_controls, 0);
 
-            Control[] new_controls = values_Prepare(type_of_value);
+            Control[] new_controls = values_Prepare(name, type_of_value);
 
             new_controls_to_display = new Control[old_controls.Length + new_controls.Length + 1];
 
@@ -537,6 +792,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             LB_value_name.Name = name;
             LB_value_name.Dock = DockStyle.Fill;
             LB_value_name.Text = name;
+            LB_value_name.Font = new Font(this.Font, FontStyle.Bold);
 
             old_controls.CopyTo(new_controls_to_display, 0);
             new_controls_to_display[old_controls.Length] = LB_value_name;
@@ -602,6 +858,11 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                 // Dodajemy odpowiednie opcje w zależności od wybranych wartości.
                 TL_values.AutoScroll = true;
                 TL_values_Draw((int)caller.Tag, caller.Text);
+                if ((int)caller.Tag == 2)
+                {
+                    if (date_values == null) date_values = new List<Tuple<string, int, int, int>>();
+                    date_values.Add(new Tuple<string, int, int, int>(caller.Text, 0, 0, 0));
+                }
             }
             else
             {
@@ -616,6 +877,10 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                     {
                         TL_values.Controls.RemoveAt(delete_from);
                     }
+                }
+                if (deletion_template.Item1 == 2)
+                {
+                    date_values.Remove(date_values.Find(x => x.Item1.Equals(caller.Text)));
                 }
                 if (TL_values.Controls.Count == 0) this.BT_execute.Enabled = false;
                 TL_values.AutoScroll = true;
@@ -705,18 +970,31 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             {
                 if (parameter.Checked == true)
                 {
-                    target_query_parameters_returned.Add(parameter.Name);
                     // Szukamy czy istnieje taki typ parametru w naszej definicji schematów grup wartości
                     var value_group_template = values_group_templates.Find(x => x.Item1 == (int)parameter.Tag);
                     if (value_group_template != null)
                     {
-                        // Istnieje, przechodzimy do szukania go w GUI.
+                        // Istnieje, dodajemy go do zbioru przesyłanych do Special_function_window paranetrów i przechodzimy do szukania go w GUI.
+                        target_query_parameters_returned.Add(parameter.Name);
                         var value_group = TL_values.Controls.Find(parameter.Text, true);
                         if (value_group.Length != 0)
                         {
                             // Znaleźliśmy - wyciągamy wartości i dodajemy odpowiednio sformatowane stringi do target_query_parameters_returned
+                            // Start_index jest +1 bo pomijamy label użyty do oznaczenia grupy wartości.
+                            // End index to indeks startu plus ilość elementów podległych zadanemu parametrowi, zdefiniowana w odpowiednim schemacie grup wartości.
                             int start_index = TL_values.Controls.IndexOf(value_group[0]) + 1;
                             int end_index = start_index + value_group_template.Item2;
+
+                            char used_comparator = ' ';
+                            bool[] datetime_components_used = new bool[0];
+                            string datetime_tag = "";
+
+                            // Jeżeli w naszym schemacie grupy jest zdefiniowana data, to tutaj będziemy przechowywać datę celem jej dalszej konwersji.
+                            if (value_group_template.Item1 == 2)
+                            {
+                                used_comparator = '=';
+                                datetime_components_used = new bool[3] { false, false, false };
+                            }
 
                             List<string> query_strings = new List<string>();
                             List<Tuple<string, int, string>> parameters_values = new List<Tuple<string, int, string>>();
@@ -741,7 +1019,6 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                                         {
                                             slaved_textbox = null;
                                             // Podległego textbox'a nie było
-
                                         }
 
                                         switch (analysed_checkbox.Name)
@@ -770,18 +1047,32 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                                                 parameters_values.Add(new Tuple<string, int, string>("@" + analysed_checkbox.Name + "_IN_" + value_group[0].Text.ToUpper().Replace(' ', '_'), 1, "%" + slaved_textbox.Text + "%"));
                                                 break;
                                             case "CB_DAY":
+                                                datetime_components_used[0] = true;
+                                                if (datetime_tag == "") datetime_tag = slaved_textbox.Tag.ToString();
+                                                /*
                                                 query_strings.Add("AND EXTRACT(DAY FROM " + parameter.Name + ") = @" + analysed_checkbox.Name + "_IN_" + value_group[0].Text.ToUpper().Replace(' ', '_'));
                                                 parameters_values.Add(new Tuple<string, int, string>("@" + analysed_checkbox.Name + "_IN_" + value_group[0].Text.ToUpper().Replace(' ', '_'), 2, slaved_textbox.Text));
+                                                */
                                                 break;
                                             case "CB_MONTH":
+                                                datetime_components_used[1] = true;
+                                                if (datetime_tag == "") datetime_tag = slaved_textbox.Tag.ToString();
+                                                /*
                                                 query_strings.Add("AND EXTRACT(MONTH FROM " + parameter.Name + ") = @" + analysed_checkbox.Name + "_IN_" + value_group[0].Text.ToUpper().Replace(' ', '_'));
                                                 parameters_values.Add(new Tuple<string, int, string>("@" + analysed_checkbox.Name + "_IN_" + value_group[0].Text.ToUpper().Replace(' ', '_'), 2, slaved_textbox.Text));
+                                                */
                                                 break;
                                             case "CB_YEAR":
+                                                datetime_components_used[2] = true;
+                                                if (datetime_tag == "") datetime_tag = slaved_textbox.Tag.ToString();
+                                                /*
                                                 query_strings.Add("AND EXTRACT(YEAR FROM " + parameter.Name + ") = @" + analysed_checkbox.Name + "_IN_" + value_group[0].Text.ToUpper().Replace(' ', '_'));
                                                 parameters_values.Add(new Tuple<string, int, string>("@" + analysed_checkbox.Name + "_IN_" + value_group[0].Text.ToUpper().Replace(' ', '_'), 2, slaved_textbox.Text));
+                                                */
                                                 break;
                                             case "CB_EARLIER":
+                                                used_comparator = '<';
+                                                /*
                                                 {
                                                     var index_to_work_on = query_strings.FindIndex(x => x.Contains("="));
                                                     while (index_to_work_on != -1)
@@ -790,8 +1081,11 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                                                         index_to_work_on = query_strings.FindIndex(x => x.Contains("="));
                                                     }
                                                 }
+                                                */
                                                 break;
                                             case "CB_LATER":
+                                                used_comparator = '>';
+                                                /*
                                                 {
                                                     var index_to_work_on = query_strings.FindIndex(x => x.Contains("="));
                                                     while (index_to_work_on != -1)
@@ -800,28 +1094,120 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                                                         index_to_work_on = query_strings.FindIndex(x => x.Contains("="));
                                                     }
                                                 }
+                                                */
                                                 break;
                                         }
                                     }
                                 }
                                 catch
                                 {
-                                    // Czasem wskakujemy tutaj gdy napotykamy na label
+                                    // Czasem wskakujemy tutaj gdy napotykamy mimo wszystko napotykamy label, w każdym razie nic to nie psuje.
                                     analysed_checkbox = null;
                                 }
 
                             }
+
+                            // Jeżeli w naszym schemacie wystąpiła data, to tutaj sprawdzamy czy jest ona poprawna i tworzymy do niej odpowiednie zapytanie:
+                            if (value_group_template.Item1 == 2)
+                            {
+                                var date_used = date_values.Find(x => x.Item1.Equals(datetime_tag));
+                                if (date_used != null)
+                                {
+                                    // Parsujemy podane wejścia jako DateTime, robimy tak w przypadku wyszukiwań postaci:
+                                    // 1. xxx-miesiac-rok,
+                                    // 2. dzien-miesiac-rok.
+                                    // Z kolei w następujących przypadkach operujemy na castach z elementów daty w bazie danych:
+                                    // 3. dzien-xxx-xxx,
+                                    // 4. xxx-miesiac-xxx,
+                                    // 5. xxx-xxx-rok.
+                                    // Odrzucamy przypadki:
+                                    // z nieustaloną datą (czyli w postaci xxx-xxx-xxx),
+                                    // dzien-miesiac-xxx - Nie do zaimplementowania z GUI (wymagałby definicji zakresu lat do przeszukania),
+                                    // dzien-xxx-rok - Możnaby w teorii iterować po wszystkich 12 miesiącach, ale jego efekt można osiągnąć innymi opcjami.
+
+                                    if (datetime_components_used[0] == false && datetime_components_used[1] == true && datetime_components_used[2] == true)
+                                    {
+                                        // 1. xxx-miesiac-rok
+                                        DateTime query_date_minimum = new DateTime(date_used.Item4, date_used.Item3, 1);
+                                        DateTime query_date_maximum = query_date_minimum.AddMonths(1);
+                                        query_date_maximum = query_date_maximum.AddSeconds(-1);
+                                        if (used_comparator == '=')
+                                        {
+                                            query_strings.Add("AND " + parameter.Name + " >= @MIN_DATE_IN_" + value_group[0].Text.ToUpper().Replace(' ', '_'));
+                                            parameters_values.Add(new Tuple<string, int, string>("@MIN_DATE_IN_" + value_group[0].Text.ToUpper().Replace(' ', '_'), 2, query_date_minimum.ToString()));
+                                            query_strings.Add("AND " + parameter.Name + " <= @MAX_DATE_IN_" + value_group[0].Text.ToUpper().Replace(' ', '_'));
+                                            parameters_values.Add(new Tuple<string, int, string>("@MAX_DATE_IN_" + value_group[0].Text.ToUpper().Replace(' ', '_'), 2, query_date_maximum.ToString()));
+                                        }
+                                        if (used_comparator == '>')
+                                        {
+                                            query_strings.Add("AND " + parameter.Name + " > @DATE_IN_" + value_group[0].Text.ToUpper().Replace(' ', '_'));
+                                            parameters_values.Add(new Tuple<string, int, string>("@DATE_IN_" + value_group[0].Text.ToUpper().Replace(' ', '_'), 2, query_date_maximum.ToString()));
+                                        }
+                                        if (used_comparator == '<')
+                                        {
+                                            query_strings.Add("AND " + parameter.Name + " < @DATE_IN_" + value_group[0].Text.ToUpper().Replace(' ', '_'));
+                                            parameters_values.Add(new Tuple<string, int, string>("@DATE_IN_" + value_group[0].Text.ToUpper().Replace(' ', '_'), 2, query_date_minimum.ToString()));
+                                        }
+                                    }
+                                    if (datetime_components_used[0] == true && datetime_components_used[1] == true && datetime_components_used[2] == false)
+                                    {
+                                        // 2. dzien-miesiac-rok
+                                        DateTime query_date_minimum = new DateTime(date_used.Item4, date_used.Item3, date_used.Item2);
+                                        DateTime query_date_maximum = query_date_minimum.AddDays(1);
+                                        query_date_maximum = query_date_maximum.AddSeconds(-1);
+                                        if (used_comparator == '=')
+                                        {
+                                            query_strings.Add("AND " + parameter.Name + " >= @MIN_DATE_IN_" + value_group[0].Text.ToUpper().Replace(' ', '_'));
+                                            parameters_values.Add(new Tuple<string, int, string>("@MIN_DATE_IN_" + value_group[0].Text.ToUpper().Replace(' ', '_'), 2, query_date_minimum.ToString()));
+                                            query_strings.Add("AND " + parameter.Name + " <= @MAX_DATE_IN_" + value_group[0].Text.ToUpper().Replace(' ', '_'));
+                                            parameters_values.Add(new Tuple<string, int, string>("@MAX_DATE_IN_" + value_group[0].Text.ToUpper().Replace(' ', '_'), 2, query_date_maximum.ToString()));
+                                        }
+                                        if (used_comparator == '>')
+                                        {
+                                            query_strings.Add("AND " + parameter.Name + " > @DATE_IN_" + value_group[0].Text.ToUpper().Replace(' ', '_'));
+                                            parameters_values.Add(new Tuple<string, int, string>("@DATE_IN_" + value_group[0].Text.ToUpper().Replace(' ', '_'), 2, query_date_maximum.ToString()));
+                                        }
+                                        if (used_comparator == '<')
+                                        {
+                                            query_strings.Add("AND " + parameter.Name + " < @DATE_IN_" + value_group[0].Text.ToUpper().Replace(' ', '_'));
+                                            parameters_values.Add(new Tuple<string, int, string>("@DATE_IN_" + value_group[0].Text.ToUpper().Replace(' ', '_'), 2, query_date_minimum.ToString()));
+                                        }
+                                    }
+                                    if (datetime_components_used[0] == true && datetime_components_used[1] == false && datetime_components_used[2] == false)
+                                    {
+                                        // 3. dzien-xxx-xxx 
+                                        query_strings.Add("AND EXTRACT(DAY FROM " + parameter.Name + ") " + used_comparator + " @DAY_IN_" + value_group[0].Text.ToUpper().Replace(' ', '_'));
+                                        parameters_values.Add(new Tuple<string, int, string>("@DAY_IN_" + value_group[0].Text.ToUpper().Replace(' ', '_'), 2, date_used.Item2.ToString()));
+                                    }
+                                    if (datetime_components_used[0] == false && datetime_components_used[1] == true && datetime_components_used[2] == false)
+                                    {
+                                        // 4. xxx-miesiac-xxx 
+                                        query_strings.Add("AND EXTRACT(MONTH FROM " + parameter.Name + ") " + used_comparator + " @MONTH_IN_" + value_group[0].Text.ToUpper().Replace(' ', '_'));
+                                        parameters_values.Add(new Tuple<string, int, string>("@MONTH_IN_" + value_group[0].Text.ToUpper().Replace(' ', '_'), 2, date_used.Item3.ToString()));
+                                    }
+                                    if (datetime_components_used[0] == false && datetime_components_used[1] == false && datetime_components_used[2] == true)
+                                    {
+                                        // 5. xxx-xxx-rok 
+                                        query_strings.Add("AND EXTRACT(YEAR FROM " + parameter.Name + ") " + used_comparator + " @YEAR_IN_" + value_group[0].Text.ToUpper().Replace(' ', '_'));
+                                        parameters_values.Add(new Tuple<string, int, string>("@YEAR_IN_" + value_group[0].Text.ToUpper().Replace(' ', '_'), 2, date_used.Item4.ToString()));
+                                    }
+                                }
+                            }
+
                             // Po zebraniu wszystkich opcji konstruujemy finalny string zapytania dla danego parametru:
                             string query_string_constructed = "";
-                            query_string_constructed += " AND (" + query_strings[0].Remove(0, 3);
+                            if(query_strings.Count != 0) query_string_constructed += " AND (" + query_strings[0].Remove(0, 3);
                             for (int j = 1; j < query_strings.Count; j++)
                             {
                                 query_string_constructed += " " + query_strings[j];
                             }
-                            query_string_constructed += " )";
+                            
+                            // Konczymy tworzyc query_string, zwracamy go potem jeżeli w międzyczasie nie pojawiły się błędy.
+                            if(query_string_constructed.Length != 0) query_string_constructed += " )";
+                            // Wszystko w porządku, przekazujemy naszą kwerendę dalej:
                             target_query_payload_returned.Add(query_string_constructed);
 
-                            // Teraz przekazujemy parametry użyte w tym stringu do naszej listy:
+                            // Jak i parametry użyte w niej do naszej listy parametrów:
                             foreach (var parameter_value in parameters_values)
                             {
                                 parameters_values_returned.Add(parameter_value);
