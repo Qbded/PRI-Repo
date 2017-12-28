@@ -222,11 +222,18 @@
   <ItemGroup>
     <Compile Include="classes\AppCryptoDataStorage.cs" />
     <Compile Include="classes\ConfigManager.cs" />
+    <Compile Include="classes\DistributedNetwork.cs" />
+    <Compile Include="classes\DistributedNetworkFile.cs" />
+    <Compile Include="classes\DistributedNetworkUser.cs" />
     <Compile Include="classes\ExtractionOptions.cs" />
     <Compile Include="classes\AppInstanceLoginManager.cs" />
     <Compile Include="classes\DatabaseEncryptor.cs" />
     <Compile Include="classes\Mp3ToWavConverter.cs" />
     <Compile Include="classes\Statistics.cs" />
+    <Compile Include="classes\TCP\TcpCommunicationHandler.cs" />
+    <Compile Include="classes\TCP\TcpFileTransferer.cs" />
+    <Compile Include="classes\TCP\TcpMessageTransferer.cs" />
+    <Compile Include="classes\TCP\TcpRequestCodebook.cs" />
     <Compile Include="classes\TimeRange.cs" />
     <Compile Include="classes\VideoFile.cs" />
     <Compile Include="classes\Wave.cs" />
@@ -385,6 +392,7 @@
       <Install>false</Install>
     </BootstrapperPackage>
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

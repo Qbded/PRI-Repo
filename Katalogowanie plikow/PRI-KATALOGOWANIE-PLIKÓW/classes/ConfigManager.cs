@@ -27,38 +27,23 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes
         private static System.IO.DirectoryInfo applicationLocation =
             new System.IO.DirectoryInfo(AppDomain.CurrentDomain.BaseDirectory);
 
-        private static readonly String[] configKeyArray =
-        {
-            DIGEST_HASH_KEY,
-            PASSWORD_SALT_KEY,
+        private static readonly Dictionary<String, String>
+            defaultConfigValues = new Dictionary<String, String>()
+            {
+                { DIGEST_HASH_KEY, "" },
+                { PASSWORD_SALT_KEY, "" },
 
-	        DB_ENCR_IV_KEY,
-            DB_ENCR_SALT_KEY,
+                { DB_ENCR_IV_KEY, "" },
+                { DB_ENCR_SALT_KEY, "" },
 
 
-            DATABASE_ENGINE_LOCATION,
-            LOCAL_DATABASE_LOCATION,
-            EXTERNAL_DATABASES_LOCATION,
+                { DATABASE_ENGINE_LOCATION, applicationLocation.FullName.ToString() + @"\bin\firebird_server\fbclient.dll" },
+                { LOCAL_DATABASE_LOCATION, applicationLocation.FullName.ToString() + @"\db\catalog.fdb" },
+                { EXTERNAL_DATABASES_LOCATION, applicationLocation.FullName.ToString() + @"\db\externals\" },
 
-            PROGRAM_LOCATION,
-            OUTPUT_LOCATION
-        };
-
-        private static String[] configDefaultValueArray =
-        {
-            "",
-            "",
-
-	        "",
-	        "",
-            
-            applicationLocation.FullName.ToString() + @"\bin\firebird_server\fbclient.dll",
-            applicationLocation.FullName.ToString() + @"\db\catalog.fdb",
-            applicationLocation.FullName.ToString() + @"\db\externals\",
-
-            applicationLocation.FullName.ToString(),
-            applicationLocation.FullName.ToString() + @"\output\"
-        };
+                { PROGRAM_LOCATION,applicationLocation.FullName.ToString() },
+                { OUTPUT_LOCATION, applicationLocation.FullName.ToString() + @"\output\" }
+            };
 
         private static void determineDirectoryStructure()
         {
@@ -72,22 +57,6 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes
                 //Program jest uruchamiany wedle ustalonej struktury programu - z katalogu bin, stąd idziemy tylko jeden folder do góry.
                 applicationLocation = applicationLocation.Parent;
             }
-
-            configDefaultValueArray = new String[] 
-            {
-                "",
-                "",
-
-		        "",
-		        "",
-
-                applicationLocation.FullName.ToString() + @"\bin\firebird_server\fbclient.dll",
-                applicationLocation.FullName.ToString() + @"\db\CATALOG.FDB",
-                applicationLocation.FullName.ToString() + @"\db\externals\",
-
-                applicationLocation.FullName.ToString(),
-                applicationLocation.FullName.ToString() + @"\output\"
-            };
         }
 
         //public ConfigManager()
@@ -230,9 +199,9 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes
             KeyValueConfigurationCollection settings =
                 configuration.AppSettings.Settings;
 
-            foreach (String key in configKeyArray)
+            foreach (KeyValuePair<String, String> entry in defaultConfigValues)
             {
-                if (ValueExists(key, settings))
+                if (!ValueExists(entry.Key, settings))
                 {
                     Console.WriteLine("config file is invalid, creating new one");
                     settings = null;
@@ -254,13 +223,13 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes
             {
                 System.IO.File.Delete(configFileLocation);
             }
-            for (int i = 0; i < configKeyArray.Length; i++)
+            foreach (KeyValuePair<String, String> entry in defaultConfigValues)
             {
                 WriteValue(
-                    configKeyArray[i], 
-                    configDefaultValueArray[i]);
+                    entry.Key,
+                    entry.Value);
             }
-            Console.WriteLine("New configFile created at " + 
+            Console.WriteLine("New configFile created at " +
                 configFileLocation);
         }
 
