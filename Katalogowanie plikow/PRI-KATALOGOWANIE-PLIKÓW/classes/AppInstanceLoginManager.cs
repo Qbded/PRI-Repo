@@ -23,21 +23,6 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes
         #region Password hashing logic
 
         /// <summary>
-        /// Gets password hash from config file, or null if hash is not set
-        /// </summary>
-        /// <returns>byte array, or null is hash is not set</returns>
-        private byte[] GetPasswordHash()
-        {
-            String passwordHashString = 
-                ConfigManager.ReadString(ConfigManager.PASSWORD_HASH_KEY);
-            if(passwordHashString == null || passwordHashString.Length <= 0)
-            {
-                return null;
-            }
-            return StringToBytes(passwordHashString);
-        }
-
-        /// <summary>
         /// Gets salt from config file, or null if salt is not set
         /// </summary>
         /// <returns>byte array, null if salt is not set</returns>
@@ -50,6 +35,17 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes
                 return null;
             }
             return StringToBytes(passwordSaltString);
+        }
+
+        private byte[] GetDigest()
+        {
+            String DigestString =
+                ConfigManager.ReadString(ConfigManager.DIGEST_HASH_KEY);
+            if (DigestString == null || DigestString.Length <= 0)
+            {
+                return null;
+            }
+            return StringToBytes(DigestString);
         }
 
 
@@ -84,7 +80,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes
         }
 
 
-        private byte[] HashPassword(String password)
+        private byte[] ComputeDigest(String password)
         {
             byte[] salt = null;
             if (!SaltIsSet())
@@ -100,12 +96,6 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes
             // Zamiast konkatenować ze sobą hasło i salt i dawać wynik takowej do SHA256 - mieszam za pomocą PBKDF2.
             Rfc2898DeriveBytes hashComputer = new Rfc2898DeriveBytes(password, salt, 512);
             return hashComputer.GetBytes(32);
-            /*
-            HashAlgorithm hashAlgorithm = SHA256.Create();
-            return hashAlgorithm.ComputeHash(
-                textEncoding.GetBytes(password + BytesToString(salt)));
-            */
-            
         }
 
 
@@ -120,13 +110,13 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes
                 BytesToString(salt)
             );
 
-            // If password is set, remove password hash, 
+            // If password is set, remove digest hash, 
             // because password can no longer match the hash
             // with new salt.
-            if (PasswordIsSet())
+            if (DigestIsSet())
             {
                 ConfigManager.RemoveValue(
-                    ConfigManager.PASSWORD_HASH_KEY);
+                    ConfigManager.DIGEST_HASH_KEY);
             }
 
             return salt;
@@ -137,44 +127,61 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes
 
         public bool VerifyPassword(String newPassword)
         {
-            byte[] passwordHash = GetPasswordHash();
-            if(passwordHash == null)
+            byte[] digest = GetDigest();
+            if(digest == null)
             {
-                Console.WriteLine("Password hash is null during password verification attempt");
+                Console.WriteLine("Digest is null during password verification attempt");
                 return false;
             }
 
-            byte[] passwordSalt = GetPasswordSalt();
-            if(passwordSalt == null)
-            {
-                Console.WriteLine("Salt is null during password verification attempt");
-                return false;
-            }
-
-            //byte[] newPasswordBytes = StringToBytes(newPassword);
-            byte[] newPasswordHash = HashPassword(newPassword);
-
-            if (passwordHash.SequenceEqual(newPasswordHash))
+            if (digest.SequenceEqual(ComputeDigest(newPassword)))
             {
                 Console.WriteLine("Password is valid");
-                AppCryptoDataStorage.Password = newPassword;
+                // We generate and store all the private keys to use from our password:
+
+                // Local database encryption key generation.
+                byte[] database_encryption_salt = new byte[saltSizeInBits / 8];
+                if (ConfigManager.ReadString(ConfigManager.DB_ENCR_SALT_KEY) == null || ConfigManager.ReadString(ConfigManager.DB_ENCR_SALT_KEY).Length == 0)
+                {
+                    RNGCryptoServiceProvider rng = new RNGCryptoServiceProvider();
+                    rng.GetBytes(database_encryption_salt);
+                    ConfigManager.WriteValue(ConfigManager.DB_ENCR_SALT_KEY,database_encryption_salt);
+                    database_encryption_salt = ConfigManager.ReadByte(ConfigManager.DB_ENCR_SALT_KEY);
+                }
+                else
+                {
+                    database_encryption_salt = ConfigManager.ReadByte(ConfigManager.DB_ENCR_SALT_KEY);
+                }
+
+                Rfc2898DeriveBytes DB_encryption_key_computer = new Rfc2898DeriveBytes(newPassword, database_encryption_salt, 512);
+
+                byte[] database_encryption_key = DB_encryption_key_computer.GetBytes(32);
+
+                AppCryptoDataStorage.DB_local_key = database_encryption_key;
+
+                // Private key generation for peer list creation
+
+                // Private key generation for external catalogue creation
+
+                // Public key is derived from network connection password
+
                 return true;
             }
             else
             {
                 Console.WriteLine("Password is invalid");
-                Console.WriteLine("Old password hash: " + 
-                    BytesToString(passwordHash));
-                Console.WriteLine("New password hash: " +
-                    BytesToString(newPasswordHash));
+                Console.WriteLine("Old digest: " + 
+                    BytesToString(digest));
+                Console.WriteLine("New digest: " +
+                    BytesToString(ComputeDigest(newPassword)));
                 return false;
             }
         }
 
 
-        public bool PasswordIsSet()
+        public bool DigestIsSet()
         {
-            if (GetPasswordHash() == null)
+            if (GetDigest() == null)
             {
                 return false;
             }
@@ -199,18 +206,17 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes
 
 
         /// <summary>
-        /// Sets new password for app instance
+        /// Computes and writes the new digest value to config for app instance
         /// </summary>
         /// <param name="newPassword"></param>
-        public void SetPassword(String newPassword)
+        public void SetDigest(String newPassword)
         {
             byte[] salt = GenerateSalt();
-            byte[] hash = HashPassword(newPassword);
+            byte[] digest = ComputeDigest(newPassword);
 
             ConfigManager.WriteValue(
-                ConfigManager.PASSWORD_HASH_KEY,
-                BytesToString(hash));
-            AppCryptoDataStorage.Password = newPassword;
+                ConfigManager.DIGEST_HASH_KEY,
+                BytesToString(digest));
         }
 
 
@@ -222,7 +228,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes
         /// </summary>
         public void DisplayLoginRegisterForm()
         {
-            if (PasswordIsSet())
+            if (DigestIsSet())
             {
                 LoginOrDie();
             }

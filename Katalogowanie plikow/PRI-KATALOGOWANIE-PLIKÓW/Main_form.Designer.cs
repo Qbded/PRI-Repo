@@ -52,18 +52,20 @@
             this.toolStripMenuItem1 = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripMenuItem2 = new System.Windows.Forms.ToolStripMenuItem();
             this.toolTip1 = new System.Windows.Forms.ToolTip(this.components);
+            this.TL_main_menu = new System.Windows.Forms.TableLayoutPanel();
+            this.BT_config = new System.Windows.Forms.Button();
             this.tabPage1.SuspendLayout();
             this.tabControl1.SuspendLayout();
             this.TP_catalog.SuspendLayout();
             this.Catalog_page_main_layout.SuspendLayout();
             this.Catalog_page_top_table_layout.SuspendLayout();
             this.contextMenuStrip1.SuspendLayout();
+            this.TL_main_menu.SuspendLayout();
             this.SuspendLayout();
             // 
             // tabPage1
             // 
-            this.tabPage1.Controls.Add(this.BT_extract_metadata);
-            this.tabPage1.Controls.Add(this.BT_test_database);
+            this.tabPage1.Controls.Add(this.TL_main_menu);
             this.tabPage1.Location = new System.Drawing.Point(4, 29);
             this.tabPage1.Margin = new System.Windows.Forms.Padding(2);
             this.tabPage1.Name = "tabPage1";
@@ -75,10 +77,11 @@
             // 
             // BT_extract_metadata
             // 
+            this.BT_extract_metadata.Dock = System.Windows.Forms.DockStyle.Fill;
             this.BT_extract_metadata.Enabled = false;
-            this.BT_extract_metadata.Location = new System.Drawing.Point(136, 15);
+            this.BT_extract_metadata.Location = new System.Drawing.Point(3, 39);
             this.BT_extract_metadata.Name = "BT_extract_metadata";
-            this.BT_extract_metadata.Size = new System.Drawing.Size(122, 31);
+            this.BT_extract_metadata.Size = new System.Drawing.Size(437, 30);
             this.BT_extract_metadata.TabIndex = 6;
             this.BT_extract_metadata.Text = "Kataloguj";
             this.BT_extract_metadata.UseVisualStyleBackColor = true;
@@ -86,9 +89,10 @@
             // 
             // BT_test_database
             // 
-            this.BT_test_database.Location = new System.Drawing.Point(8, 15);
+            this.BT_test_database.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.BT_test_database.Location = new System.Drawing.Point(3, 3);
             this.BT_test_database.Name = "BT_test_database";
-            this.BT_test_database.Size = new System.Drawing.Size(122, 31);
+            this.BT_test_database.Size = new System.Drawing.Size(437, 30);
             this.BT_test_database.TabIndex = 1;
             this.BT_test_database.Text = "Test bazy";
             this.BT_test_database.UseVisualStyleBackColor = true;
@@ -272,6 +276,34 @@
             this.toolStripMenuItem2.Size = new System.Drawing.Size(384, 22);
             this.toolStripMenuItem2.Text = "Zapisz raport katgalogowania";
             // 
+            // TL_main_menu
+            // 
+            this.TL_main_menu.ColumnCount = 1;
+            this.TL_main_menu.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
+            this.TL_main_menu.Controls.Add(this.BT_test_database, 0, 0);
+            this.TL_main_menu.Controls.Add(this.BT_extract_metadata, 0, 1);
+            this.TL_main_menu.Controls.Add(this.BT_config, 0, 2);
+            this.TL_main_menu.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.TL_main_menu.Location = new System.Drawing.Point(2, 2);
+            this.TL_main_menu.Name = "TL_main_menu";
+            this.TL_main_menu.RowCount = 4;
+            this.TL_main_menu.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 36F));
+            this.TL_main_menu.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 36F));
+            this.TL_main_menu.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 36F));
+            this.TL_main_menu.RowStyles.Add(new System.Windows.Forms.RowStyle());
+            this.TL_main_menu.Size = new System.Drawing.Size(443, 390);
+            this.TL_main_menu.TabIndex = 7;
+            // 
+            // BT_config
+            // 
+            this.BT_config.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.BT_config.Location = new System.Drawing.Point(3, 75);
+            this.BT_config.Name = "BT_config";
+            this.BT_config.Size = new System.Drawing.Size(437, 30);
+            this.BT_config.TabIndex = 7;
+            this.BT_config.Text = "Opcje programu";
+            this.BT_config.UseVisualStyleBackColor = true;
+            // 
             // Main_form
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -293,6 +325,7 @@
             this.Catalog_page_top_table_layout.ResumeLayout(false);
             this.Catalog_page_top_table_layout.PerformLayout();
             this.contextMenuStrip1.ResumeLayout(false);
+            this.TL_main_menu.ResumeLayout(false);
             this.ResumeLayout(false);
 
         }
@@ -321,6 +354,8 @@
         private System.Windows.Forms.ColumnHeader Widoczność_w_sieci;
         private System.Windows.Forms.ColumnHeader Kopiowalność_w_sieci;
         private System.Windows.Forms.ColumnHeader Kopiowalność_bez_pytania;
+        private System.Windows.Forms.TableLayoutPanel TL_main_menu;
+        private System.Windows.Forms.Button BT_config;
     }
 }
 

@@ -1,4 +1,5 @@
-﻿using PRI_KATALOGOWANIE_PLIKÓW.classes;
+﻿using FirebirdSql.Data.FirebirdClient;
+using PRI_KATALOGOWANIE_PLIKÓW.classes;
 using System;
 using System.Windows.Forms;
 
@@ -25,6 +26,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
         {
             if (AppCryptoDataStorage.UserAuthorized)
             {
+                FbConnection.ClearAllPools();
                 new DatabaseEncryptor().EncryptDatabaseFile();
             }
         }

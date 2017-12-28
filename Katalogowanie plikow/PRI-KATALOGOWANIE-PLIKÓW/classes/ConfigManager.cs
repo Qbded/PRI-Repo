@@ -9,7 +9,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes
 {
     static class ConfigManager
     {
-        public static readonly String PASSWORD_HASH_KEY = "passwordHash";
+        public static readonly String DIGEST_HASH_KEY = "digestHash";
         public static readonly String PASSWORD_SALT_KEY = "passwordSalt";
         public static readonly String DB_ENCR_SALT_KEY = "dbEnc_salt";
         public static readonly String DB_ENCR_IV_KEY = "dbEnc_IV";
@@ -29,7 +29,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes
 
         private static readonly String[] configKeyArray =
         {
-            PASSWORD_HASH_KEY,
+            DIGEST_HASH_KEY,
             PASSWORD_SALT_KEY,
 
 	        DB_ENCR_IV_KEY,
