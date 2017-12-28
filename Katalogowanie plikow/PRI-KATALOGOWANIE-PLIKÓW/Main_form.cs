@@ -444,6 +444,12 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
         // Obsługa logiki wymaganej przez WPF i resizing okna.
         public Main_form()
         {
+            // Check if our config file does not exist, generate a new one!
+            if(!ConfigManager.ConfigFileExists())
+            {
+                ConfigManager.CreateNewConfigFile();
+            }
+            
             // Only allow app to run after successful login 
             // or password setting
             new AppInstanceLoginManager().DisplayLoginRegisterForm();
@@ -1007,6 +1013,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
         }
 
         // Stary kawałek logiki do wyświetlania zawartości zmiennej metadata.
+        /*
         private void chkExcludeMetadata_CheckedChanged(object sender, EventArgs e)
         {
             if (this.chkExcludeMetadata.Checked)
@@ -1018,7 +1025,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                     for (int j = 0; j < metadata[i].Length; j++) display += " " + metadata[i].ElementAt(j) + " ";
                     this.chkMetadata.Items.Add(display);
                 }
-                /*
+                
                 //DEBUG - zapisujemy wyniki katalogowania do pliku $$$.txt
                 FileInfo txt_dump = new FileInfo(txt_path);
                 if (txt_dump.Exists)
@@ -1033,7 +1040,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                     }
                     txt_dumper.Close();
                 }
-                */
+                
             }
             else
             {
@@ -1041,6 +1048,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                 this.chkMetadata.Items.Clear();
             }
         }
+        */
 
     // Operacje na bazie danych
 

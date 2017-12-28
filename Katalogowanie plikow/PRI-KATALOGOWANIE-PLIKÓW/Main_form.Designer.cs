@@ -32,8 +32,6 @@
             this.tabPage1 = new System.Windows.Forms.TabPage();
             this.BT_extract_metadata = new System.Windows.Forms.Button();
             this.BT_test_database = new System.Windows.Forms.Button();
-            this.chkExcludeMetadata = new System.Windows.Forms.CheckBox();
-            this.chkMetadata = new System.Windows.Forms.CheckedListBox();
             this.tabControl1 = new System.Windows.Forms.TabControl();
             this.TP_catalog = new System.Windows.Forms.TabPage();
             this.Catalog_page_main_layout = new System.Windows.Forms.TableLayoutPanel();
@@ -47,13 +45,13 @@
             this.Ostatnia_modyfikacja = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.Ostatnie_katalogowanie = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.Rozmiar = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+            this.Widoczność_w_sieci = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+            this.Kopiowalność_w_sieci = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+            this.Kopiowalność_bez_pytania = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.contextMenuStrip1 = new System.Windows.Forms.ContextMenuStrip(this.components);
             this.toolStripMenuItem1 = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripMenuItem2 = new System.Windows.Forms.ToolStripMenuItem();
             this.toolTip1 = new System.Windows.Forms.ToolTip(this.components);
-            this.Widoczność_w_sieci = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
-            this.Kopiowalność_w_sieci = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
-            this.Kopiowalność_bez_pytania = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.tabPage1.SuspendLayout();
             this.tabControl1.SuspendLayout();
             this.TP_catalog.SuspendLayout();
@@ -66,8 +64,6 @@
             // 
             this.tabPage1.Controls.Add(this.BT_extract_metadata);
             this.tabPage1.Controls.Add(this.BT_test_database);
-            this.tabPage1.Controls.Add(this.chkExcludeMetadata);
-            this.tabPage1.Controls.Add(this.chkMetadata);
             this.tabPage1.Location = new System.Drawing.Point(4, 29);
             this.tabPage1.Margin = new System.Windows.Forms.Padding(2);
             this.tabPage1.Name = "tabPage1";
@@ -97,27 +93,6 @@
             this.BT_test_database.Text = "Test bazy";
             this.BT_test_database.UseVisualStyleBackColor = true;
             this.BT_test_database.Click += new System.EventHandler(this.BT_test_database_click);
-            // 
-            // chkExcludeMetadata
-            // 
-            this.chkExcludeMetadata.AutoSize = true;
-            this.chkExcludeMetadata.Location = new System.Drawing.Point(8, 52);
-            this.chkExcludeMetadata.Name = "chkExcludeMetadata";
-            this.chkExcludeMetadata.Size = new System.Drawing.Size(282, 24);
-            this.chkExcludeMetadata.TabIndex = 3;
-            this.chkExcludeMetadata.Text = "Wyklucz niektóre metadane z plików";
-            this.chkExcludeMetadata.UseVisualStyleBackColor = true;
-            this.chkExcludeMetadata.CheckedChanged += new System.EventHandler(this.chkExcludeMetadata_CheckedChanged);
-            // 
-            // chkMetadata
-            // 
-            this.chkMetadata.BorderStyle = System.Windows.Forms.BorderStyle.None;
-            this.chkMetadata.Enabled = false;
-            this.chkMetadata.FormattingEnabled = true;
-            this.chkMetadata.Location = new System.Drawing.Point(8, 82);
-            this.chkMetadata.Name = "chkMetadata";
-            this.chkMetadata.Size = new System.Drawing.Size(431, 294);
-            this.chkMetadata.TabIndex = 2;
             // 
             // tabControl1
             // 
@@ -263,6 +238,18 @@
             this.Rozmiar.Text = "Rozmiar";
             this.Rozmiar.Width = 100;
             // 
+            // Widoczność_w_sieci
+            // 
+            this.Widoczność_w_sieci.Text = "Czy jest widoczny w sieci?";
+            // 
+            // Kopiowalność_w_sieci
+            // 
+            this.Kopiowalność_w_sieci.Text = "Czy użytkownicy sieci mogą prosić o jego skopiowanie?";
+            // 
+            // Kopiowalność_bez_pytania
+            // 
+            this.Kopiowalność_bez_pytania.Text = "Czy użytkownicy sieci mogą skopiować go bez pytania?";
+            // 
             // contextMenuStrip1
             // 
             this.contextMenuStrip1.ImageScalingSize = new System.Drawing.Size(20, 20);
@@ -285,18 +272,6 @@
             this.toolStripMenuItem2.Size = new System.Drawing.Size(384, 22);
             this.toolStripMenuItem2.Text = "Zapisz raport katgalogowania";
             // 
-            // Widoczność_w_sieci
-            // 
-            this.Widoczność_w_sieci.Text = "Czy jest widoczny w sieci?";
-            // 
-            // Kopiowalność_w_sieci
-            // 
-            this.Kopiowalność_w_sieci.Text = "Czy użytkownicy sieci mogą prosić o jego skopiowanie?";
-            // 
-            // Kopiowalność_bez_pytania
-            // 
-            this.Kopiowalność_bez_pytania.Text = "Czy użytkownicy sieci mogą skopiować go bez pytania?";
-            // 
             // Main_form
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -311,7 +286,6 @@
             this.SizeGripStyle = System.Windows.Forms.SizeGripStyle.Show;
             this.Text = "Katalogowanie plików";
             this.tabPage1.ResumeLayout(false);
-            this.tabPage1.PerformLayout();
             this.tabControl1.ResumeLayout(false);
             this.TP_catalog.ResumeLayout(false);
             this.TP_catalog.PerformLayout();
@@ -327,8 +301,6 @@
         private System.Windows.Forms.TabPage tabPage1;
         private System.Windows.Forms.TabControl tabControl1;
         private System.Windows.Forms.ToolTip toolTip1;
-        private System.Windows.Forms.CheckedListBox chkMetadata;
-        private System.Windows.Forms.CheckBox chkExcludeMetadata;
         private System.Windows.Forms.ContextMenuStrip contextMenuStrip1;
         private System.Windows.Forms.ToolStripMenuItem toolStripMenuItem1;
         private System.Windows.Forms.ToolStripMenuItem toolStripMenuItem2;

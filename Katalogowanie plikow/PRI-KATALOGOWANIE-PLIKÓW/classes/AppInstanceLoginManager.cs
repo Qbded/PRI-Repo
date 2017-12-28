@@ -96,10 +96,16 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes
                 salt = StringToBytes(ConfigManager.ReadString(
                     ConfigManager.PASSWORD_SALT_KEY));
             }
-
+            
+            // Zamiast konkatenować ze sobą hasło i salt i dawać wynik takowej do SHA256 - mieszam za pomocą PBKDF2.
+            Rfc2898DeriveBytes hashComputer = new Rfc2898DeriveBytes(password, salt, 512);
+            return hashComputer.GetBytes(32);
+            /*
             HashAlgorithm hashAlgorithm = SHA256.Create();
             return hashAlgorithm.ComputeHash(
                 textEncoding.GetBytes(password + BytesToString(salt)));
+            */
+            
         }
 
 
@@ -200,6 +206,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes
         {
             byte[] salt = GenerateSalt();
             byte[] hash = HashPassword(newPassword);
+
             ConfigManager.WriteValue(
                 ConfigManager.PASSWORD_HASH_KEY,
                 BytesToString(hash));
