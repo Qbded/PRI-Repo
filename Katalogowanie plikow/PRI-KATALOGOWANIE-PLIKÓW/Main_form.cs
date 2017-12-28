@@ -454,7 +454,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             // or password setting
             new AppInstanceLoginManager().DisplayLoginRegisterForm();
             AppCryptoDataStorage.UserAuthorized = true;
-            //new DatabaseEncryptor().DecryptDatabaseFile();
+            new DatabaseEncryptor().DecryptDatabaseFile();
             InitializeComponent();
 
             DetermineFilepaths();

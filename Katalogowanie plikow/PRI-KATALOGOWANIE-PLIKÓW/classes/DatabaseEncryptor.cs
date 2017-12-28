@@ -22,6 +22,13 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes
 
         public DatabaseEncryptor()
         {
+            if(ConfigManager.ConfigFileExists())
+            {
+                decryptedFileDirectory = ConfigManager.ReadString(ConfigManager.LOCAL_DATABASE_LOCATION);
+                encryptedFileDirectory = ConfigManager.ReadString(ConfigManager.PROGRAM_LOCATION) + @"\db\encrypted_catalog";
+            }
+
+            /*
             DirectoryInfo directory_grabber = new DirectoryInfo(Application.StartupPath);
             String target_directory;
 
@@ -39,6 +46,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes
             //TODO Pobieranie lokacji bazy danych z pliku config
             decryptedFileDirectory = target_directory + @"\db\catalog.fdb"; // Lokacja katalogu tworzonego przez program
             encryptedFileDirectory = target_directory + @"\db\encrypted_catalog";
+            */
         }
 
 
@@ -58,7 +66,6 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes
             {
                 salt = GenerateSalt();
                 SetNewSalt(salt);
-                return;
             }
 
             byte[] IV = ConfigManager.ReadByte(
@@ -67,14 +74,13 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes
             {
                 IV = GenerateIV();
                 SetNewIV(IV);
-                return;
             }
 
 
             Rijndael rijndael = Rijndael.Create();
 
             Rfc2898DeriveBytes rfc2898DeriveBytes =
-                new Rfc2898DeriveBytes(password, salt);
+                new Rfc2898DeriveBytes(password, salt, 512);
 
             byte[] key = rfc2898DeriveBytes.GetBytes(keySizeBytes);
 
@@ -137,7 +143,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes
 
             Rijndael rijndael = Rijndael.Create();
             Rfc2898DeriveBytes rfc2898DeriveBytes =
-                new Rfc2898DeriveBytes(password, salt);
+                new Rfc2898DeriveBytes(password, salt, 512);
             byte[] key = rfc2898DeriveBytes.GetBytes(keySizeBytes);
 
             RijndaelManaged rijndaelManaged = new RijndaelManaged();

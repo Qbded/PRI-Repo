@@ -25,7 +25,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
         {
             if (AppCryptoDataStorage.UserAuthorized)
             {
-                //new DatabaseEncryptor().EncryptDatabaseFile();
+                new DatabaseEncryptor().EncryptDatabaseFile();
             }
         }
     }
