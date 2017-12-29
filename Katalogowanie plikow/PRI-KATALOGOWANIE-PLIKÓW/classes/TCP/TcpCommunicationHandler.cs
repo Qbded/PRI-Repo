@@ -47,23 +47,26 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
             }
         }
 
-
+        
         public byte[] RequestFile(DistributedNetworkUser targetUser,
             DistributedNetworkFile file)
         {
-
+            //TODO: Input proper logic.
+            return null;
         }
 
         public DistributedNetworkFile GetRequestedFile()
         {
-
+            //TODO: Input proper logic.
+            return null;
         }
 
         public void SendFile(DistributedNetworkUser targetUser,
             DistributedNetworkFile file)
         {
-
+            //TODO: Input proper logic.
         }
+        
 
 
 #region server threading logic

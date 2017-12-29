@@ -142,16 +142,15 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
         // Ładowanie ścieżek do odpowiednich plików i folderów z pliku konfiguracyjnego.
         private void DetermineFilepaths()
         {
-            if (ConfigManager.ConfigFileExists() == false)
+            if (ConfigManager.ConfigFileExists() == false || ConfigManager.ValidateConfigFile() == false)
             {
-                // FATAL ERROR - jakimś cudem nie mieliśmy konfiga i nie został on utworzony po prompcie o nowe konto - wychodzimy z aplikacji!
-                Application.Exit();
-                Environment.Exit(0);
+                // ERROR - jakimś cudem nie mieliśmy konfiga lub nie został on utworzony poprawnie - regenerujemy nasz plik konfiguracyjny!
+                ConfigManager.CreateNewConfigFile();
             }
 
-            if(ConfigManager.ConfigFileExists() == true)
+            if(ConfigManager.ConfigFileExists() == true && ConfigManager.ValidateConfigFile() == true)
             {
-                //DEBUG MessageBox.Show("Znalazłem konfig'a, pobieram jego wartości...");
+                // Wszystko w porządku, pobieramy wartości z konfigów do programu
 
                 program_path = ConfigManager.ReadString(ConfigManager.PROGRAM_LOCATION);
                 output_path = ConfigManager.ReadString(ConfigManager.OUTPUT_LOCATION);
@@ -1488,7 +1487,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                                                                                   "WHERE ID = @Id;"
                                                                                   ,
                                                                                   new FbConnection(database_connection_string_builder.ConnectionString));
-
+            
             database_folder_modifiable_verifier.SelectCommand.Parameters.AddWithValue("@Id", id_to_check);
 
             database_folder_modifiable_verifier.Fill(database_folder_modifiable_verifier_container);

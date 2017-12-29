@@ -37,12 +37,12 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes
                 { DB_ENCR_SALT_KEY, "" },
 
 
-                { DATABASE_ENGINE_LOCATION, applicationLocation.FullName.ToString() + @"\bin\firebird_server\fbclient.dll" },
-                { LOCAL_DATABASE_LOCATION, applicationLocation.FullName.ToString() + @"\db\catalog.fdb" },
-                { EXTERNAL_DATABASES_LOCATION, applicationLocation.FullName.ToString() + @"\db\externals\" },
+                { DATABASE_ENGINE_LOCATION, "" },
+                { LOCAL_DATABASE_LOCATION, "" },
+                { EXTERNAL_DATABASES_LOCATION, "" },
 
-                { PROGRAM_LOCATION,applicationLocation.FullName.ToString() },
-                { OUTPUT_LOCATION, applicationLocation.FullName.ToString() + @"\output\" }
+                { PROGRAM_LOCATION, "" },
+                { OUTPUT_LOCATION, ""}
             };
 
         private static void determineDirectoryStructure()
@@ -57,6 +57,13 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes
                 //Program jest uruchamiany wedle ustalonej struktury programu - z katalogu bin, stąd idziemy tylko jeden folder do góry.
                 applicationLocation = applicationLocation.Parent;
             }
+
+            ConfigManager.WriteValue(DATABASE_ENGINE_LOCATION, applicationLocation.FullName.ToString() + @"\bin\firebird_server\fbclient.dll");
+            ConfigManager.WriteValue(LOCAL_DATABASE_LOCATION, applicationLocation.FullName.ToString() + @"\db\catalog.fdb");
+            ConfigManager.WriteValue(EXTERNAL_DATABASES_LOCATION, applicationLocation.FullName.ToString() + @"\db\externals\");
+
+            ConfigManager.WriteValue(PROGRAM_LOCATION, applicationLocation.FullName.ToString());
+            ConfigManager.WriteValue(OUTPUT_LOCATION, applicationLocation.FullName.ToString() + @"\output\");
         }
 
         //public ConfigManager()
@@ -218,7 +225,6 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes
 
         public static void CreateNewConfigFile()
         {
-            determineDirectoryStructure();
             if (ConfigFileExists())
             {
                 System.IO.File.Delete(configFileLocation);
@@ -229,6 +235,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes
                     entry.Key,
                     entry.Value);
             }
+            determineDirectoryStructure();
             Console.WriteLine("New configFile created at " +
                 configFileLocation);
         }

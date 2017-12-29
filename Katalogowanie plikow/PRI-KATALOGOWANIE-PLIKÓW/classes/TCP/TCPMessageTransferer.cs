@@ -13,7 +13,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
 
         public void SendMessage(Socket networkSocket, DistributedNetworkUser targetUser, String message)
         {
-            networkSocket.BeginSend()
+            //networkSocket.BeginSend();
         }
     }
 }
