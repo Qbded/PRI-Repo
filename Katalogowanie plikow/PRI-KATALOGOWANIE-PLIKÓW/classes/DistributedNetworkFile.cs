@@ -8,6 +8,9 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes
 {
     class DistributedNetworkFile
     {
+        public bool allowDistribution;
+        public bool unpromptedDistribution;
+
         public DistributedNetworkFile()
         {
 

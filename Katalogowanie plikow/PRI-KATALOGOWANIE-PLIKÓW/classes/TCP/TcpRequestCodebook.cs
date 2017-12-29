@@ -8,7 +8,10 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
 {
     static class TcpRequestCodebook
     {
-        public const String REQUEST_FILE = "request file";
-        public const String REQUEST_CATALOG = "request catalog";
+        public static readonly String REQUEST_FILE = "request file";
+        public static readonly String REQUEST_CATALOG = "request catalog";
+
+        public static readonly byte[] INITIALIZE = { 2 };
+        public static readonly byte[] SEPARATOR = { 4 };
     }
 }

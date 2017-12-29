@@ -29,47 +29,67 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
             clientBGWorkers = new List<BackgroundWorker>();
             _clientThreadLocks = new List<object>();
             //tcpListener
+
+            StartServer();
         }
 
 
         private void InterpretRequest(String request, 
             DistributedNetworkUser requestingUser)
         {
-            switch (request)
+            if(request == TcpRequestCodebook.REQUEST_FILE)
             {
-                case TcpRequestCodebook.REQUEST_FILE:
-                    DistributedNetworkFile file = GetRequestedFile();
-                    RequestFile(requestingUser, file);
-                    break;
-                default:
-                    // Incorrect request
-                    break;
+                DistributedNetworkFile dnFile = GetRequestedFile();
+                RequestFileCallback(requestingUser, dnFile);
             }
+            else
+            {
+                // Incorrect request
+            }
+            //switch (request)
+            //{
+            //    case TcpRequestCodebook.REQUEST_FILE:
+            //        DistributedNetworkFile file = GetRequestedFile();
+            //        RequestFile(requestingUser, file);
+            //        break;
+            //    default:
+            //        // Incorrect request
+            //        break;
+            //}
         }
 
-        
+
         public byte[] RequestFile(DistributedNetworkUser targetUser,
             DistributedNetworkFile file)
         {
-            //TODO: Input proper logic.
+            //TODO: Input proper logic
             return null;
+        }
+
+        public void RequestFileCallback(DistributedNetworkUser targetUser,
+            DistributedNetworkFile dnFile)
+        {
+            //TODO: Input proper logic
         }
 
         public DistributedNetworkFile GetRequestedFile()
         {
-            //TODO: Input proper logic.
+            //TODO: Input proper logic
             return null;
         }
 
         public void SendFile(DistributedNetworkUser targetUser,
             DistributedNetworkFile file)
         {
-            //TODO: Input proper logic.
+            //TODO: Input proper logic
         }
-        
 
 
 #region server threading logic
+        /// <summary>
+        /// Starts a background thread using TcpListener to await 
+        /// requests.
+        /// </summary>
         private void StartServer()
         {
             serverBGWorker = new BackgroundWorker();
@@ -107,7 +127,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
             ref DoWorkEventArgs e)
         {
             List<object> arg = e.Argument as List<object>;
-            object _threadLock = arg.ElementAt(0);
+            object _threadLock = arg.ElementAt(0) as object;
             try
             {
                 serverListener = new TcpListener(IPAddress.Any, PORT);
@@ -132,9 +152,21 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
                         e.Cancel = true;
                     }
                 }
+
                 TcpClient tcpClient = serverListener.AcceptTcpClient();
 
             }
+        }
+
+        private void StopServer()
+        {
+            if (serverBGWorker.IsBusy && 
+                !serverBGWorker.CancellationPending)
+            {
+                serverBGWorker.CancelAsync();
+            }
+
+            serverListener.Stop();
         }
 
         private void ServerStoppedEvent(object sender, 
@@ -148,17 +180,6 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
             if (!((String)e.Result).Equals("")){
                 System.Windows.Forms.MessageBox.Show((String)e.Result);
             }
-        }
-
-        private void StopServer()
-        {
-            if (serverBGWorker.IsBusy && 
-                !serverBGWorker.CancellationPending)
-            {
-                serverBGWorker.CancelAsync();
-            }
-
-            serverListener.Stop();
         }
 #endregion
 
@@ -192,6 +213,21 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
             ref DoWorkEventArgs e)
         {
 
+        }
+
+        private void StopClient(BackgroundWorker client)
+        {
+            client.CancelAsync();
+        }
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="index">Index, under whitch the client can be 
+        /// found on the clientBGWorkers list</param>
+        private void StopClient(int index)
+        {
+            BackgroundWorker client = clientBGWorkers[index];
+            StopClient(client);
         }
 
         private void StopClientEvent(object sender, RunWorkerCompletedEventArgs e)
