@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
@@ -13,7 +14,21 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
 {
     class TcpCommunicationHandler
     {
+
+
+
         private static readonly int PORT = 100;
+        
+        /// <summary>
+        /// Maximum byte count of data sent in a single data packet
+        /// </summary>
+        private static readonly int MAX_DATA_PACKET_SIZE = 1024;
+        /// <summary>
+        /// Length of data packets is stored in int variables, whitch
+        /// take 4 bytes each. Therefore, 4 consecutive bytes from
+        /// stream must be interpreted as such.
+        /// </summary>
+        private static readonly int DATA_SIZE_BYTE_ARRAY_LENGTH = 4;
 
         TcpListener serverListener;
 
@@ -34,54 +49,10 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
         }
 
 
-        private void InterpretRequest(String request, 
-            DistributedNetworkUser requestingUser)
-        {
-            if(request == TcpRequestCodebook.REQUEST_FILE)
-            {
-                DistributedNetworkFile dnFile = GetRequestedFile();
-                RequestFileCallback(requestingUser, dnFile);
-            }
-            else
-            {
-                // Incorrect request
-            }
-            //switch (request)
-            //{
-            //    case TcpRequestCodebook.REQUEST_FILE:
-            //        DistributedNetworkFile file = GetRequestedFile();
-            //        RequestFile(requestingUser, file);
-            //        break;
-            //    default:
-            //        // Incorrect request
-            //        break;
-            //}
-        }
-
-
-        public byte[] RequestFile(DistributedNetworkUser targetUser,
-            DistributedNetworkFile file)
-        {
-            //TODO: Input proper logic
-            return null;
-        }
-
-        public void RequestFileCallback(DistributedNetworkUser targetUser,
-            DistributedNetworkFile dnFile)
-        {
-            //TODO: Input proper logic
-        }
-
         public DistributedNetworkFile GetRequestedFile()
         {
             //TODO: Input proper logic
             return null;
-        }
-
-        public void SendFile(DistributedNetworkUser targetUser,
-            DistributedNetworkFile file)
-        {
-            //TODO: Input proper logic
         }
 
 
@@ -128,6 +99,8 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
         {
             List<object> arg = e.Argument as List<object>;
             object _threadLock = arg.ElementAt(0) as object;
+
+            // Start server listener
             try
             {
                 serverListener = new TcpListener(IPAddress.Any, PORT);
@@ -154,7 +127,20 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
                 }
 
                 TcpClient tcpClient = serverListener.AcceptTcpClient();
+                //NetworkStream networkStream = tcpClient.GetStream();
+                Thread thread = new Thread(
+                    new ParameterizedThreadStart(AcceptClientRequest));
+                thread.Start(tcpClient);
+            }
 
+            // Stop serverListener after receiving worker cancellation
+            // signal
+            try
+            {
+                serverListener.Stop();
+            }
+            catch(SocketException ex) {
+                Console.WriteLine(ex.Message.ToString());
             }
         }
 
@@ -166,7 +152,14 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
                 serverBGWorker.CancelAsync();
             }
 
-            serverListener.Stop();
+            try
+            {
+                serverListener.Stop();
+            }
+            catch(SocketException e)
+            {
+                Console.WriteLine(e.Message);
+            }
         }
 
         private void ServerStoppedEvent(object sender, 
@@ -268,6 +261,205 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
                 index++;
             }
         }
-#endregion
+        #endregion
+
+
+#region socket communication methods
+        // All methods in this region are to be called by background
+        // threads
+        private void AcceptClientRequest(object parameter)
+        {
+            TcpClient tcpClient = parameter as TcpClient;
+            NetworkStream networkStream = tcpClient.GetStream();
+
+            int firstByte = networkStream.ReadByte();
+            if(firstByte == TcpRequestCodebook.INITIALIZE[0])
+            {
+                int requestCode = networkStream.ReadByte();
+                if(TcpRequestCodebook.IsRequest(
+                    requestCode, TcpRequestCodebook.SEND_FILE))
+                {
+                    SendFileRequestCallback(networkStream);
+                }
+            }
+
+            try
+            {
+                networkStream.Close();
+                tcpClient.Close();
+            }
+            catch(Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+            }
+        }
+
+
+        private void InterpretRequest(NetworkStream networkStream, 
+            int request)
+        {
+            if (TcpRequestCodebook.IsRequest(
+                request, TcpRequestCodebook.SEND_FILE))
+            {
+                DistributedNetworkFile dnFile = GetRequestedFile();
+                SendFileRequestCallback(networkStream, dnFile);
+            }
+            else
+            {
+                // Incorrect request
+            }
+        }
+
+
+        public byte[] RequestFile(DistributedNetworkUser targetUser,
+            DistributedNetworkFile file)
+        {
+            //TODO: Input proper logic
+            return null;
+        }
+
+        public void SendFileRequestCallback(NetworkStream networkStream,
+            DistributedNetworkFile dnFile)
+        {
+            
+        }
+
+
+        public void SendFile(DistributedNetworkUser targetUser,
+            DistributedNetworkFile file)
+        {
+            //TODO: Input proper logic
+        }
+
+
+
+
+
+        //private byte[] CreateMessageDataPacket(byte[] request,
+        //    String base64String)
+        //{
+        //    MemoryStream memoryStream = new MemoryStream();
+
+        //    byte[] initializingBytes = TcpRequestCodebook.INITIALIZE;
+        //    memoryStream.Write(
+        //        initializingBytes, 0, initializingBytes.Length);
+
+        //    byte[] requestBytes = request;
+        //    memoryStream.Write(
+        //        request, 0, request.Length);
+
+        //    byte[] stringBytes = StringToByteArray(base64String);
+        //    int stringByteCount = stringBytes.Length;
+        //    byte[] 
+        //}
+
+
+        private byte[] CreateFileDataPacket(byte[] request,
+            byte[] dataToSend)
+        {
+            MemoryStream memoryStream = new MemoryStream();
+
+            byte[] initializingBytes = TcpRequestCodebook.INITIALIZE;
+            memoryStream.Write(
+                initializingBytes, 0, initializingBytes.Length);
+
+            byte[] requestBytes = request;
+            memoryStream.Write(
+                requestBytes, 0, requestBytes.Length);
+
+            byte[] dataLengthBytes = IntToByteArray(
+                dataToSend.Length);
+            memoryStream.Write(
+                dataLengthBytes, 0, dataLengthBytes.Length);
+
+            byte[] separatorBytes = TcpRequestCodebook.SEPARATOR;
+            memoryStream.Write(
+                separatorBytes, 0, separatorBytes.Length);
+
+            byte[] dataBytes = dataToSend;
+            memoryStream.Write(
+                dataBytes, 0, dataBytes.Length);
+
+            return memoryStream.ToArray();
+        }
+
+
+        private String EncodeStringBase64(String unencodedString)
+        {
+            if (unencodedString.Equals(String.Empty))
+            {
+                return String.Empty;
+            }
+
+            byte[] unencodedStringBytes = 
+                Encoding.UTF8.GetBytes(unencodedString);
+            return Convert.ToBase64String(unencodedStringBytes);
+        }
+
+        private String DecodeStringBase64(String encodedString)
+        {
+            if (encodedString.Equals(String.Empty))
+            {
+                return String.Empty;
+            }
+
+            byte[] encodedStringBytes = 
+                Convert.FromBase64String(encodedString);
+            return Encoding.UTF8.GetString(encodedStringBytes);
+        }
+
+        private byte[] StringToByteArray(String str)
+        {
+            return Encoding.UTF8.GetBytes(str);
+        }
+
+        private String ByteArrayToString(byte[] b)
+        {
+            return Encoding.UTF8.GetString(b);
+        }
+
+        private int GetStringByteCount(String str)
+        {
+            return UTF8Encoding.UTF8.GetByteCount(str);
+        }
+
+
+        /// <summary>
+        /// Converts byte to integer representing the byte value
+        /// </summary>
+        /// <param name="b"></param>
+        /// <returns></returns>
+        public static int ByteToInt(byte b)
+        {
+            return b;
+        }
+
+        /// <summary>
+        /// Uses first 4 bytes from byte array to create integer value;
+        /// </summary>
+        /// <param name="b"></param>
+        /// <returns></returns>
+        public static int ByteArrayToInt(byte[] b)
+        {
+            return BitConverter.ToInt32(b, 0);
+        }
+
+        /// <summary>
+        /// Converts int to 4-element byte array.
+        /// </summary>
+        /// <param name="i"></param>
+        /// <returns>4-element byte array.</returns>
+        public static byte[] IntToByteArray(int i)
+        {
+            byte[] bytes = BitConverter.GetBytes(i);
+            //if (BitConverter.IsLittleEndian)
+            //{
+            //    Array.Reverse(bytes);
+            //}
+            return bytes;
+        }
+
+
+        #endregion
     }
 }
