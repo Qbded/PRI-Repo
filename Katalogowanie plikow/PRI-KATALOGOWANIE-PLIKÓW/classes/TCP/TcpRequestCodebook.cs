@@ -14,13 +14,20 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
         public static readonly byte[] INITIALIZE = { 2 };
         public static readonly byte[] SEPARATOR = { 4 };
 
-        public static readonly byte[] SEND_FILE = { 20 };
-        public static readonly byte[] SEND_CATALOGUE = { 21 };
+        public static readonly byte[] OK = { 10 };
+        public static readonly byte[] NO = { 11 };
+        public static readonly byte[] ABORT = { 12 };
 
-        public static readonly byte[] START_SENDING_FILE = { 120 };
-        public static readonly byte[] CONTINUE_SENDING_FILE = { 121 };
-        public static readonly byte[] SENDING_FILE_FRAGMENT = { 122 };
-        public static readonly byte[] DONE_SENDING_FILE = { 123 };
+        public static readonly byte[] SEND_CATALOGUE = { 30 };
+
+        public static readonly byte[] SEND_PUB_KEY = { 70 };
+
+        public static readonly byte[] SEND_FILE = { 120 };
+        public static readonly byte[] SEND_FILE_SPEC = { 121 };
+        public static readonly byte[] START_SENDING_FILE = { 122 };
+        public static readonly byte[] CONTINUE_SENDING_FILE = { 123 };
+        public static readonly byte[] SENDING_FILE_FRAGMENT = { 124 };
+        public static readonly byte[] DONE_SENDING_FILE = { 125 };
 
         public static readonly byte[] TERMINATE = { 255 };
 

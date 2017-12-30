@@ -295,22 +295,6 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
         }
 
 
-        private void InterpretRequest(NetworkStream networkStream, 
-            int request)
-        {
-            if (TcpRequestCodebook.IsRequest(
-                request, TcpRequestCodebook.SEND_FILE))
-            {
-                DistributedNetworkFile dnFile = GetRequestedFile();
-                SendFileRequestCallback(networkStream, dnFile);
-            }
-            else
-            {
-                // Incorrect request
-            }
-        }
-
-
         public byte[] RequestFile(DistributedNetworkUser targetUser,
             DistributedNetworkFile file)
         {
@@ -318,8 +302,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
             return null;
         }
 
-        public void SendFileRequestCallback(NetworkStream networkStream,
-            DistributedNetworkFile dnFile)
+        public void SendFileRequestCallback(NetworkStream networkStream)
         {
             
         }
