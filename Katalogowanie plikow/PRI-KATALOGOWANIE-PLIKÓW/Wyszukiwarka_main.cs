@@ -12,6 +12,8 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
 {
     public partial class Wyszukiwarka_main : Form
     {
+        #region Deklaracja zmiennych
+
         public event EventHandler OnDataAvalible;
 
     // Definicje używanych wewnętrznie danych:
@@ -67,6 +69,10 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
         //    4 to rok.
         // 3. Item3 (string) - dane dla parametru uzupełnione przez użytkownika w GUI.
         public List<Tuple<string, int, string>> parameters_values_returned;
+
+        #endregion
+
+        #region Konstruktor i jego logika
 
         private void TL_datasource_Initialise()
         {
@@ -215,6 +221,24 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
 
         }
 
+        public Wyszukiwarka_main()
+        {
+            // Przygotowywanie danych statycznych
+            parameter_group_templates_Setup();
+            values_group_templates_Setup();
+
+            // Inicjalizacja graficznych komponentów
+            InitializeComponent();
+
+            // Zaludnianie odpowiednich komponentów zawartością
+            TL_datasource_Initialise();
+
+        }
+
+        #endregion
+
+        #region Konstrukcja kontrolek
+
         // Tworzy checkbox, ale UWAGA - nie jest on podpięty pod żadne zdarzenie!
         // Zdarzenia do zdefiniowania:
         // CheckedChanged - wyzwalane przy jakiejkolwiek zmianie statusu zaznaczenia checkbox'a
@@ -354,6 +378,10 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             }
             return values;
         }
+
+        #endregion
+
+        #region Obsługa zdarzeń okna
 
         private void value_selector_EnabledChanged(object sender, EventArgs e)
         {
@@ -809,20 +837,6 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             TL_values.Controls.AddRange(new_controls_to_display);
         }
 
-        public Wyszukiwarka_main()
-        {
-            // Przygotowywanie danych statycznych
-            parameter_group_templates_Setup();
-            values_group_templates_Setup();
-
-            // Inicjalizacja graficznych komponentów
-            InitializeComponent();
-
-            // Zaludnianie odpowiednich komponentów zawartością
-            TL_datasource_Initialise();
-
-        }
-
         private void datasource_selector_CheckedChanged(object sender, EventArgs e)
         {
             CheckBox caller = (CheckBox)sender;
@@ -1235,5 +1249,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             this.Close();
             this.Dispose();
         }
+
+        #endregion
     }
 }

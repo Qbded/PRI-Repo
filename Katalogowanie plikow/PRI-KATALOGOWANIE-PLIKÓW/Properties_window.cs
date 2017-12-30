@@ -12,8 +12,14 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
 {
     public partial class Properties_window : Form
     {
+        #region Deklaracja zmiennych
+
         public List<string> names_passed;
         public DataTable data_passed;
+
+        #endregion
+
+        #region Konstruktor
 
         public Properties_window()
         {
@@ -22,6 +28,10 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
 
             InitializeComponent();
         }
+
+        #endregion
+
+        #region Logika okna
 
         private void LV_metadata_basic_fill()
         {
@@ -63,5 +73,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                 LV_metadata_advanced.AutoResizeColumns(ColumnHeaderAutoResizeStyle.ColumnContent);
             }
         }
+
+        #endregion
     }
 }

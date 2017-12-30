@@ -13,6 +13,8 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
 {
     public partial class Special_function_window : Form
     {
+        #region Deklaracja zmiennych
+
         public event EventHandler OnDataAvalible;
 
     // Deklaracje okien potomnych i danych przekazanych z Main_form'u
@@ -58,7 +60,11 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
         // Parametr informujący o tym co zwracamy do programu głównego.
         public int return_index = 0;
 
-    // Obsługa zdarzeń okien podrzędnych i pośredniczenie w ich kontakcie z Main_form
+        #endregion
+
+        #region Obsługa zdarzeń powrotu z okien podrzędnych
+
+        // Obsługa zdarzeń okien podrzędnych i pośredniczenie w ich kontakcie z Main_form
         // Obsługa zdarzenia powrotu z formu Janka - dostajemy listę Tuple<int,string> zawierającą ID przydzielone nowemu folderowi (w celach porządkowych)
         // i jego nową nazwę, jak i listę Tuple<int,string> zawierającą indeks do którego przydzielamy plik i jego ścieżkę.
         void Janek_main_OnDataAvalible(object sender, EventArgs e)
@@ -154,7 +160,10 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             this.Dispose();
         }
 
-    // Konstruktor standardowy dla Special_function_window
+        #endregion
+
+        #region Konstruktor i przygotowywanie wartości zmiennych
+        // Konstruktor standardowy dla Special_function_window
         public Special_function_window()
         {
             names = new List<string>();
@@ -446,7 +455,9 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             return result;
         }
 
-    //Obsługa wywołania poszczególnych okien potomnych
+        #endregion
+
+        #region Obsługa wywołania poszczególnych okien potomnych
         // Wywołanie części Karola i przekazanie do niej danych.
         private void BT_extract_from_images_Click(object sender, EventArgs e)
         {
@@ -543,7 +554,19 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             Controls_set_lock(true);
         }
 
-    // Blokuje kontrolker okna, true powoduje zablokowanie, false odblokowanie.
+        // Stworzenie katalogu obiegowego, na razie jest tutaj...
+        private void BT_external_catalog_create_Click(object sender, EventArgs e)
+        {
+            return_index = 4;
+            OnDataAvalible(this, EventArgs.Empty);
+            this.Close();
+            this.Dispose();
+        }
+
+        #endregion
+
+        #region Logika pomocniczna okna
+        // Blokuje kontrolker okna, true powoduje zablokowanie, false odblokowanie.
         public void Controls_set_lock(bool lock_status)
         {
             Enabled = !lock_status;
@@ -555,23 +578,18 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             else Show();
         }
 
+        // Przy zamykaniu okna przywołuje na pulpit okno macierzyste.
         private void Special_function_window_FormClosing(object sender, FormClosingEventArgs e)
         {
             this.Owner.Show();
         }
 
-        private void BT_external_catalog_create_Click(object sender, EventArgs e)
-        {
-            return_index = 4;
-            OnDataAvalible(this, EventArgs.Empty);
-            this.Close();
-            this.Dispose();
-        }
+        #endregion
     }
 }
 
-
-/* Kod legacy
+#region Kod legacy
+/*
         private List<Tuple<int, string>> prepare_data_legacy(List<string> extensions)
         {
             List<Tuple<int, string>> result = new List<Tuple<int, string>>();
@@ -683,3 +701,4 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             return result;
         }
         */
+#endregion

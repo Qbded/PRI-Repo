@@ -46,7 +46,8 @@
             this.tableLayoutPanel1.Controls.Add(this.BT_process_image, 0, 2);
             this.tableLayoutPanel1.Controls.Add(this.BT_search_catalog, 0, 3);
             this.tableLayoutPanel1.Controls.Add(this.BT_external_catalog_create, 0, 4);
-            this.tableLayoutPanel1.Location = new System.Drawing.Point(12, 12);
+            this.tableLayoutPanel1.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.tableLayoutPanel1.Location = new System.Drawing.Point(0, 0);
             this.tableLayoutPanel1.Name = "tableLayoutPanel1";
             this.tableLayoutPanel1.RowCount = 5;
             this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 20F));
@@ -54,7 +55,7 @@
             this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 20F));
             this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 20F));
             this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 20F));
-            this.tableLayoutPanel1.Size = new System.Drawing.Size(260, 412);
+            this.tableLayoutPanel1.Size = new System.Drawing.Size(284, 436);
             this.tableLayoutPanel1.TabIndex = 0;
             // 
             // BT_extract_from_images
@@ -63,7 +64,7 @@
             this.BT_extract_from_images.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F);
             this.BT_extract_from_images.Location = new System.Drawing.Point(3, 3);
             this.BT_extract_from_images.Name = "BT_extract_from_images";
-            this.BT_extract_from_images.Size = new System.Drawing.Size(254, 76);
+            this.BT_extract_from_images.Size = new System.Drawing.Size(278, 81);
             this.BT_extract_from_images.TabIndex = 0;
             this.BT_extract_from_images.Text = "Wyodrębnij tekst z plików multimedialnych";
             this.BT_extract_from_images.UseVisualStyleBackColor = true;
@@ -73,9 +74,9 @@
             // 
             this.BT_compare_audio_files.Dock = System.Windows.Forms.DockStyle.Fill;
             this.BT_compare_audio_files.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.BT_compare_audio_files.Location = new System.Drawing.Point(3, 85);
+            this.BT_compare_audio_files.Location = new System.Drawing.Point(3, 90);
             this.BT_compare_audio_files.Name = "BT_compare_audio_files";
-            this.BT_compare_audio_files.Size = new System.Drawing.Size(254, 76);
+            this.BT_compare_audio_files.Size = new System.Drawing.Size(278, 81);
             this.BT_compare_audio_files.TabIndex = 1;
             this.BT_compare_audio_files.Text = "Porównaj pliki dźwiękowe pod kątem podobieństwa";
             this.BT_compare_audio_files.UseVisualStyleBackColor = true;
@@ -86,9 +87,9 @@
             this.BT_process_image.Dock = System.Windows.Forms.DockStyle.Fill;
             this.BT_process_image.Enabled = false;
             this.BT_process_image.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.BT_process_image.Location = new System.Drawing.Point(3, 167);
+            this.BT_process_image.Location = new System.Drawing.Point(3, 177);
             this.BT_process_image.Name = "BT_process_image";
-            this.BT_process_image.Size = new System.Drawing.Size(254, 76);
+            this.BT_process_image.Size = new System.Drawing.Size(278, 81);
             this.BT_process_image.TabIndex = 2;
             this.BT_process_image.Text = "Porównaj obrazy celem znalezienia obrazów podobnych";
             this.BT_process_image.UseVisualStyleBackColor = true;
@@ -99,9 +100,9 @@
             this.BT_search_catalog.Dock = System.Windows.Forms.DockStyle.Fill;
             this.BT_search_catalog.Enabled = false;
             this.BT_search_catalog.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.BT_search_catalog.Location = new System.Drawing.Point(3, 249);
+            this.BT_search_catalog.Location = new System.Drawing.Point(3, 264);
             this.BT_search_catalog.Name = "BT_search_catalog";
-            this.BT_search_catalog.Size = new System.Drawing.Size(254, 76);
+            this.BT_search_catalog.Size = new System.Drawing.Size(278, 81);
             this.BT_search_catalog.TabIndex = 3;
             this.BT_search_catalog.Text = "Przeszukaj katalog";
             this.BT_search_catalog.UseVisualStyleBackColor = true;
@@ -111,9 +112,9 @@
             // 
             this.BT_external_catalog_create.Dock = System.Windows.Forms.DockStyle.Fill;
             this.BT_external_catalog_create.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F);
-            this.BT_external_catalog_create.Location = new System.Drawing.Point(3, 331);
+            this.BT_external_catalog_create.Location = new System.Drawing.Point(3, 351);
             this.BT_external_catalog_create.Name = "BT_external_catalog_create";
-            this.BT_external_catalog_create.Size = new System.Drawing.Size(254, 78);
+            this.BT_external_catalog_create.Size = new System.Drawing.Size(278, 82);
             this.BT_external_catalog_create.TabIndex = 4;
             this.BT_external_catalog_create.Text = "Stwórz katalog obiegowy";
             this.BT_external_catalog_create.UseVisualStyleBackColor = true;
@@ -125,6 +126,7 @@
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(284, 436);
             this.Controls.Add(this.tableLayoutPanel1);
+            this.MinimumSize = new System.Drawing.Size(300, 474);
             this.Name = "Special_function_window";
             this.Text = "Opcje specjalne";
             this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.Special_function_window_FormClosing);

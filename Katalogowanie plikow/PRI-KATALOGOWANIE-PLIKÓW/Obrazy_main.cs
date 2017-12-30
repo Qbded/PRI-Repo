@@ -8,6 +8,8 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
 {
     public partial class Obrazy_main : Form
     {
+        #region Deklaracja zmiennych
+
         public event EventHandler OnDataAvalible;
 
         //Rozszerzenia przetwarzanych plików
@@ -30,6 +32,10 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
         private string image_selected;
         private int image_selected_index_in_data;
 
+        #endregion
+
+        #region Konstruktor
+
         public Obrazy_main()
         {
             InitializeComponent();
@@ -45,74 +51,13 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             image_selected = "";
         }
 
+        #endregion
+
+        #region Logika okna głównego
+
         private void Obrazy_main_FormClosing(object sender, FormClosingEventArgs e)
         {
             ((Special_function_window)this.Owner).Controls_set_lock(false);
-        }
-
-        private void BT_execute_Click(object sender, EventArgs e)
-        {
-            if (LB_image_selected_name.Text != "")
-            {
-                int[] counters = new int[4];
-                int total_count = 0;
-                ulong image_selected_hash = (ulong)data[image_selected_index_in_data].Item3;
-                int distance = 0;
-                for (int i = 0; i < data.Count; i++)
-                {
-                    //Nie chcemy porównywać obrazu samego ze sobą
-                    if (i != image_selected_index_in_data)
-                    {
-                        ulong image_analysed_hash = (ulong)data[i].Item3;
-                        distance = pHash.ph_hamming_distance(image_selected_hash, image_analysed_hash);
-
-                        if(distance == 0)
-                        {
-                            result_files.Add(new Tuple<int, string>(0, names[i]));
-                            counters[0]++;
-                        }
-
-                        if(distance == 1)
-                        {
-                            result_files.Add(new Tuple<int, string>(1, names[i]));
-                            counters[1]++;
-                        }
-
-                        if (distance > 1 && distance <= 3)
-                        {
-                            result_files.Add(new Tuple<int, string>(2, names[i]));
-                            counters[2]++;
-                        }
-
-                        if (distance > 4)
-                        {
-                            result_files.Add(new Tuple<int, string>(3, names[i]));
-                            counters[3]++;
-                        }
-                    }
-                }
-                total_count = counters[0] + counters[1] + counters[2] + counters[3];
-
-                if (counters[0] > 0) result_directories.Add(new Tuple<int, string>(0, "Kopie obrazu " + image_selected));
-                if (counters[1] > 0) result_directories.Add(new Tuple<int, string>(1, "Obrazy bardzo podobne do " + image_selected));
-                if (counters[2] > 0) result_directories.Add(new Tuple<int, string>(2, "Obrazy podobne do " + image_selected));
-                if (counters[3] > 0) result_directories.Add(new Tuple<int, string>(3, "Obrazy niepodobne do " + image_selected));
-
-                MessageBox.Show("Wyniki analizy obrazów w wybranym zbiorze do obrazu " + image_selected + ": \n" +
-                                "Liczba zbadanych obrazów: " + total_count + " \n" +
-                                "Obrazy takie same jak " + image_selected + ": " + counters[0] + " \n" +
-                                "Obrazy bardzo podobne: " + counters[1] + " \n" +
-                                "Obrazy w pewnym stopniu podobne: " + counters[2] + " \n" +
-                                "Obrazy niepodobne: " + counters[3]);
-
-                OnDataAvalible(this, EventArgs.Empty);
-                this.Close();
-                this.Dispose();
-            }
-            else
-            {
-                MessageBox.Show("Proszę wybrać obraz, który będzie porównany do pozostałych na liście.");
-            }
         }
 
         private void Obrazy_main_Load(object sender, EventArgs e)
@@ -122,6 +67,10 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                 LB_images.Items.Add(names[i]);
             }
         }
+
+        #endregion
+
+        #region Obsługa zdarzeń związanych z obrazkami
 
         private void PB_image_draw(int index)
         {
@@ -164,5 +113,72 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                 PB_image_preview.SizeMode = PictureBoxSizeMode.Zoom;
             }
         }
+
+        private void BT_execute_Click(object sender, EventArgs e)
+        {
+            if (LB_image_selected_name.Text != "")
+            {
+                int[] counters = new int[4];
+                int total_count = 0;
+                ulong image_selected_hash = (ulong)data[image_selected_index_in_data].Item3;
+                int distance = 0;
+                for (int i = 0; i < data.Count; i++)
+                {
+                    //Nie chcemy porównywać obrazu samego ze sobą
+                    if (i != image_selected_index_in_data)
+                    {
+                        ulong image_analysed_hash = (ulong)data[i].Item3;
+                        distance = pHash.ph_hamming_distance(image_selected_hash, image_analysed_hash);
+
+                        if (distance == 0)
+                        {
+                            result_files.Add(new Tuple<int, string>(0, names[i]));
+                            counters[0]++;
+                        }
+
+                        if (distance == 1)
+                        {
+                            result_files.Add(new Tuple<int, string>(1, names[i]));
+                            counters[1]++;
+                        }
+
+                        if (distance > 1 && distance <= 3)
+                        {
+                            result_files.Add(new Tuple<int, string>(2, names[i]));
+                            counters[2]++;
+                        }
+
+                        if (distance > 4)
+                        {
+                            result_files.Add(new Tuple<int, string>(3, names[i]));
+                            counters[3]++;
+                        }
+                    }
+                }
+                total_count = counters[0] + counters[1] + counters[2] + counters[3];
+
+                if (counters[0] > 0) result_directories.Add(new Tuple<int, string>(0, "Kopie obrazu " + image_selected));
+                if (counters[1] > 0) result_directories.Add(new Tuple<int, string>(1, "Obrazy bardzo podobne do " + image_selected));
+                if (counters[2] > 0) result_directories.Add(new Tuple<int, string>(2, "Obrazy podobne do " + image_selected));
+                if (counters[3] > 0) result_directories.Add(new Tuple<int, string>(3, "Obrazy niepodobne do " + image_selected));
+
+                MessageBox.Show("Wyniki analizy obrazów w wybranym zbiorze do obrazu " + image_selected + ": \n" +
+                                "Liczba zbadanych obrazów: " + total_count + " \n" +
+                                "Obrazy takie same jak " + image_selected + ": " + counters[0] + " \n" +
+                                "Obrazy bardzo podobne: " + counters[1] + " \n" +
+                                "Obrazy w pewnym stopniu podobne: " + counters[2] + " \n" +
+                                "Obrazy niepodobne: " + counters[3]);
+
+                OnDataAvalible(this, EventArgs.Empty);
+                this.Close();
+                this.Dispose();
+            }
+            else
+            {
+                MessageBox.Show("Proszę wybrać obraz, który będzie porównany do pozostałych na liście.");
+            }
+        }
+
+        #endregion
     }
 }
