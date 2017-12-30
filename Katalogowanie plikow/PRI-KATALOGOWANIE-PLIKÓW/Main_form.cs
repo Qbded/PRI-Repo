@@ -21,6 +21,8 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
 {
     public partial class Main_form : Form
     {
+        #region Deklaracja zmiennych
+
         // Zmienne ekstraktora metadanych
         private Metadata_extractor metadata_extractor_window;
         // Tutaj wylądują po procesie ekstrakcji metadane.
@@ -138,6 +140,10 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
         // Zmienne przesyłacza do opcji specialnych:
         private Special_function_window special_option_selector;
         private List<ListViewItem> sent_items;
+
+        #endregion
+
+        #region Konstruktor i jego logika
 
         // Ładowanie ścieżek do odpowiednich plików i folderów z pliku konfiguracyjnego.
         private void DetermineFilepaths()
@@ -423,6 +429,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             database_connection_string_builder.Charset = "UTF8";
         }
 
+        // Ładowanie lokalnego katalogu do listy wyświetlanych katalogów podczas jej wyświelania
         void LoadLocalCatalog()
         {
             ListViewItem local_catalog = new ListViewItem();
@@ -474,53 +481,9 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             files_grabbed = new List<Tuple<int, string, string, string, System.DateTime, System.DateTime, long, Tuple<bool,bool,bool>>>();
         }
 
-        /* Zmiana rozmiaru okna głównego
-         * 
-        *  Zakładam minimalny rozmiar okna na poziomie tego, co zrobił na początku Janek
-        *  
-        *  Gdy zmieniamy rozmiar okna głównego niektóre elementy powinny zmienić swój rozmiar lub pozycję, są to:
-        *  - tabpage tabPage1 (Kryteria katalogowania) - rozmiar
-        *  - groupbox groupBox1 (Użyj polecenie) - rozmiar
-        *       - textbox txtCommand (za Polecenie:) - rozmiar
-        *       - button BT_text_database (Test bazy) - pozycja
-        *       - button BT_extract_metadata (Kataloguj) - pozycja
-        *  - groupbox z metadanymi - rozmiar
-        *       - checkedlistbox chkMetadata - rozmiar 
-        *  
-        *  I tyle, reszta w kodzie.
-        *  
-        */
+        #endregion
 
-        /* Old - logika resize'owania okna, teraz już zbędna.
-        private void Form1_Resize(object sender, EventArgs e)
-        {
-            // Ustawiamy rozdzielczosc minimalna na poziomie tego, co zrobił Janek
-            this.MinimumSize = new Size(471, 465);
-
-            // A jezeli jest wieksza, to reskalujemy
-            if (this.Size.Width >= 471 && this.Size.Height >= 465)
-            {
-                // Najpierw TabPage tabPage1:
-                tabPage1.Width = this.Size.Width - 24;
-                tabPage1.Height = this.Size.Height - 71;
-
-                // I to na tyle, jak bedzie przybywalo komponentów trzeba bedzie je tutaj dodawać
-                // Liczby do odejmowania obliczam biorąc za podstawę okno w rozmiarze minimalnym,
-                // odejmuje od rozmiaru kontenera macierzystego albo rozmiar jego subkomponentu
-                // (jezeli chcemy go skalowac) lub jego lokację (jeżeli chcemy zmienić pozycję)
-            }
-        }
-        */
-        
-        // Resize wielkości textboxa z teraźniejszą ścieżką w katalogu wirtualnym, potrzebny bo nie robi tego automatycznie jego rodzic.
-        private void TB_catalog_path_current_resizer(object sender, EventArgs e)
-        {
-            TableLayoutPanel parent = (TableLayoutPanel)sender;
-            TextBox target = (TextBox)parent.Controls[1];
-            target.Width = parent.Size.Width - 150;
-        }
-        
-
+        #region Logika zakładki Menu główne
 
         /*    Sprawdzanie czy istnieje baza danych (i jej walidacja jeżeli istnieje)
          *    
@@ -583,7 +546,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
 
                 FbConnection.CreateDatabase(database_connection_string_builder.ConnectionString);
 
-                database_build(database_connection_string_builder.ConnectionString);
+                database_build(database_connection_string_builder.ConnectionString, false);
 
                 MessageBox.Show("Zakonczono budowę bazy!");
 
@@ -614,7 +577,6 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                 }
             }
         }
-
 
         // Działa nie do końca poprawnie, czasem zjada dane w ALTERNATE_PATHS... no time to debug!
         private void metadata_extractor_OnDataAvalible(object sender, EventArgs e)
@@ -1011,45 +973,9 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             }
         }
 
-        // Stary kawałek logiki do wyświetlania zawartości zmiennej metadata.
-        /*
-        private void chkExcludeMetadata_CheckedChanged(object sender, EventArgs e)
-        {
-            if (this.chkExcludeMetadata.Checked)
-            {
-                this.chkMetadata.Enabled = true;
-                for (int i = 0; i < metadata.Count(); i++)
-                {
-                    string display = String.Empty;
-                    for (int j = 0; j < metadata[i].Length; j++) display += " " + metadata[i].ElementAt(j) + " ";
-                    this.chkMetadata.Items.Add(display);
-                }
-                
-                //DEBUG - zapisujemy wyniki katalogowania do pliku $$$.txt
-                FileInfo txt_dump = new FileInfo(txt_path);
-                if (txt_dump.Exists)
-                {
-                    StreamWriter txt_dumper = new StreamWriter(txt_path);
+        #endregion
 
-                    for (int i = 0; i < metadata.Count(); i++)
-                    {
-                        string display = String.Empty;
-                        for (int j = 0; j < metadata[i].Length; j++) display += " " + metadata[i].ElementAt(j) + " ";
-                        txt_dumper.WriteLine(display);
-                    }
-                    txt_dumper.Close();
-                }
-                
-            }
-            else
-            {
-                this.chkMetadata.Enabled = false;
-                this.chkMetadata.Items.Clear();
-            }
-        }
-        */
-
-    // Operacje na bazie danych
+        #region Operacje na bazie danych
 
         // Tworzenie plików w wirtualnych folderach
         private void database_virtual_item_make(int parent_id, string type, List<string> data)
@@ -1141,7 +1067,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
         }
 
         // Budowanie odpowiednich kolumn bazy danych
-        private void database_build(string database_connection_string)
+        private void database_build(string database_connection_string, bool external)
         {
             FbConnection database_connection = new FbConnection(database_connection_string);
 
@@ -1156,11 +1082,15 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             database_connection.Close();
 
             database_virtual_folder_make("root", -1, false, database_connection_string);
-            database_virtual_folder_make("Pliki tekstowe", 1, false, database_connection_string);
-            database_virtual_folder_make("Dokumenty", 1, false, database_connection_string);
-            database_virtual_folder_make("Pliki .htm i .html", 1, false, database_connection_string);
-            database_virtual_folder_make("Obrazki i zdjęcia", 1, false, database_connection_string);
-            database_virtual_folder_make("Pliki multimedialne", 1, false, database_connection_string);
+
+            if (external == false)
+            {
+                database_virtual_folder_make("Pliki tekstowe", 1, false, database_connection_string);
+                database_virtual_folder_make("Dokumenty", 1, false, database_connection_string);
+                database_virtual_folder_make("Pliki .htm i .html", 1, false, database_connection_string);
+                database_virtual_folder_make("Obrazki i zdjęcia", 1, false, database_connection_string);
+                database_virtual_folder_make("Pliki multimedialne", 1, false, database_connection_string);
+            }
         }
 
         // Generowanie katalogu obiegowego na podstawie katalogu lokalnego
@@ -1176,42 +1106,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                 }
                 else
                 {
-                    // Tworzymy string połączeniowy do nowej bazy danych:
-                    FbConnectionStringBuilder external_catalog_connecton_string_builder = new FbConnectionStringBuilder();
-
-                    external_catalog_connecton_string_builder = new FbConnectionStringBuilder();
-                    external_catalog_connecton_string_builder.ServerType = FbServerType.Embedded;
-                    external_catalog_connecton_string_builder.UserID = "SYSDBA"; // Defaultowy uzytkownik z najwyzszymi uprawnieniami do systemu bazodanowego.
-                    external_catalog_connecton_string_builder.Password = ""; // Haslo nie jest sprawdzane w wersji embedded, można dać tu cokolwiek.
-                    external_catalog_connecton_string_builder.Database = database_externals_path + alias + "_CATALOG.FDB";
-                    external_catalog_connecton_string_builder.ClientLibrary = database_engine_path;
-                    external_catalog_connecton_string_builder.Charset = "UTF8";
-
-                    // Teraz tworzymy samą nową bazę danych:
-                    FbConnection.CreateDatabase(external_catalog_connecton_string_builder.ConnectionString);
-                    // I budujemy ją tak samo jak katalog:
-                    database_build(external_catalog_connecton_string_builder.ConnectionString);
-
-
-                    // Po stworzeniu bazy danych kopiujemy do niej wszystko z bazy macierzystej:
-                    string datafields = String.Empty;
-                    string values = String.Empty;
-                    string[] values_passed = new string[0];
-
-                    // Poprawne zaimplementowanie struktury folderów wirtualnych w katalogu obiegowym wymaga trzymania listy folderów wirtualnych
-                    // i ich nowych identyfikatorów (nie można ufać DIR_ID z katalogu macierzystego!)
-
-                    // Ma ona postać listy tupli złożonej z:
-                    // 1. Item1 - string - nazwa folderu z katalogu macierzystego (taka sama jest w katalogu obiegowym)
-                    // 2. Item2 - int - ID folderu macierzystego z katalogu macierzystego (czyt. DIR_ID przed korektą)
-                    // 3. Item3 - int - ID folderu roboczego z katalogu macierzystego (czyt. ID przed korektą)
-                    // 4. Item4 - int - ID folderu macierzystego w katalogu obiegowym (czyt. DIR_ID już po korekcie)
-                    // 5. Item5 - int - ID folderu roboczego w katalogu obiegowym (czyt. ID po korekcie)
-
-                    List<Tuple<string, int, int, int, int>> id_tracker_list = new List<Tuple<string, int, int, int, int>>();
-
-                    // Teraz pobieramy z bazy wszystkie foldery wirtualne oznaczone jako widoczne dla katalogu obiegowego
-
+                    // Na samym początku pobieramy z bazy wszystkie foldery wirtualne oznaczone jako widoczne dla katalogu obiegowego
                     DataTable source_folder_structure_container = new DataTable();
                     FbDataAdapter source_folder_structure_grabber = new FbDataAdapter("SELECT * " +
                                                                             "FROM " + database_tables.Find(x => x.Item1 == 0).Item2 + " " +
@@ -1221,174 +1116,213 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
 
                     source_folder_structure_grabber.Fill(source_folder_structure_container);
 
-                    for(int i = 0; i < source_folder_structure_container.Rows.Count; i++)
+                    if (source_folder_structure_container.Rows.Count == 0)
                     {
-                        // Mamy tutaj dwa możliwe scenariusze:
-                        // 1. Folder z katalogu macierzystego jest już w katalogu obiegowym (był to np. folder domyślny) - modyfikujemy jego flagi i bierzemy ID do listy.
-                        // 2. Folder pobrany nie istnieje w katalogu obiegowym - tworzymy nowy z odpowiednim rodzicem, pobieramy jego ID i dodajemy info o ID do listy.
-                        // Na koniec chcemy mieć uzupełnioną listę folderów w katalogu obiegowym, z DIR_ID i ID zarówno z katalogu macierzystego, jak i przydzielone w katalogu obiegowym.
-
-                        Tuple<string, int, int, int, int> initial_data = new Tuple<string, int, int, int, int>("",0,0,0,0);
-                        int parent_id = 0;
-                        try
-                        {
-                            parent_id = (int)source_folder_structure_container.Rows[i].ItemArray[2];
-
-                            initial_data = new Tuple<string, int, int, int, int>(
-                                                                         (string)source_folder_structure_container.Rows[i].ItemArray[1],
-                                                                         parent_id,
-                                                                         (int)source_folder_structure_container.Rows[i].ItemArray[0],
-                                                                         0,
-                                                                         0);
-                        }
-                        catch
-                        {
-                            initial_data = new Tuple<string, int, int, int, int>(
-                                                                         (string)source_folder_structure_container.Rows[i].ItemArray[1],
-                                                                         -1,
-                                                                         (int)source_folder_structure_container.Rows[i].ItemArray[0],
-                                                                         0,
-                                                                         0);
-                        }
-
-                        
-
-                        DataTable destination_folder_container = new DataTable();
-                        FbDataAdapter destination_folder_grabber = new FbDataAdapter();
-                        if (initial_data.Item2 == -1)
-                        {
-                            destination_folder_grabber = new FbDataAdapter("SELECT ID,DIR_ID " +
-                                                                                "FROM " + database_tables.Find(x => x.Item1 == 0).Item2 + " " +
-                                                                                "WHERE NAME = @Name AND DIR_ID IS NULL"
-                                                                                ,
-                                                                                new FbConnection(external_catalog_connecton_string_builder.ConnectionString));
-                        }
-                        else
-                        {
-                            destination_folder_grabber = new FbDataAdapter("SELECT ID,DIR_ID " +
-                                                                                "FROM " + database_tables.Find(x => x.Item1 == 0).Item2 + " " +
-                                                                                "WHERE NAME = @Name AND DIR_ID = @Parent_directory_ID"
-                                                                                ,
-                                                                                new FbConnection(external_catalog_connecton_string_builder.ConnectionString));
-
-                        }
-                        destination_folder_grabber.SelectCommand.Parameters.AddWithValue("@Name", initial_data.Item1);
-                        if (initial_data.Item2 != -1)
-                        {
-                            destination_folder_grabber.SelectCommand.Parameters.AddWithValue("@Parent_directory_ID", initial_data.Item2);
-                        }
-                        
-                        destination_folder_grabber.Fill(destination_folder_container);
-
-                        if(destination_folder_container.Rows.Count > 0)
-                        {
-                            // Znaleźliśmy ten folder w katalogu obiegowym - pobierz id coby dokonczyć tuplę i dodaj go do listy:
-
-                            initial_data = new Tuple<string, int, int, int, int>(initial_data.Item1,
-                                                                                 initial_data.Item2,
-                                                                                 initial_data.Item3,
-                                                                                 (int)destination_folder_container.Rows[0].ItemArray[1],
-                                                                                 (int)destination_folder_container.Rows[0].ItemArray[0]);
-
-                            id_tracker_list.Add(initial_data);
-                        }
-                        else
-                        {
-                            // Folder nie istnieje w katalogu obiegowym - stwórz go, pobierz ID i DIR_ID nowo-stworzonego folderę do tupli i dodaj takową do listy:
-
-                            // Tworzymy nowy folder w odpowienim katalogu
-                            database_virtual_folder_make(initial_data.Item1, initial_data.Item2, false, external_catalog_connecton_string_builder.ConnectionString);
-
-                            // I tworzymy zapytanie o jego nowy ID i DIR_ID
-                            DataTable new_folder_container = new DataTable();
-                            FbDataAdapter new_folder_grabber = new FbDataAdapter("SELECT ID,DIR_ID " +
-                                                                                    "FROM " + database_tables.Find(x => x.Item1 == 0).Item2 + " " +
-                                                                                    "WHERE NAME = @Name AND DIR_ID = @Parent_directory_ID"
-                                                                                    ,
-                                                                                    new FbConnection(external_catalog_connecton_string_builder.ConnectionString));
-
-                            new_folder_grabber.SelectCommand.Parameters.AddWithValue("@Name", initial_data.Item1);
-                            new_folder_grabber.SelectCommand.Parameters.AddWithValue("@Parent_directory_ID", initial_data.Item2);
-
-                            new_folder_grabber.Fill(new_folder_container);
-
-                            if(new_folder_container.Rows.Count > 0)
-                            {
-                                // Kompletujemy dane w tupli
-                                initial_data = new Tuple<string, int, int, int, int>(initial_data.Item1,
-                                                                                 initial_data.Item2,
-                                                                                 initial_data.Item3,
-                                                                                 (int)new_folder_container.Rows[0].ItemArray[1],
-                                                                                 (int)new_folder_container.Rows[0].ItemArray[0]);
-
-                                // I dodajemy ją do listy
-                                id_tracker_list.Add(initial_data);
-                            }
-                        }
+                        // Jezeli takowych nie było - zwracamy informację o próbie stworzenia pustego katalogu obiegowego i konczymy działanie procedury!
+                        MessageBox.Show("Uwaga - próba wygenerowania pustego katalogu obiegowego!\nKatalog nie został wygenerowany.");
                     }
-
-                    // Mając informację o folderach w katalogu obiegowym wypełniamy go danymi z pozostałych tabel katalogu głównego
-                    for(int i = 1; i < database_tables.Count; i++) 
+                    else
                     {
-                        Tuple < int,string> table = database_tables[i];
-                        
-                        // Pobieranie informacji o strukturze tabeli, którą chcemy wypełnić:
-                        int datatable_index = table.Item1;
+                        // Jeżeli takowe są to tworzymy string połączeniowy do nowej bazy danych:
+                        FbConnectionStringBuilder external_catalog_connecton_string_builder = new FbConnectionStringBuilder();
 
-                        var columns_to_populate = database_columns.FindAll(x => x.Item1 == datatable_index);
+                        external_catalog_connecton_string_builder = new FbConnectionStringBuilder();
+                        external_catalog_connecton_string_builder.ServerType = FbServerType.Embedded;
+                        external_catalog_connecton_string_builder.UserID = "SYSDBA"; // Defaultowy uzytkownik z najwyzszymi uprawnieniami do systemu bazodanowego.
+                        external_catalog_connecton_string_builder.Password = ""; // Haslo nie jest sprawdzane w wersji embedded, można dać tu cokolwiek.
+                        external_catalog_connecton_string_builder.Database = database_externals_path + alias + "_CATALOG.FDB";
+                        external_catalog_connecton_string_builder.ClientLibrary = database_engine_path;
+                        external_catalog_connecton_string_builder.Charset = "UTF8";
 
-                        values_passed = new string[columns_to_populate.Count - 1];
+                        // Tworzymy nową bazę danych:
+                        FbConnection.CreateDatabase(external_catalog_connecton_string_builder.ConnectionString);
+                        // I budujemy ją tak samo jak katalog, z tą różnicą że mówimy funkcji że jest to katalog obiegowy:
+                        database_build(external_catalog_connecton_string_builder.ConnectionString, true);
 
-                        // ID wypełnia silnik bazodanowy - stąd startujemy od 1!
-                        for (int j = 1; j < columns_to_populate.Count; j++)
+                        // Poprawne zaimplementowanie struktury folderów wirtualnych w katalogu obiegowym wymaga trzymania listy folderów wirtualnych
+                        // i ich nowych identyfikatorów (nie można ufać DIR_ID z katalogu macierzystego!).
+                        // Ma ona postać listy tupli złożonej z:
+                        // 1. Item1 - string - nazwa folderu z katalogu macierzystego (taka sama jest w katalogu obiegowym)
+                        // 2. Item2 - int - ID folderu macierzystego z katalogu macierzystego (czyt. DIR_ID przed korektą)
+                        // 3. Item3 - int - ID folderu roboczego z katalogu macierzystego (czyt. ID przed korektą)
+                        // 4. Item4 - int - ID folderu macierzystego w katalogu obiegowym (czyt. DIR_ID już po korekcie)
+                        // 5. Item5 - int - ID folderu roboczego w katalogu obiegowym (czyt. ID po korekcie)
+                        List<Tuple<string, int, int, int, int>> id_tracker_list = new List<Tuple<string, int, int, int, int>>();
+
+                        for (int i = 0; i < source_folder_structure_container.Rows.Count; i++)
                         {
-                            datafields += columns_to_populate[j].Item2 + ",";
-                            values += "@" + columns_to_populate[j].Item2 + ",";
-                            values_passed[j - 1] = columns_to_populate[j].Item2;
-                        }
-                        datafields = datafields.TrimEnd(',');
-                        values = values.TrimEnd(',');
+                            // Jako że tworzymy katalog obiegowy tylko z folderem root możemy bez problemu kopiować wszystkie znalezione foldery.
+                            // Tworzymy im nowy odpowiednik, pobieramy jego ID i ID jego rodzica, dodajemy te informacje do listy.
+                            // Na koniec chcemy mieć uzupełnioną listę folderów w katalogu obiegowym, z DIR_ID i ID folderu zarówno z katalogu macierzystego, jak i przydzielone w katalogu obiegowym.
 
-                        DataTable source_content_container = new DataTable();
-                        FbDataAdapter source_content_grabber = new FbDataAdapter("SELECT * " +
-                                                                                "FROM " + table.Item2 + " " +
-                                                                                "WHERE VISIBLE_TO_OTHERS = TRUE;"
-                                                                                ,
-                                                                                new FbConnection(database_connection_string_builder.ConnectionString));
-
-                        source_content_grabber.Fill(source_content_container);
-
-                        for (int j = 0; j < source_content_container.Rows.Count; j++)
-                        {
-                            for (int k = 0; k < source_content_container.Rows[j].ItemArray.Count(); k++)
+                            Tuple<string, int, int, int, int> initial_data = new Tuple<string, int, int, int, int>("", 0, 0, 0, 0);
+                            int parent_id = 0;
+                            try
                             {
-                                values_passed[k] = (string)source_content_container.Rows[j].ItemArray[k+1];
+                                parent_id = (int)source_folder_structure_container.Rows[i].ItemArray[2];
+
+                                initial_data = new Tuple<string, int, int, int, int>(
+                                                                             (string)source_folder_structure_container.Rows[i].ItemArray[1],
+                                                                             parent_id,
+                                                                             (int)source_folder_structure_container.Rows[i].ItemArray[0],
+                                                                             0,
+                                                                             0);
+                            }
+                            catch
+                            {
+                                parent_id = -1;
+                            }
+                            
+                            if(parent_id != -1)
+                            {
+                                // Tworzymy nowy folder w odpowienim katalogu
+                                Tuple<string, int, int, int, int> redirect_parent = id_tracker_list.Find(x => x.Item3 == parent_id);
+                                if (redirect_parent == null)
+                                {
+                                    database_virtual_folder_make(initial_data.Item1, initial_data.Item2, false, external_catalog_connecton_string_builder.ConnectionString);
+                                }
+                                else
+                                {
+                                    database_virtual_folder_make(initial_data.Item1, redirect_parent.Item5, false, external_catalog_connecton_string_builder.ConnectionString);
+                                }
+                                
+
+                                // I tworzymy zapytanie o jego nowy ID i DIR_ID
+                                DataTable new_folder_container = new DataTable();
+                                FbDataAdapter new_folder_grabber = new FbDataAdapter("SELECT ID,DIR_ID " +
+                                                                                     "FROM " + database_tables.Find(x => x.Item1 == 0).Item2 + " " +
+                                                                                     "WHERE NAME = @Name AND DIR_ID = @Parent_directory_ID"
+                                                                                     ,
+                                                                                     new FbConnection(external_catalog_connecton_string_builder.ConnectionString));
+                                if(redirect_parent == null)
+                                {
+                                    new_folder_grabber.SelectCommand.Parameters.AddWithValue("@Parent_directory_ID", initial_data.Item2);
+                                }
+                                else
+                                {
+                                    new_folder_grabber.SelectCommand.Parameters.AddWithValue("@Parent_directory_ID", redirect_parent.Item5);
+                                }
+                                new_folder_grabber.SelectCommand.Parameters.AddWithValue("@Name", initial_data.Item1);
+
+                                new_folder_grabber.Fill(new_folder_container);
+
+                                if (new_folder_container.Rows.Count > 0)
+                                {
+                                    // Kompletujemy dane w tupli
+                                    Tuple<string, int, int, int, int> new_parent = id_tracker_list.Find(x => x.Item3 == (int)new_folder_container.Rows[0].ItemArray[1]);
+
+                                    if (new_parent != null)
+                                    {
+                                        initial_data = new Tuple<string, int, int, int, int>(initial_data.Item1,
+                                                                                     initial_data.Item2,
+                                                                                     initial_data.Item3,
+                                                                                     new_parent.Item5,
+                                                                                     (int)new_folder_container.Rows[0].ItemArray[0]
+                                                                                    );
+                                    }
+                                    else
+                                    {
+                                        initial_data = new Tuple<string, int, int, int, int>(initial_data.Item1,
+                                                                                         initial_data.Item2,
+                                                                                         initial_data.Item3,
+                                                                                         (int)new_folder_container.Rows[0].ItemArray[1],
+                                                                                         (int)new_folder_container.Rows[0].ItemArray[0]
+                                                                                        );
+                                    }
+
+                                    // I dodajemy ją do listy
+                                    id_tracker_list.Add(initial_data);
+                                }
+                                new_folder_grabber.Dispose();
                             }
                         }
 
-                        /*
-                        FbCommand add_data = new FbCommand("INSERT INTO " + table.Item2 + "(" + datafields + ") VALUES (" + values + ")", new FbConnection(external_catalog_connecton_string_builder.ConnectionString));
-
-                        for (int j = 1; j < source_content_container.Rows.Count; j++)
+                        for (int i = 0; i < id_tracker_list.Count; i++)
                         {
-                            if (!(data.ElementAt(j).Equals(""))) add_data.Parameters.AddWithValue(values_passed[j], data.ElementAt(j));
-                            else add_data.Parameters.AddWithValue(values_passed[j], null);
-                        }
+                            // Z folderów w liście kopiujemy oznaczoną zawartość.
+                            for (int j = 1; j < database_tables.Count; j++)
+                            {
+                                Tuple<int, string> table = database_tables[j];
 
-                        if (data.Count() < values_passed.Length)
-                        {
-                            for (int j = data.Count(); j < values_passed.Length; j++) add_data.Parameters.AddWithValue(values_passed[j], null);
-                        }
+                                // Po stworzeniu bazy danych kopiujemy do niej wszystko z bazy macierzystej:
+                                string datafields = String.Empty;
+                                string values = String.Empty;
+                                string[] values_passed = new string[0];
 
-                        add_data.Connection.Open();
-                        add_data.ExecuteNonQuery();
-                        add_data.Connection.Close();
-                        */
+                                // Pobieranie informacji o strukturze tabeli, którą chcemy wypełnić:
+                                int datatable_index = table.Item1;
+
+                                var columns_to_populate = database_columns.FindAll(x => x.Item1 == datatable_index);
+                                values_passed = new string[columns_to_populate.Count - 1];
+
+                                // ID wypełnia silnik bazodanowy - stąd startujemy od 1!
+                                for (int k = 1; k < columns_to_populate.Count; k++)
+                                {
+                                    datafields += columns_to_populate[k].Item2 + ",";
+                                    values += "@" + columns_to_populate[k].Item2 + ",";
+                                    values_passed[k - 1] = columns_to_populate[k].Item2;
+                                }
+
+                                datafields = datafields.TrimEnd(',');
+                                values = values.TrimEnd(',');
+
+                                DataTable source_content_container = new DataTable();
+                                FbDataAdapter source_content_grabber = new FbDataAdapter("SELECT * " +
+                                                                                        "FROM " + table.Item2 + " " +
+                                                                                        "WHERE DIR_ID = @Parent_directory_id " +
+                                                                                        "AND VISIBLE_TO_OTHERS = TRUE;"
+                                                                                        ,
+                                                                                        new FbConnection(database_connection_string_builder.ConnectionString));
+
+                                source_content_grabber.SelectCommand.Parameters.AddWithValue("@Parent_directory_id", id_tracker_list[i].Item3);
+
+                                source_content_grabber.Fill(source_content_container);
+
+                                if (source_content_container.Rows.Count > 0)
+                                {
+                                    for (int k = 0; k < source_content_container.Rows.Count; k++)
+                                    {
+                                        FbCommand add_data = new FbCommand("INSERT INTO " + table.Item2 + "(" + datafields + ") VALUES (" + values + ")", new FbConnection(external_catalog_connecton_string_builder.ConnectionString));
+
+                                        for (int l = 0; l < values_passed.Length; l++)
+                                        {
+                                            switch (values_passed[l])
+                                            {
+                                                case "DIR_ID":
+                                                    {
+                                                        add_data.Parameters.AddWithValue("@" + values_passed[l], id_tracker_list[i].Item5.ToString());
+                                                        break;
+                                                    }
+                                                case "PATH":
+                                                    {
+                                                        add_data.Parameters.AddWithValue("@" + values_passed[l], "");
+                                                        break;
+                                                    }
+                                                case "ALTERNATE_PATHS":
+                                                    {
+                                                        add_data.Parameters.AddWithValue("@" + values_passed[l], null);
+                                                        break;
+                                                    }
+                                                default:
+                                                    {
+                                                        add_data.Parameters.AddWithValue("@" + values_passed[l], source_content_container.Rows[k].ItemArray[l + 1]);
+                                                        break;
+                                                    }
+                                            }
+                                        }
+                                        add_data.Connection.Open();
+                                        add_data.ExecuteNonQuery();
+                                        add_data.Connection.Close();
+
+                                        add_data.Dispose();
+                                    }
+                                } 
+                            }
+                        }
                     }
+                    source_folder_structure_grabber.Dispose();
                 }
             }
-
-            
         }
 
         // Pobranie indeksu, folderu macierzystego, nazwy, typu (z której tabeli pochodzi) i rozszerzenia każdego pliku w zadanym folderze
@@ -1569,6 +1503,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             int id_new = 0;
             string error_message = string.Empty;
             bool error = false;
+            bool[] flags = new bool[3];
 
             // 1. Tworzymy folder, który będzie naszą kopią
 
@@ -1621,6 +1556,34 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                 error_message += "Nie mogłem znaleść ID nowo-utworzonego folderu, albo znalazłem ich więcej niż jeden.\n";
             }
 
+            // Także modyfikujemy jego flagi tak, aby pokrywały się z flagami folderu źródłowego
+
+
+            // Pobieramy flagi folderu macierzystego
+            DataTable parent_folder_flags_container = new DataTable();
+            FbDataAdapter parent_folder_flags_grabber = new FbDataAdapter("SELECT VISIBLE_TO_OTHERS,REQUESTABLE_BY_OTHERS,COPIES_WITHOUT_CONFIRM " +
+                                                                          "FROM " + database_tables[0].Item2 + " " +
+                                                                          "WHERE ID = @Id "
+                                                                          ,
+                                                                          new FbConnection(database_connection_string_builder.ConnectionString));
+
+            parent_folder_flags_grabber.SelectCommand.Parameters.AddWithValue("@Id", source_folder_id);
+
+            parent_folder_flags_grabber.Fill(parent_folder_flags_container);
+
+            if(parent_folder_flags_container.Rows.Count == 0)
+            {
+                // Error - nie znalazł folderu macierzystego!
+                MessageBox.Show("ERROR - nie znaleziono flag folderu macierzystego!");
+                error = true;
+            }
+            else
+            {
+                flags = new bool[3] { (bool)parent_folder_flags_container.Rows[0].ItemArray[0],
+                                      (bool)parent_folder_flags_container.Rows[0].ItemArray[1],
+                                      (bool)parent_folder_flags_container.Rows[0].ItemArray[2] };
+            }
+
             // 3. Gdy mamy już id kopiujemy całą zawartość folderu źródłowego do naszego nowoutworzonego folderu
 
             if (error == false)
@@ -1671,6 +1634,9 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                     }
                 }
 
+                database_virtual_folder_modify_rights(id_new, name_new, "VISIBLE_TO_OTHERS", flags[0]);
+                database_virtual_folder_modify_rights(id_new, name_new, "REQUESTABLE_BY_OTHERS", flags[1]);
+                database_virtual_folder_modify_rights(id_new, name_new, "COPIES_WITHOUT_CONFIRM", flags[2]);
             }
             else
             {
@@ -1851,150 +1817,43 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             folder_rights_modifier.Connection.Close();
         }
 
-        /* kod legacy zmiany modyfikacji praw dla foldera
-        private Tuple<int, int> database_virtual_folder_modify_rights(int source_folder_id, string name, string right_to_modify, bool new_value)
+        // Procedura zmieniająca TYLKO uprawnienia folderu.
+        private void database_virtual_folder_simple_modify_rights(int source_folder_id, string name, string right_to_modify, bool new_value)
         {
-            Tuple<int,int> successful_changes = new Tuple<int,int>(0,0);
-            int successful = 0, failed = 0;
+            string modifications = "";
 
-            DataTable subfolders_to_modify = new DataTable();
-            FbDataAdapter subfolders_to_modify_grabber = new FbDataAdapter("SELECT ID,NAME,DIR_ID " +
-                                                                    "FROM " + database_tables[0].Item2 + " " +
-                                                                    "WHERE DIR_ID = @Target_directory_id;"
-                                                                    ,
-                                                                    new FbConnection(database_connection_string_builder.ConnectionString));
-
-            subfolders_to_modify_grabber.SelectCommand.Parameters.AddWithValue("@Target_directory_id", source_folder_id);
-
-            subfolders_to_modify_grabber.Fill(subfolders_to_modify);
-
-            // Pobieramy tutaj wszystkie podfoldery naszego wskazanego folderu
-            for (int i = 0; i < subfolders_to_modify.Rows.Count; i++)
+            if (new_value == true) modifications = "SET " + right_to_modify + "=@" + right_to_modify + "_VALUE ";
+            else
             {
-                if (!subfolders_to_modify.Rows[i].ItemArray[0].Equals(source_folder_id))
+                if (right_to_modify.Equals("VISIBLE_TO_OTHERS"))
                 {
-                    Tuple<int,int> result = database_virtual_folder_modify_rights((int)subfolders_to_modify.Rows[i].ItemArray[0],
-                                                                                  (string)subfolders_to_modify.Rows[i].ItemArray[1],
-                                                                                  right_to_modify,
-                                                                                  new_value);
-
-                    successful_changes = new Tuple<int, int>(successful_changes.Item1 + result.Item1, 
-                                                             successful_changes.Item2 + result.Item2);
+                    modifications = "SET VISIBLE_TO_OTHERS = FALSE, REQUESTABLE_BY_OTHERS = FALSE, COPIES_WITHOUT_CONFIRM = FALSE ";
                 }
-                    
-            }
-
-            // Przetworzyliśmy uprawnienia dla podfolderów, teraz trzeba wziąść całą pozostałą zawartośc folderu źródłowego
-            for (int i = 1; i < database_tables.Count; i++)
-            {
-                DataTable folder_content_to_modify_container = new DataTable();
-                FbDataAdapter folder_content_to_modify_grabber = new FbDataAdapter("SELECT NAME,EXTENSION,VISIBLE_TO_OTHERS,REQUESTABLE_BY_OTHERS,COPIES_WITHOUT_CONFIRM " +
-                                                                        "FROM " + database_tables[i].Item2 + " " +
-                                                                        "WHERE DIR_ID = @Target_directory_id;"
-                                                                        ,
-                                                                        new FbConnection(database_connection_string_builder.ConnectionString));
-
-                folder_content_to_modify_grabber.SelectCommand.Parameters.AddWithValue("@Target_directory_id", source_folder_id);
-
-                folder_content_to_modify_grabber.Fill(folder_content_to_modify_container);
-                for (int j = 0; j < folder_content_to_modify_container.Rows.Count; j++)
+                if (right_to_modify.Equals("REQUESTABLE_BY_OTHERS"))
                 {
-                    bool skip = false;
-                    // Czyszczenie wartości dla flag podrzędnych w przypadku wyłączenia flagi nadrzędnej
-                    if (right_to_modify.Equals("VISIBLE_TO_OTHERS") && new_value == false)
-                    {
-                        if ((bool)(folder_content_to_modify_container.Rows[j].ItemArray[3]) == true)
-                            database_virtual_file_modify_rights(source_folder_id,
-                                                                database_tables[i].Item2,
-                                                                (string)folder_content_to_modify_container.Rows[j].ItemArray[0],
-                                                                (string)folder_content_to_modify_container.Rows[j].ItemArray[1],
-                                                                "REQUESTABLE_BY_OTHERS",
-                                                                false);
-                        if ((bool)(folder_content_to_modify_container.Rows[j].ItemArray[4]) == true)
-                            database_virtual_file_modify_rights(source_folder_id,
-                                                                database_tables[i].Item2,
-                                                                (string)folder_content_to_modify_container.Rows[j].ItemArray[0],
-                                                                (string)folder_content_to_modify_container.Rows[j].ItemArray[1],
-                                                                "COPIES_WITHOUT_CONFIRM",
-                                                                false);
-                    }
-
-                    if (right_to_modify.Equals("REQUESTABLE_BY_OTHERS") && new_value == false)
-                    {
-                        if ((bool)(folder_content_to_modify_container.Rows[j].ItemArray[4]) == true)
-                            database_virtual_file_modify_rights(source_folder_id,
-                                                                database_tables[i].Item2,
-                                                                (string)folder_content_to_modify_container.Rows[j].ItemArray[0],
-                                                                (string)folder_content_to_modify_container.Rows[j].ItemArray[1],
-                                                                "COPIES_WITHOUT_CONFIRM",
-                                                                false);
-                    }
-
-                    // Sprawdzanie, czy flagi nadrzędne są ustawione na prawdę przy próbie zmiany wartości flagi podrzędnej
-                    if (!right_to_modify.Equals("VISIBLE_TO_OTHERS"))
-                    {
-                        if ((bool)(folder_content_to_modify_container.Rows[j].ItemArray[2]) == false) skip = true;
-                        if (right_to_modify.Equals("COPIES_WITHOUT_CONFIRM"))
-                        {
-                            if ((bool)(folder_content_to_modify_container.Rows[j].ItemArray[3]) == false) skip = true;
-                        }
-                        if (skip == true) failed++;
-                    }
-
-                    if (skip == false)
-                    {
-                        database_virtual_file_modify_rights(source_folder_id,
-                                                            database_tables[i].Item2,
-                                                            (string)folder_content_to_modify_container.Rows[j].ItemArray[0],
-                                                            (string)folder_content_to_modify_container.Rows[j].ItemArray[1],
-                                                            right_to_modify,
-                                                            new_value);
-                        successful++;
-                    }
+                    modifications = "SET REQUESTABLE_BY_OTHERS = FALSE, COPIES_WITHOUT_CONFIRM = FALSE ";
+                }
+                if (right_to_modify.Equals("COPIES_WITHOUT_CONFIRM"))
+                {
+                    modifications = "SET COPIES_WITHOUT_CONFIRM = FALSE ";
                 }
             }
 
-            successful_changes = new Tuple<int, int>(successful_changes.Item1 + successful, successful_changes.Item2 + failed);
+            FbCommand folder_rights_modifier = new FbCommand("UPDATE " + database_tables[0].Item2 + " " +
+                                                       modifications +
+                                                       "WHERE NAME = @Name " +
+                                                       "AND ID = @Id "
+                                                       ,
+                                                       new FbConnection(database_connection_string_builder.ConnectionString));
 
-            if (successful_changes.Item2 == 0)
-            {
-                string modifications = "";
+            folder_rights_modifier.Parameters.AddWithValue("@Name", name);
+            folder_rights_modifier.Parameters.AddWithValue("@Id", source_folder_id);
+            if (new_value == true) folder_rights_modifier.Parameters.AddWithValue("@" + right_to_modify + "_VALUE", new_value);
 
-                if (new_value == true) modifications = "SET " + right_to_modify + "=@" + right_to_modify + "_VALUE ";
-                else
-                {
-                    if (right_to_modify.Equals("VISIBLE_TO_OTHERS"))
-                    {
-                        modifications = "SET VISIBLE_TO_OTHERS = FALSE, REQUESTABLE_BY_OTHERS = FALSE, COPIES_WITHOUT_CONFIRM = FALSE ";
-                    }
-                    if (right_to_modify.Equals("REQUESTABLE_BY_OTHERS"))
-                    {
-                        modifications = "SET REQUESTABLE_BY_OTHERS = FALSE, COPIES_WITHOUT_CONFIRM = FALSE ";
-                    }
-                    if (right_to_modify.Equals("COPIES_WITHOUT_CONFIRM"))
-                    {
-                        modifications = "SET COPIES_WITHOUT_CONFIRM = FALSE ";
-                    }
-                }
-
-                FbCommand file_rights_modifier = new FbCommand("UPDATE " + database_tables[0].Item2 + " " +
-                                                           modifications + 
-                                                           "WHERE NAME = @Name " +
-                                                           "AND ID = @Id "
-                                                           ,
-                                                           new FbConnection(database_connection_string_builder.ConnectionString));
-
-                file_rights_modifier.Parameters.AddWithValue("@Name", name);
-                file_rights_modifier.Parameters.AddWithValue("@Id", source_folder_id);
-                if(new_value == true) file_rights_modifier.Parameters.AddWithValue("@" + right_to_modify + "_VALUE", new_value);
-
-                file_rights_modifier.Connection.Open();
-                file_rights_modifier.ExecuteNonQuery();
-                file_rights_modifier.Connection.Close();
-            }
-            return successful_changes;
+            folder_rights_modifier.Connection.Open();
+            folder_rights_modifier.ExecuteNonQuery();
+            folder_rights_modifier.Connection.Close();
         }
-        */
 
         // Procedura usuwająca zadany folder wirtualny, w zależności od użytkownika usuwa foldery z zawartością.
         private void database_virtual_folder_delete(int id_to_delete, string target_table, bool is_file, bool surpress_pop_ups)
@@ -2202,9 +2061,9 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             return result;
         }
 
+        #endregion
 
-    // Zakładka Katalog i jej logika:
-
+        #region Logika zakładki Wyświetlanie katalogów
 
         private void LV_catalog_display_catalogs_load()
         {
@@ -2578,23 +2437,34 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             {
                 if(copy == true)
                 {
-                    for(int i = 0; i < LV_catalog_display_data_to_manipulate.Count; i++)
+                    bool anything_visible = false;
+                    for (int i = 0; i < LV_catalog_display_data_to_manipulate.Count; i++)
                     {
-                        if(LV_catalog_display_data_to_manipulate[i].SubItems[1].Text.Equals("Folder")) {
+                        if(LV_catalog_display_data_to_manipulate[i].SubItems[1].Text.Equals("Folder"))
+                        {
+                            if (LV_catalog_display_data_to_manipulate[i].SubItems[5].Text == "TAK") anything_visible = true;
                             database_virtual_folder_copy(int.Parse(LV_catalog_display_data_to_manipulate[i].Name),
                                                  catalog_folder_id_list.Last(),
                                                  LV_catalog_display_data_to_manipulate[i].Text);
                         }
                         else
                         {
+                            if (LV_catalog_display_data_to_manipulate[i].SubItems[5].Text == "TAK") anything_visible = true;
                             database_virtual_file_copy(LV_catalog_display_data_to_manipulate_orgin_directory_id,
                                                        catalog_folder_id_list.Last(),
                                                        LV_catalog_display_data_to_manipulate[i].ToolTipText,
                                                        LV_catalog_display_data_to_manipulate[i].Text,
-                                                       LV_catalog_display_data_to_manipulate[i].SubItems[0].Text);
+                                                       LV_catalog_display_data_to_manipulate[i].SubItems[1].Text);
                         }
                     }
-                    
+                    if(anything_visible == true)
+                    {
+                        for(int i = 0; i < catalog_folder_id_list.Count; i++)
+                        {
+                            if(catalog_folder_id_list[i] == 1) database_virtual_folder_simple_modify_rights(catalog_folder_id_list[i], "root", "VISIBLE_TO_OTHERS", true);
+                            else database_virtual_folder_simple_modify_rights(catalog_folder_id_list[i], catalog_folder_path_list[i+1].Remove(catalog_folder_path_list[i+1].Length-1,1), "VISIBLE_TO_OTHERS", true);
+                        }
+                    }
                 }
                 if(cut == true)
                 {
@@ -3239,6 +3109,15 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             }
         }
 
+        private void Catalog_page_top_table_layout_SizeChanged(object sender, EventArgs e)
+        {
+            int length_new = 0;
+            TableLayoutPanel caller = (TableLayoutPanel)sender;
+            length_new = caller.Size.Width;
+
+            TB_catalog_path_current.Width = length_new - 2 * 72;
+        }
+
         // Obsługa zdarzenia powrotu z wyboru opcji specjalnych - używana przez wszystkie okna specjalne, głównie zajmują się dodawaniem
         // wyniku do bazy danych w odpowiadający dla okna zwracającego sposób.
         void Special_function_window_OnDataAvalible(object sender, EventArgs e)
@@ -3597,75 +3476,64 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             this.Hide();
         }
 
-        // Dalej znajduje się kod legacy...
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        /*
-        // Kod legacy:
-        
-        /* OLD
+        #endregion
+
+        #region Logika zakładki Funkcjonalności sieciowe
+
+        //TODO: Fill me!
+
+        #endregion
+
+        #region Kod legacy
+
+        /* Old - detale zmiany rozmiaru okna głównego
+         * 
+        *  Zakładam minimalny rozmiar okna na poziomie tego, co zrobił na początku Janek
+        *  
+        *  Gdy zmieniamy rozmiar okna głównego niektóre elementy powinny zmienić swój rozmiar lub pozycję, są to:
+        *  - tabpage tabPage1 (Kryteria katalogowania) - rozmiar
+        *  - groupbox groupBox1 (Użyj polecenie) - rozmiar
+        *       - textbox txtCommand (za Polecenie:) - rozmiar
+        *       - button BT_text_database (Test bazy) - pozycja
+        *       - button BT_extract_metadata (Kataloguj) - pozycja
+        *  - groupbox z metadanymi - rozmiar
+        *       - checkedlistbox chkMetadata - rozmiar 
+        *  
+        *  I tyle, reszta w kodzie.
+        *  
+        */
+
+        /* Old - logika resize'owania okna, teraz już zbędna.
+        private void Form1_Resize(object sender, EventArgs e)
+        {
+            // Ustawiamy rozdzielczosc minimalna na poziomie tego, co zrobił Janek
+            this.MinimumSize = new Size(471, 465);
+
+            // A jezeli jest wieksza, to reskalujemy
+            if (this.Size.Width >= 471 && this.Size.Height >= 465)
+            {
+                // Najpierw TabPage tabPage1:
+                tabPage1.Width = this.Size.Width - 24;
+                tabPage1.Height = this.Size.Height - 71;
+
+                // I to na tyle, jak bedzie przybywalo komponentów trzeba bedzie je tutaj dodawać
+                // Liczby do odejmowania obliczam biorąc za podstawę okno w rozmiarze minimalnym,
+                // odejmuje od rozmiaru kontenera macierzystego albo rozmiar jego subkomponentu
+                // (jezeli chcemy go skalowac) lub jego lokację (jeżeli chcemy zmienić pozycję)
+            }
+        }
+        */
+
+        /* Old - Resize wielkości textboxa z teraźniejszą ścieżką w katalogu wirtualnym, potrzebny bo nie robi tego automatycznie jego rodzic.
+        private void TB_catalog_path_current_resizer(object sender, EventArgs e)
+        {
+            TableLayoutPanel parent = (TableLayoutPanel)sender;
+            TextBox target = (TextBox)parent.Controls[1];
+            target.Width = parent.Size.Width - 150;
+        }
+        */
+
+        /* Old - wcześniejsza logika ustalania stringów z ścieżkami do odpowiednich folderów i plików
                   Oduzależnienie programu od statycznych stringów - pobieranie lokacji programu
              *    
              *    Na początku tworzymy grabber dający nam obiekt DirectoryInfo zawiarajacy lokacje fizyczna programu na dysku twardym.
@@ -4046,5 +3914,189 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             return UTF8Encoding.UTF8.GetString(resultArray);
         }
         */
+
+        /* Old - wyświetlanie zawartości zmiennej metadata.
+        private void chkExcludeMetadata_CheckedChanged(object sender, EventArgs e)
+        {
+            if (this.chkExcludeMetadata.Checked)
+            {
+                this.chkMetadata.Enabled = true;
+                for (int i = 0; i < metadata.Count(); i++)
+                {
+                    string display = String.Empty;
+                    for (int j = 0; j < metadata[i].Length; j++) display += " " + metadata[i].ElementAt(j) + " ";
+                    this.chkMetadata.Items.Add(display);
+                }
+                
+                //DEBUG - zapisujemy wyniki katalogowania do pliku $$$.txt
+                FileInfo txt_dump = new FileInfo(txt_path);
+                if (txt_dump.Exists)
+                {
+                    StreamWriter txt_dumper = new StreamWriter(txt_path);
+
+                    for (int i = 0; i < metadata.Count(); i++)
+                    {
+                        string display = String.Empty;
+                        for (int j = 0; j < metadata[i].Length; j++) display += " " + metadata[i].ElementAt(j) + " ";
+                        txt_dumper.WriteLine(display);
+                    }
+                    txt_dumper.Close();
+                }
+                
+            }
+            else
+            {
+                this.chkMetadata.Enabled = false;
+                this.chkMetadata.Items.Clear();
+            }
+        }
+        */
+
+        /* Old - zmiana uprawnień dla folderu (teraz robi to zmiana praw pliku!)
+        private Tuple<int, int> database_virtual_folder_modify_rights(int source_folder_id, string name, string right_to_modify, bool new_value)
+        {
+            Tuple<int,int> successful_changes = new Tuple<int,int>(0,0);
+            int successful = 0, failed = 0;
+
+            DataTable subfolders_to_modify = new DataTable();
+            FbDataAdapter subfolders_to_modify_grabber = new FbDataAdapter("SELECT ID,NAME,DIR_ID " +
+                                                                    "FROM " + database_tables[0].Item2 + " " +
+                                                                    "WHERE DIR_ID = @Target_directory_id;"
+                                                                    ,
+                                                                    new FbConnection(database_connection_string_builder.ConnectionString));
+
+            subfolders_to_modify_grabber.SelectCommand.Parameters.AddWithValue("@Target_directory_id", source_folder_id);
+
+            subfolders_to_modify_grabber.Fill(subfolders_to_modify);
+
+            // Pobieramy tutaj wszystkie podfoldery naszego wskazanego folderu
+            for (int i = 0; i < subfolders_to_modify.Rows.Count; i++)
+            {
+                if (!subfolders_to_modify.Rows[i].ItemArray[0].Equals(source_folder_id))
+                {
+                    Tuple<int,int> result = database_virtual_folder_modify_rights((int)subfolders_to_modify.Rows[i].ItemArray[0],
+                                                                                  (string)subfolders_to_modify.Rows[i].ItemArray[1],
+                                                                                  right_to_modify,
+                                                                                  new_value);
+
+                    successful_changes = new Tuple<int, int>(successful_changes.Item1 + result.Item1, 
+                                                             successful_changes.Item2 + result.Item2);
+                }
+                    
+            }
+
+            // Przetworzyliśmy uprawnienia dla podfolderów, teraz trzeba wziąść całą pozostałą zawartośc folderu źródłowego
+            for (int i = 1; i < database_tables.Count; i++)
+            {
+                DataTable folder_content_to_modify_container = new DataTable();
+                FbDataAdapter folder_content_to_modify_grabber = new FbDataAdapter("SELECT NAME,EXTENSION,VISIBLE_TO_OTHERS,REQUESTABLE_BY_OTHERS,COPIES_WITHOUT_CONFIRM " +
+                                                                        "FROM " + database_tables[i].Item2 + " " +
+                                                                        "WHERE DIR_ID = @Target_directory_id;"
+                                                                        ,
+                                                                        new FbConnection(database_connection_string_builder.ConnectionString));
+
+                folder_content_to_modify_grabber.SelectCommand.Parameters.AddWithValue("@Target_directory_id", source_folder_id);
+
+                folder_content_to_modify_grabber.Fill(folder_content_to_modify_container);
+                for (int j = 0; j < folder_content_to_modify_container.Rows.Count; j++)
+                {
+                    bool skip = false;
+                    // Czyszczenie wartości dla flag podrzędnych w przypadku wyłączenia flagi nadrzędnej
+                    if (right_to_modify.Equals("VISIBLE_TO_OTHERS") && new_value == false)
+                    {
+                        if ((bool)(folder_content_to_modify_container.Rows[j].ItemArray[3]) == true)
+                            database_virtual_file_modify_rights(source_folder_id,
+                                                                database_tables[i].Item2,
+                                                                (string)folder_content_to_modify_container.Rows[j].ItemArray[0],
+                                                                (string)folder_content_to_modify_container.Rows[j].ItemArray[1],
+                                                                "REQUESTABLE_BY_OTHERS",
+                                                                false);
+                        if ((bool)(folder_content_to_modify_container.Rows[j].ItemArray[4]) == true)
+                            database_virtual_file_modify_rights(source_folder_id,
+                                                                database_tables[i].Item2,
+                                                                (string)folder_content_to_modify_container.Rows[j].ItemArray[0],
+                                                                (string)folder_content_to_modify_container.Rows[j].ItemArray[1],
+                                                                "COPIES_WITHOUT_CONFIRM",
+                                                                false);
+                    }
+
+                    if (right_to_modify.Equals("REQUESTABLE_BY_OTHERS") && new_value == false)
+                    {
+                        if ((bool)(folder_content_to_modify_container.Rows[j].ItemArray[4]) == true)
+                            database_virtual_file_modify_rights(source_folder_id,
+                                                                database_tables[i].Item2,
+                                                                (string)folder_content_to_modify_container.Rows[j].ItemArray[0],
+                                                                (string)folder_content_to_modify_container.Rows[j].ItemArray[1],
+                                                                "COPIES_WITHOUT_CONFIRM",
+                                                                false);
+                    }
+
+                    // Sprawdzanie, czy flagi nadrzędne są ustawione na prawdę przy próbie zmiany wartości flagi podrzędnej
+                    if (!right_to_modify.Equals("VISIBLE_TO_OTHERS"))
+                    {
+                        if ((bool)(folder_content_to_modify_container.Rows[j].ItemArray[2]) == false) skip = true;
+                        if (right_to_modify.Equals("COPIES_WITHOUT_CONFIRM"))
+                        {
+                            if ((bool)(folder_content_to_modify_container.Rows[j].ItemArray[3]) == false) skip = true;
+                        }
+                        if (skip == true) failed++;
+                    }
+
+                    if (skip == false)
+                    {
+                        database_virtual_file_modify_rights(source_folder_id,
+                                                            database_tables[i].Item2,
+                                                            (string)folder_content_to_modify_container.Rows[j].ItemArray[0],
+                                                            (string)folder_content_to_modify_container.Rows[j].ItemArray[1],
+                                                            right_to_modify,
+                                                            new_value);
+                        successful++;
+                    }
+                }
+            }
+
+            successful_changes = new Tuple<int, int>(successful_changes.Item1 + successful, successful_changes.Item2 + failed);
+
+            if (successful_changes.Item2 == 0)
+            {
+                string modifications = "";
+
+                if (new_value == true) modifications = "SET " + right_to_modify + "=@" + right_to_modify + "_VALUE ";
+                else
+                {
+                    if (right_to_modify.Equals("VISIBLE_TO_OTHERS"))
+                    {
+                        modifications = "SET VISIBLE_TO_OTHERS = FALSE, REQUESTABLE_BY_OTHERS = FALSE, COPIES_WITHOUT_CONFIRM = FALSE ";
+                    }
+                    if (right_to_modify.Equals("REQUESTABLE_BY_OTHERS"))
+                    {
+                        modifications = "SET REQUESTABLE_BY_OTHERS = FALSE, COPIES_WITHOUT_CONFIRM = FALSE ";
+                    }
+                    if (right_to_modify.Equals("COPIES_WITHOUT_CONFIRM"))
+                    {
+                        modifications = "SET COPIES_WITHOUT_CONFIRM = FALSE ";
+                    }
+                }
+
+                FbCommand file_rights_modifier = new FbCommand("UPDATE " + database_tables[0].Item2 + " " +
+                                                           modifications + 
+                                                           "WHERE NAME = @Name " +
+                                                           "AND ID = @Id "
+                                                           ,
+                                                           new FbConnection(database_connection_string_builder.ConnectionString));
+
+                file_rights_modifier.Parameters.AddWithValue("@Name", name);
+                file_rights_modifier.Parameters.AddWithValue("@Id", source_folder_id);
+                if(new_value == true) file_rights_modifier.Parameters.AddWithValue("@" + right_to_modify + "_VALUE", new_value);
+
+                file_rights_modifier.Connection.Open();
+                file_rights_modifier.ExecuteNonQuery();
+                file_rights_modifier.Connection.Close();
+            }
+            return successful_changes;
+        }
+        */
+
+        #endregion
     }
 }

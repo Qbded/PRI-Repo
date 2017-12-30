@@ -14,6 +14,8 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
 {
     public partial class Metadata_extractor : Form
     {
+        #region Deklaracja zmiennych
+
         public event EventHandler OnDataAvalible;
         public List<Tuple<int,string>> extends { get; set; }
         public DirectoryInfo target_directory { get; set; }
@@ -28,6 +30,10 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
         public List<Tuple<int, int, string>> complex_ordering_set;
         public List<Tuple<int, int, string>> image_ordering_set;
         public List<Tuple<int, int, string>> multimedia_ordering_set;
+
+        #endregion
+
+        #region Konstruktor
 
         public Metadata_extractor()
         {
@@ -52,6 +58,9 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             BGW_metadata_extractor.RunWorkerAsync();
         }
 
+        #endregion
+
+        #region Logika ekstraktora
 
         /*  Ekstracja metadanych przez BackgroundWorkera
          *  
@@ -255,7 +264,6 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                 this.LB_file_supported_count_container.Text = file_supported_count.ToString();
             }
         }
-
 
         /*  Koniec ekstrakcji metadanych przez BackgroundWorkera
          *  
@@ -610,13 +618,12 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                 this.multimedia_ordering_set.Add(new Tuple<int, int, string>(14, 1, "xmpDM:logComment"));
             }
         }
+
+        #endregion
     }
 }
 
-
-
-//Legacy:
-
+#region Kod legacy
 /*
                     for (int i = 0; i < extends.Length; i++)
                     {
@@ -757,3 +764,4 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                             BGW_metadata_extractor.ReportProgress(0);
                         }
                     } */
+#endregion
