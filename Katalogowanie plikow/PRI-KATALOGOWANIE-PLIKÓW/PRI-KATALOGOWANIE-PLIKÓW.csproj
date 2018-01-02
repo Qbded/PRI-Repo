@@ -223,9 +223,7 @@
     <Compile Include="classes\AppCryptoDataStorage.cs" />
     <Compile Include="classes\ConfigManager.cs" />
     <Compile Include="classes\DistributedNetwork.cs" />
-    <Compile Include="classes\DistributedNetworkClientConnection.cs" />
     <Compile Include="classes\DistributedNetworkFile.cs" />
-    <Compile Include="classes\DistributedNetworkServerConnection.cs" />
     <Compile Include="classes\DistributedNetworkUser.cs" />
     <Compile Include="classes\ExtractionOptions.cs" />
     <Compile Include="classes\AppInstanceLoginManager.cs" />

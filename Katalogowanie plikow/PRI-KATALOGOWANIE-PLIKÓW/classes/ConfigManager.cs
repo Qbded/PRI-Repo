@@ -21,6 +21,8 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes
         public static readonly String PROGRAM_LOCATION = "ProgramLocation";
         public static readonly String OUTPUT_LOCATION = "OutputLocation";
 
+        public static readonly String TCP_SECONDS_TO_TIMEOUT = "TCPSecondsToTimeout"
+
         private static readonly String configFileLocation =
             AppDomain.CurrentDomain.SetupInformation.ConfigurationFile;
 
@@ -42,7 +44,9 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes
                 { EXTERNAL_DATABASES_LOCATION, "" },
 
                 { PROGRAM_LOCATION, "" },
-                { OUTPUT_LOCATION, ""}
+                { OUTPUT_LOCATION, ""},
+
+                { TCP_SECONDS_TO_TIMEOUT, "5" }
             };
 
         private static void determineDirectoryStructure()
@@ -169,8 +173,20 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes
         /// <returns></returns>
         public static byte[] ReadByte(String key)
         {
-            String value = ReadString(key);
-            return StringToBytes(value);
+            String valueString = ReadString(key);
+            return StringToBytes(valueString);
+        }
+
+        /// <summary>
+        /// Returns int representation of value from config file,
+        /// or default value if the value is not set.
+        /// </summary>
+        /// <param name="key"></param>
+        /// <returns></returns>
+        public static int ReadInt(String key)
+        {
+            String valueString = ReadString(key);
+            return Int32.Parse(valueString);
         }
 
 

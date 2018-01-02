@@ -28,6 +28,9 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
         public static readonly byte[] CONTINUE_SENDING_FILE = { 123 };
         public static readonly byte[] SENDING_FILE_FRAGMENT = { 124 };
         public static readonly byte[] DONE_SENDING_FILE = { 125 };
+        public static readonly byte[] CANNOT_SEND_FILE = { 130 };
+        public static readonly byte[] FILE_NOT_IN_MY_CATALOGUE = { 131 };
+        public static readonly byte[] REFUSED_TO_SEND_FILE = { 132 };
 
         public static readonly byte[] TERMINATE = { 255 };
 

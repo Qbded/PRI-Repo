@@ -6,6 +6,7 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
+using System.Runtime.Serialization.Formatters.Binary;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -29,6 +30,13 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
         /// stream must be interpreted as such.
         /// </summary>
         private static readonly int DATA_SIZE_BYTE_ARRAY_LENGTH = 4;
+
+
+        #region return codes
+        private static readonly int RETURN_OK = 0;
+        private static readonly int RETURN_CANCEL = 1;
+        private static readonly int RETURN_TIMEOUT = 2;
+
 
         TcpListener serverListener;
 
@@ -286,7 +294,9 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
             try
             {
                 networkStream.Close();
+                networkStream.Dispose();
                 tcpClient.Close();
+                tcpClient.Dispose();
             }
             catch(Exception ex)
             {
@@ -295,24 +305,164 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
         }
 
 
-        public byte[] RequestFile(DistributedNetworkUser targetUser,
-            DistributedNetworkFile file)
+        /*public int SendFileRequest(NetworkStream networkStream,
+            DistributedNetworkFile dnFile)
         {
-            //TODO: Input proper logic
-            return null;
+            BinaryFormatter binaryFormatter = new BinaryFormatter();
+            byte[] fileData;
+            using(MemoryStream memoryStream = new MemoryStream())
+            {
+                binaryFormatter.Serialize(memoryStream, dnFile);
+                fileData = memoryStream.ToArray();
+            }
+            byte[] packet = CreateFileDataPacket(
+                TcpRequestCodebook.SEND_FILE, fileData);
+            networkStream.Write(packet, 0, packet.Length);
+
+            packet = null;
+            fileData = null;
+            binaryFormatter = null;
+        }*/
+        public int SendFileRequest(NetworkStream networkStream,
+            String filePathInCatalogue)
+        {
+            byte[] serializedFilePath = SerializeString(filePathInCatalogue);
+            byte[] packet = CreateTCPDataPacket(
+                TcpRequestCodebook.SEND_FILE, serializedFilePath);
+            networkStream.Write(packet, 0, packet.Length);
+            networkStream.Flush();
+
+            packet = null;
+            serializedFilePath = null;
+
+            return 0;
         }
 
-        public void SendFileRequestCallback(NetworkStream networkStream)
+
+        public int SendFileRequestCallback(NetworkStream networkStream)
         {
-            
+            byte[] sizeBytes = new byte[DATA_SIZE_BYTE_ARRAY_LENGTH];
+            int bytesToRead = DATA_SIZE_BYTE_ARRAY_LENGTH;
+            int bytesDoneRead = 0;
+            DateTime lastReadTime = DateTime.Now;
+            TimeSpan timeoutWaitTime = new TimeSpan(
+                0, 0, ConfigManager.ReadInt(ConfigManager.TCP_SECONDS_TO_TIMEOUT));
+            bool timedOut = false;
+            while (bytesToRead > 0) {
+                int bytesRead = networkStream.Read(sizeBytes, 0, bytesToRead);
+                if (bytesRead > 0)
+                {
+                    lastReadTime = DateTime.Now;
+                }
+                else
+                {
+                    TimeSpan idleTime = DateTime.Now - lastReadTime;
+                    // if idleTime >= timeoutWaitTime, then timeout
+                    if(idleTime.CompareTo(timeoutWaitTime) >= 0)
+                    {
+                        timedOut = true;
+                        return RETURN_TIMEOUT;
+                    }
+                }
+                bytesToRead -= bytesRead;
+                bytesDoneRead += bytesRead;
+            }
+
+            int packetSize = ByteArrayToInt(sizeBytes);
+
+            int separator = networkStream.ReadByte();
+
+            byte[] serializedFilePath = new byte[packetSize];
+            networkStream.Read(serializedFilePath, 0, packetSize);
+            String filePathInCatalogue = ByteArrayToString(serializedFilePath);
+
+            DistributedNetworkFile distributedNetworkFile = DistributedNetworkFile.GetFileByFilePath(filePathInCatalogue);
+
+            if (!distributedNetworkFile.IsPresentInLocalCatalogue())
+            {
+                byte[] responsePacket = CreateTCPDataPacket(
+                    TcpRequestCodebook.FILE_NOT_IN_MY_CATALOGUE,
+                    SerializeString("FileNotFound"));
+
+                networkStream.Write(responsePacket, 0, responsePacket.Length);
+                networkStream.Flush();
+                return RETURN_OK;
+            }
+
+            bool canSendFile = false;
+            if(distributedNetworkFile.allowUnpromptedDistribution == true)
+            {
+                canSendFile = true;
+            }
+            else
+            {
+                canSendFile = GetUserPermissionToSendFile(distributedNetworkFile);
+                if(canSendFile == false)
+                {
+                    byte[] responsePacket = CreateTCPDataPacket(
+                        TcpRequestCodebook.REFUSED_TO_SEND_FILE,
+                        SerializeString("User refused to send file"));
+
+                    networkStream.Write(responsePacket, 0, responsePacket.Length);
+                    networkStream.Flush();
+                    return RETURN_OK;
+                }
+            }
+
+            // serialize and send file
+
+            FileStream fileStream = new FileStream(
+                distributedNetworkFile.realFilePath, FileMode.Open);
+
+            bool run = true;
+            while (run)
+            {
+
+            }
+
+            return 0;
+
+
+            //byte[] serializedDNFile = new byte[packetSize];
+            //networkStream.Read(serializedDNFile, 0, packetSize);
+
+            //MemoryStream serializationStream = new MemoryStream(serializedDNFile);
+            //BinaryFormatter binaryFormatter = new BinaryFormatter();
+            //DistributedNetworkFile dnFile = 
+            //    (DistributedNetworkFile) binaryFormatter.Deserialize(serializationStream);
+
+
+            //DistributedNetworkFile dnf = new DistributedNetworkFile();
+            //BinaryFormatter binaryFormatter = new BinaryFormatter();
+            //using (MemoryStream ms = new MemoryStream()) {
+            //    binaryFormatter.Serialize(ms, dnf);
+            //    byte[] serializedFileData = ms.ToArray();
+            //}
+            // TODO check if file exists
+            // TODO logic to ask user for permission to send file
         }
 
 
-        public void SendFile(DistributedNetworkUser targetUser,
-            DistributedNetworkFile file)
+        private bool GetUserPermissionToSendFile(
+            DistributedNetworkFile distributedNetworkFile)
         {
-            //TODO: Input proper logic
+
         }
+
+
+        //public byte[] RequestFile(DistributedNetworkUser targetUser,
+        //    DistributedNetworkFile file)
+        //{
+        //    //TODO: Input proper logic
+        //    return null;
+        //}
+
+
+        //public void SendFile(DistributedNetworkUser targetUser,
+        //    DistributedNetworkFile file)
+        //{
+        //    //TODO: Input proper logic
+        //}
 
 
 
@@ -337,7 +487,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
         //}
 
 
-        private byte[] CreateFileDataPacket(byte[] request,
+        private byte[] CreateTCPDataPacket(byte[] request,
             byte[] dataToSend)
         {
             MemoryStream memoryStream = new MemoryStream();
@@ -399,6 +549,16 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
         private String ByteArrayToString(byte[] b)
         {
             return Encoding.UTF8.GetString(b);
+        }
+
+        private byte[] SerializeString(String s)
+        {
+            return StringToByteArray(EncodeStringBase64(s));
+        }
+
+        private String DeserializeString(byte[] b)
+        {
+            return DecodeStringBase64(ByteArrayToString(b));
         }
 
         private int GetStringByteCount(String str)
