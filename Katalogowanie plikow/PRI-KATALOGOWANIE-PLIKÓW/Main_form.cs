@@ -68,7 +68,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
 
         // Tutaj przechowujemy skrypty tworzące bazę danych, nie muszą być koniecznie globalne dla całego okna, ale chwilowo dla wygody takimi je uczyniłem.
         private List<string> creation_scripts { get; set; }
-
+        
         // Lista z obsługiwanymi rozszerzeniami.
         public List<Tuple<int, string>> extends = new List<Tuple<int, string>>() {
                                                                                // Formaty plików tekstowych - identyfikator 0:
@@ -2752,9 +2752,31 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                     item_properties.Show();
                 }
             }
-            if (e.ClickedItem.Text.Equals("Sciągnij"))
+            if (e.ClickedItem.Text.Equals("Ściągnij"))
             {
-                //TODO: po aliasie w nazwie katalogu wyszukać adres IP i wyslać zapytanie do adresu IP wskazywanego przez alias z prośbą o plik.
+                //Wybieramy tylko pliki, ignorujemy foldery póki co:
+                foreach(ListViewItem selected_item in LV_catalog_display_item_selection)
+                {
+                    if(selected_item.SubItems[1].Text.Equals("Folder"))
+                    {
+                        // obsługa folderów w wybieraniu obiektów do wysłania, póki co nie robi nic.
+                    }
+                    else
+                    {
+                        // obsługa plików w wybieraniu obiektów do wysyłania - pobrać nazwę pliku, jego rozszerzenie i nazwę folderu macierzystego.
+                        string requested_file_name = selected_item.SubItems[0].Text;
+                        string requested_file_extension = selected_item.SubItems[1].Text;
+                        string requested_file_parent_folder = catalog_folder_path_list.Last();
+
+                        // Trimujemy ostatni backslash z nazwy foldera żeby był w konwencji, w której występuje w bazach danych:
+                        requested_file_parent_folder = requested_file_parent_folder.Remove(requested_file_parent_folder.Length - 1, 1);
+
+                        // Wywołanie dla kodu Karola powinno nastąpić tutaj
+                        // TODO - Wywołać kod Karola do przesyłu pliku!
+                    }
+                }
+
+
             }
         }
 
