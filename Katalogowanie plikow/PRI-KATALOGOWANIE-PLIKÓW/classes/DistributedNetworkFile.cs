@@ -13,7 +13,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes
         public bool allowUnpromptedDistribution;
 
         public String filePathInCatalogue;
-        //public String realFilePath;
+        public String realFilePath;
 
         public long fileSize;
 
@@ -27,18 +27,17 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes
         {
             // TODO grab file data based on file's path
             // return distributedNetworkFile
+            
+            // Passthrough logic, it is completely invalid!
+            DistributedNetworkFile result = new DistributedNetworkFile();
+            return result;
         }
 
 
         public bool IsPresentInLocalCatalogue()
         {
-
-        }
-
-
-        public String ResolveRealFilePath()
-        {
-
+            bool result = true;
+            return result;
         }
     }
 }

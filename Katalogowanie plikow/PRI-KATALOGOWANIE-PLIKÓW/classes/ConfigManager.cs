@@ -21,7 +21,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes
         public static readonly String PROGRAM_LOCATION = "ProgramLocation";
         public static readonly String OUTPUT_LOCATION = "OutputLocation";
 
-        public static readonly String TCP_SECONDS_TO_TIMEOUT = "TCPSecondsToTimeout"
+        public static readonly String TCP_SECONDS_TO_TIMEOUT = "TCPSecondsToTimeout";
 
         private static readonly String configFileLocation =
             AppDomain.CurrentDomain.SetupInformation.ConfigurationFile;

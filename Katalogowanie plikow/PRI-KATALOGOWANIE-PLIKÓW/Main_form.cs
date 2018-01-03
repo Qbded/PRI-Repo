@@ -141,9 +141,34 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
         private Special_function_window special_option_selector;
         private List<ListViewItem> sent_items;
 
+        // Zmienne związane z funkcjonowaniem opcji sieciowych:
+        private DistributedNetworkUser local_user = null;
+
         #endregion
 
         #region Konstruktor i jego logika
+
+        // Ładowanie z konfiga(?) danych o użytkowniku lokalnym. Póki co SHIM nie zależy od konfigu.
+        private void DetermineLocalUser()
+        {
+            //SHIM - póki nie ustalimy gdzie przechowywać takie dane, wypełniam je tutaj z palca i danymi niepoprawnymi.
+            if(System.Net.NetworkInformation.NetworkInterface.GetIsNetworkAvailable())
+            {
+                /*
+                var host = System.Net.Dns.GetHostEntry(System.Net.Dns.GetHostName());
+                foreach (var ip in host.AddressList)
+                {
+                    if (ip.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork)
+                    {
+                        ip.ToString();
+                    }
+                }
+                */
+                local_user = new DistributedNetworkUser(false, "TEST", new System.Net.IPAddress(new byte[] { 127, 0, 0, 1 }));
+            }
+
+            local_user = null;
+        }
 
         // Ładowanie ścieżek do odpowiednich plików i folderów z pliku konfiguracyjnego.
         private void DetermineFilepaths()
@@ -468,6 +493,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             LoadCreationScripts();
             PrepareConnectionString();
             LoadLocalCatalog();
+            DetermineLocalUser();
 
             /*
             this.chkMetadata.LostFocus += ChkMetadata_LostFocus;
@@ -1095,8 +1121,9 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
 
         // Generowanie katalogu obiegowego na podstawie katalogu lokalnego
         // Alias nie może zawierać w nazwie znaku '_', oprócz tego wszystkie chwyty dozwolone.
-        private void external_catalog_build(string alias)
+        private bool external_catalog_build(string alias)
         {
+            bool result = false;
             if (alias.Contains('_')) MessageBox.Show("ERROR! Nazwa aliasu nie może zawierać znaku: _");
             else
             {
@@ -1123,6 +1150,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                     }
                     else
                     {
+                        result = true;
                         // Jeżeli takowe są to tworzymy string połączeniowy do nowej bazy danych:
                         FbConnectionStringBuilder external_catalog_connecton_string_builder = new FbConnectionStringBuilder();
 
@@ -1323,6 +1351,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                     source_folder_structure_grabber.Dispose();
                 }
             }
+            return result;
         }
 
         // Pobranie indeksu, folderu macierzystego, nazwy, typu (z której tabeli pochodzi) i rozszerzenia każdego pliku w zadanym folderze
@@ -2775,8 +2804,10 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                         // TODO - Wywołać kod Karola do przesyłu pliku!
                     }
                 }
-
-
+            }
+            if (e.ClickedItem.Text.Equals("Opcje specjalne"))
+            {
+                BT_specials_Click(this, new EventArgs());
             }
         }
 
@@ -2937,6 +2968,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                         folder_context_menu_strip.Items.Add("Zmień widoczność w katalogu obiegowym");
                         folder_context_menu_strip.Items.Add("Zmień dostępność do pobrania");
                         folder_context_menu_strip.Items.Add("Zmień dostępność do pobrania (bez pytania)");
+                        folder_context_menu_strip.Items.Add("Opcje specjalne");
                     }
                     else
                     {
@@ -2965,6 +2997,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                         file_context_menu_strip.Items.Add("Zmień dostępność do pobrania");
                         file_context_menu_strip.Items.Add("Zmień dostępność do pobrania (bez pytania)");
                         file_context_menu_strip.Items.Add("Właściwości");
+                        file_context_menu_strip.Items.Add("Opcje specjalne");
                     }
                     if (LV_catalog_display_status == 2)
                     {
@@ -3470,7 +3503,10 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                     break;
                 case 4:
                     // Budowanie katalogu obiegowego, na razie z aliasem test dopóki nie bedzie częśći sieciowej...
-                    external_catalog_build("Test");
+                    if(local_user != null)
+                    {
+                        external_catalog_build(local_user.Alias);
+                    }
                     break;
                 default:
                     break;
@@ -3499,8 +3535,52 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
         }
 
         #endregion
-
+        
         #region Logika zakładki Funkcjonalności sieciowe
+
+        public Tuple<bool,string> ExternalCatalogTransfer()
+        {
+            Tuple<bool, string> result;
+
+            // Zakładam tutaj, że Main_form jest świadomy jakim DistributedNetworkUser'em jest
+
+            // Sprawdzamy po kolei następujące rzeczy:
+            // 1. Czy jesteśmy wpięci do jakiejkolwiek sieci - czy local_user nie jest nullem. Jeżeli jest to zwracamy error, jeżeli nie to idziemy do pp.2 .
+            // 2. Czy istnieje katalog lokalny - jeżeli istnieje to skonstruuj poprawny result i go zwróć, jeżeli nie to sprawdź pp.3 .
+            // 3. Czy próba stworzenia katalogu lokalnego konczy się sukcesem (jeżeli nie, to ze względu na punkt 2. jedyna opcja to próba stworzenia pustego).
+
+            if(local_user != null)
+            {
+                // Istnieje, stąd sprawdzamy czy wygenerował już swój katalog obiegowy.
+                if (new FileInfo(database_externals_path + local_user.Alias + "_CATALOG.FDB").Exists)
+                {
+                    // Istnieje - tworzymy poprawny result i returnujemy go.
+                    result = new Tuple<bool, string>(false, database_externals_path + local_user.Alias + "_CATALOG.FDB");
+                }
+                else
+                {
+                    // Nie istnieje - sprawdzamy czy stworzenie nowego da pozytywny wynik:
+                    if (external_catalog_build(local_user.Alias))
+                    {
+                        // Zbudowany poprawnie - najwyraźniej nie został nigdy utworzony. Tworzymy poprawny result i returnujemy go
+                        result = new Tuple<bool, string>(false, database_externals_path + local_user.Alias + "_CATALOG.FDB");
+                    }
+                    else
+                    {
+                        // Próbowaliśmy stworzyć pusty katalog obiegowy - zwróć błędny result:
+                        result = new Tuple<bool, string>(true, "");
+                    }
+                }
+            }
+            else
+            {
+                // Pracujemy będąc niepodłączonymi do sieci - zwróć błędny result:
+                result = new Tuple<bool, string>(true, "");
+            }
+
+            return result;
+        }
+
 
         public bool GrantFileTransferPermission(
             DistributedNetworkFile distributedNetworkFile)

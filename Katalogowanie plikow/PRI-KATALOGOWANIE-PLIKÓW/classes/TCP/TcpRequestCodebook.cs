@@ -19,6 +19,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
         public static readonly byte[] ABORT = { 12 };
 
         public static readonly byte[] SEND_CATALOGUE = { 30 };
+        public static readonly byte[] CANNOT_SEND_CATALOGUE = { 31 };
 
         public static readonly byte[] SEND_PUB_KEY = { 70 };
 

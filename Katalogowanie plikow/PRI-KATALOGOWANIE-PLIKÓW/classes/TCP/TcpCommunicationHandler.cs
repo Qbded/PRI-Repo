@@ -319,6 +319,11 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
                 {
                     SendFileRequestCallback(mainForm, networkStream);
                 }
+                if (TcpRequestCodebook.IsRequest(
+                    requestCode, TcpRequestCodebook.SEND_CATALOGUE))
+                {
+                    SendCatalogueRequestCallback(mainForm, networkStream);
+                }
             }
 
             try
@@ -518,6 +523,121 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
             return canSendFile;
         }
 
+        public int SendCatalogueRequest(NetworkStream networkStream)
+        {
+            byte[] packet = CreateTCPDataPacket(
+                TcpRequestCodebook.SEND_CATALOGUE, new byte[] { 0 });
+            networkStream.Write(packet, 0, packet.Length);
+            networkStream.Flush();
+
+            packet = null;
+
+            return 0;
+        }
+
+        public int SendCatalogueRequestCallback(Main_form mainForm,
+            NetworkStream networkStream)
+        {
+            // Reading size of upcoming packet
+            byte[] sizeBytes = AwaitPacketSize(networkStream);
+
+            int packetSize = ByteArrayToInt(sizeBytes);
+
+            int separator = AwaitNonNegativeByte(networkStream);
+            if (separator == -1)
+            {
+                return RETURN_TIMEOUT;
+            }
+
+            // We should do some checks in the main form and return their results here.
+            // On successful exit bool in returns is set to false and it's string is a non-empty string pointing to our external catalog
+            // On any error bool in returns is set to true and it's string is empty.
+
+            Tuple<bool,string> check_returns = new Tuple<bool,string>(true,"");
+
+            mainForm.Invoke((Action)delegate ()
+            {
+                check_returns = mainForm.ExternalCatalogTransfer();
+            });
+
+            if(check_returns.Item1 == false)
+            {
+                // Everything was fine, we have a path to external catalogue in our returns:
+                FileInfo external_catalogue_info = new FileInfo(check_returns.Item2);
+                FileStream fileStream = new FileStream(
+                check_returns.Item2, FileMode.Open);
+                
+                long totalBytesRead = 0;
+                long remainingFileBytes = external_catalogue_info.Length;
+                while (remainingFileBytes > 0)
+                {
+                    long fileFragmentSize =
+                        Math.Min(external_catalogue_info.Length,
+                            MAX_DATA_PACKET_SIZE);
+                    byte[] fileFragment = new byte[fileFragmentSize];
+                    int bytesRead = fileStream.Read(
+                        fileFragment, 0, fileFragment.Length);
+                    totalBytesRead += bytesRead;
+                    remainingFileBytes -= bytesRead;
+
+                    byte[] fileFragmentPacket = CreateTCPDataPacket(
+                        TcpRequestCodebook.SENDING_FILE_FRAGMENT,
+                        fileFragment);
+                    networkStream.Write(fileFragmentPacket, 0,
+                        fileFragmentPacket.Length);
+                    networkStream.Flush();
+
+                    int initByte = AwaitNonNegativeByte(networkStream);
+                    if (initByte == -1) return RETURN_TIMEOUT;
+                    int requestCode = AwaitNonNegativeByte(networkStream);
+                    if (requestCode == -1) return RETURN_TIMEOUT;
+                    byte[] receivedPacketSize = AwaitPacketSize(networkStream);
+                    if (receivedPacketSize.Length == 0) return RETURN_TIMEOUT;
+                    packetSize = ByteArrayToInt(receivedPacketSize);
+                    int separatorByte = AwaitNonNegativeByte(networkStream);
+                    if (separatorByte == -1) return RETURN_TIMEOUT;
+                    byte[] packetData = AwaitDataPacket(networkStream, packetSize);
+                    if (packetData.Length > MAX_DATA_PACKET_SIZE) return RETURN_TIMEOUT;
+
+                    if (requestCode != TcpRequestCodebook.CONTINUE_SENDING_FILE[0])
+                    {
+                        byte[] responsePacket = CreateTCPDataPacket(
+                            TcpRequestCodebook.TERMINATE,
+                            SerializeString("Bad response"));
+                        networkStream.Write(responsePacket, 0,
+                            responsePacket.Length);
+                        networkStream.Flush();
+                        return RETURN_BAD_REQUEST;
+                    }
+                }
+
+                byte[] finalMessagePacket = CreateTCPDataPacket(
+                    TcpRequestCodebook.DONE_SENDING_FILE,
+                    SerializeString("Entire file has been sent"));
+                networkStream.Write(finalMessagePacket, 0, finalMessagePacket.Length);
+                networkStream.Flush();
+                finalMessagePacket = null;
+                finalMessagePacket = CreateTCPDataPacket(
+                     TcpRequestCodebook.TERMINATE,
+                     SerializeString("End connection"));
+                networkStream.Write(finalMessagePacket, 0, finalMessagePacket.Length);
+                networkStream.Flush();
+            }
+            else
+            {
+                // Something went wrong - we return an error to the caller
+                
+                byte[] responsePacket = CreateTCPDataPacket(
+                            TcpRequestCodebook.CANNOT_SEND_CATALOGUE,
+                            SerializeString("External catalogue could not be sent. Requested participant appears to have no files to share."));
+                networkStream.Write(responsePacket, 0,
+                    responsePacket.Length);
+                networkStream.Flush();
+                return RETURN_OK;
+            }
+
+            return 0;
+        }
 
         //public byte[] RequestFile(DistributedNetworkUser targetUser,
         //    DistributedNetworkFile file)
