@@ -13,7 +13,7 @@ using System.Threading.Tasks;
 
 namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
 {
-    class TcpCommunicationHandler
+    public class TcpCommunicationHandler
     {
 
 
@@ -23,7 +23,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
         /// <summary>
         /// Maximum byte count of data sent in a single data packet
         /// </summary>
-        private static readonly int MAX_DATA_PACKET_SIZE = 1024;
+        private static readonly int MAX_DATA_PACKET_SIZE = 4096;
         /// <summary>
         /// Length of data packets is stored in int variables, whitch
         /// take 4 bytes each. Therefore, 4 consecutive bytes from
@@ -36,6 +36,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
         private static readonly int RETURN_OK = 0;
         private static readonly int RETURN_CANCEL = 1;
         private static readonly int RETURN_TIMEOUT = 2;
+        private static readonly int RETURN_BAD_REQUEST = 3;
 
 
         TcpListener serverListener;
@@ -46,14 +47,14 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
         List<object> _clientThreadLocks;
 
 
-        public TcpCommunicationHandler()
+        public TcpCommunicationHandler(Main_form mainForm)
         {
             serverListener = new TcpListener(IPAddress.Any, PORT);
             clientBGWorkers = new List<BackgroundWorker>();
             _clientThreadLocks = new List<object>();
             //tcpListener
 
-            StartServer();
+            StartServer(mainForm);
         }
 
 
@@ -69,7 +70,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
         /// Starts a background thread using TcpListener to await 
         /// requests.
         /// </summary>
-        private void StartServer()
+        private void StartServer(Main_form main_Form)
         {
             serverBGWorker = new BackgroundWorker();
             _serverThreadLock = new object();
@@ -81,6 +82,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
                 new RunWorkerCompletedEventHandler(ServerStoppedEvent);
             List<object> doWorkArguments = new List<object>()
             {
+                main_Form,
                 _serverThreadLock
             };
             serverBGWorker.RunWorkerAsync(doWorkArguments);
@@ -106,7 +108,8 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
             ref DoWorkEventArgs e)
         {
             List<object> arg = e.Argument as List<object>;
-            object _threadLock = arg.ElementAt(0) as object;
+            Main_form mainForm = arg.ElementAt(0) as Main_form;
+            object _threadLock = arg.ElementAt(1) as object;
 
             // Start server listener
             try
@@ -135,10 +138,15 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
                 }
 
                 TcpClient tcpClient = serverListener.AcceptTcpClient();
+                List<object> threadArgs = new List<object>()
+                {
+                    mainForm,
+                    tcpClient
+                };
                 //NetworkStream networkStream = tcpClient.GetStream();
                 Thread thread = new Thread(
                     new ParameterizedThreadStart(AcceptClientRequest));
-                thread.Start(tcpClient);
+                thread.Start(threadArgs);
             }
 
             // Stop serverListener after receiving worker cancellation
@@ -277,17 +285,27 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
         // threads
         private void AcceptClientRequest(object parameter)
         {
-            TcpClient tcpClient = parameter as TcpClient;
+            List<object> args = parameter as List<object>;
+            Main_form mainForm = args.ElementAt(0) as Main_form;
+            TcpClient tcpClient = args.ElementAt(1) as TcpClient;
             NetworkStream networkStream = tcpClient.GetStream();
 
-            int firstByte = networkStream.ReadByte();
+            int firstByte = AwaitNonNegativeByte(networkStream);
+            if(firstByte == -1)
+            {
+                networkStream.Close();
+                networkStream.Dispose();
+                tcpClient.Close();
+                tcpClient.Dispose();
+                return;
+            } 
             if(firstByte == TcpRequestCodebook.INITIALIZE[0])
             {
                 int requestCode = networkStream.ReadByte();
                 if(TcpRequestCodebook.IsRequest(
                     requestCode, TcpRequestCodebook.SEND_FILE))
                 {
-                    SendFileRequestCallback(networkStream);
+                    SendFileRequestCallback(mainForm, networkStream);
                 }
             }
 
@@ -339,8 +357,10 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
         }
 
 
-        public int SendFileRequestCallback(NetworkStream networkStream)
+        public int SendFileRequestCallback(Main_form mainForm,
+            NetworkStream networkStream)
         {
+            // Reading size of upcoming packet
             byte[] sizeBytes = new byte[DATA_SIZE_BYTE_ARRAY_LENGTH];
             int bytesToRead = DATA_SIZE_BYTE_ARRAY_LENGTH;
             int bytesDoneRead = 0;
@@ -349,14 +369,18 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
                 0, 0, ConfigManager.ReadInt(ConfigManager.TCP_SECONDS_TO_TIMEOUT));
             bool timedOut = false;
             while (bytesToRead > 0) {
-                int bytesRead = networkStream.Read(sizeBytes, 0, bytesToRead);
+                int bytesRead = networkStream.Read(
+                    sizeBytes, bytesDoneRead, bytesToRead);
+                bytesToRead -= bytesRead;
+                bytesDoneRead += bytesRead;
                 if (bytesRead > 0)
                 {
                     lastReadTime = DateTime.Now;
                 }
                 else
                 {
-                    TimeSpan idleTime = DateTime.Now - lastReadTime;
+                    TimeSpan idleTime = 
+                        DateTime.Now.Subtract(lastReadTime);
                     // if idleTime >= timeoutWaitTime, then timeout
                     if(idleTime.CompareTo(timeoutWaitTime) >= 0)
                     {
@@ -364,17 +388,58 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
                         return RETURN_TIMEOUT;
                     }
                 }
-                bytesToRead -= bytesRead;
-                bytesDoneRead += bytesRead;
             }
 
             int packetSize = ByteArrayToInt(sizeBytes);
 
             int separator = networkStream.ReadByte();
+            lastReadTime = DateTime.Now;
+            while(separator == -1)
+            {
+                separator = networkStream.ReadByte();
+                if(separator == -1)
+                {
+                    TimeSpan idleTime = 
+                        DateTime.Now.Subtract(lastReadTime);
+                    if(idleTime.CompareTo(timeoutWaitTime) >= 0)
+                    {
+                        byte[] responsePacket = CreateTCPDataPacket(
+                            TcpRequestCodebook.TERMINATE,
+                            SerializeString("Terminating due to timeout"));
+                        return RETURN_TIMEOUT;
+                    }
+                }
+            }
 
             byte[] serializedFilePath = new byte[packetSize];
-            networkStream.Read(serializedFilePath, 0, packetSize);
-            String filePathInCatalogue = ByteArrayToString(serializedFilePath);
+
+            bytesToRead = packetSize;
+            bytesDoneRead = 0;
+            lastReadTime = DateTime.Now;
+            timedOut = false;
+            while (bytesToRead > 0)
+            {
+                int bytesRead = networkStream.Read(
+                    serializedFilePath, bytesDoneRead, bytesToRead);
+                bytesToRead -= bytesRead;
+                bytesDoneRead += bytesRead;
+                if (bytesRead > 0)
+                {
+                    lastReadTime = DateTime.Now;
+                }
+                else
+                {
+                    TimeSpan idleTime = 
+                        DateTime.Now.Subtract(lastReadTime);
+                    // if idleTime >= timeoutWaitTime, then timeout
+                    if (idleTime.CompareTo(timeoutWaitTime) >= 0)
+                    {
+                        timedOut = true;
+                        return RETURN_TIMEOUT;
+                    }
+                }
+            }
+            String filePathInCatalogue = DeserializeString(serializedFilePath);
 
             DistributedNetworkFile distributedNetworkFile = DistributedNetworkFile.GetFileByFilePath(filePathInCatalogue);
 
@@ -396,7 +461,8 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
             }
             else
             {
-                canSendFile = GetUserPermissionToSendFile(distributedNetworkFile);
+                canSendFile = (bool) mainForm.Invoke(
+                    mainForm.GrantFileTransferPermission;
                 if(canSendFile == false)
                 {
                     byte[] responsePacket = CreateTCPDataPacket(
@@ -414,11 +480,72 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
             FileStream fileStream = new FileStream(
                 distributedNetworkFile.realFilePath, FileMode.Open);
 
-            bool run = true;
-            while (run)
+            long totalBytesRead = 0;
+            long remainingFileBytes = distributedNetworkFile.fileSize;
+            while (remainingFileBytes > 0)
             {
+                long fileFragmentSize =
+                    Math.Min(distributedNetworkFile.fileSize,
+                        MAX_DATA_PACKET_SIZE);
+                byte[] fileFragment = new byte[fileFragmentSize];
+                int bytesRead = fileStream.Read(
+                    fileFragment, 0, fileFragment.Length);
+                totalBytesRead += bytesRead;
+                remainingFileBytes -= bytesRead;
 
+                byte[] fileFragmentPacket = CreateTCPDataPacket(
+                    TcpRequestCodebook.SENDING_FILE_FRAGMENT,
+                    fileFragment);
+                networkStream.Write(fileFragmentPacket, 0,
+                    fileFragmentPacket.Length);
+                networkStream.Flush();
+
+                lastReadTime = DateTime.Now;
+                int requestCode = networkStream.ReadByte();
+                while (requestCode == -1)
+                {
+                    requestCode = networkStream.ReadByte();
+
+                    if (requestCode == -1)
+                    {
+                        TimeSpan idleTime =
+                            lastReadTime.Subtract(DateTime.Now);
+                        if(idleTime.CompareTo(timeoutWaitTime) >= 0)
+                        {
+                            byte[] responsePacket = CreateTCPDataPacket(
+                                TcpRequestCodebook.TERMINATE,
+                                SerializeString("Terminating due to timeout"));
+                            networkStream.Write(responsePacket, 0, 
+                                responsePacket.Length);
+                            networkStream.Flush();
+                            return RETURN_TIMEOUT;
+                        }
+                    }
+
+                }
+                if(requestCode != TcpRequestCodebook.CONTINUE_SENDING_FILE[0])
+                {
+                    byte[] responsePacket = CreateTCPDataPacket(
+                        TcpRequestCodebook.TERMINATE,
+                        SerializeString("Bad response"));
+                    networkStream.Write(responsePacket, 0, 
+                        responsePacket.Length);
+                    networkStream.Flush();
+                    return RETURN_BAD_REQUEST;
+                }
             }
+
+            byte[] finalMessagePacket = CreateTCPDataPacket(
+                TcpRequestCodebook.DONE_SENDING_FILE,
+                SerializeString("Entire file has been sent"));
+            networkStream.Write(finalMessagePacket, 0, finalMessagePacket.Length);
+            networkStream.Flush();
+            finalMessagePacket = null;
+            finalMessagePacket = CreateTCPDataPacket(
+                 TcpRequestCodebook.TERMINATE,
+                 SerializeString("End connection"));
+            networkStream.Write(finalMessagePacket, 0, finalMessagePacket.Length);
+            networkStream.Flush();
 
             return 0;
 
@@ -443,10 +570,11 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
         }
 
 
-        private bool GetUserPermissionToSendFile(
+        private bool GetUserPermissionToSendFile(Main_form mainForm,
             DistributedNetworkFile distributedNetworkFile)
         {
-
+            bool permissionGranted = 
+                
         }
 
 
@@ -485,6 +613,35 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
         //    int stringByteCount = stringBytes.Length;
         //    byte[] 
         //}
+
+
+        /// <summary>
+        /// Will return first non-negative byte from NetworkStream
+        /// or -1 if timeout occurs
+        /// </summary>
+        /// <param name="networkStream"></param>
+        /// <returns></returns>
+        private int AwaitNonNegativeByte(NetworkStream networkStream)
+        {
+            DateTime lastReadTime = DateTime.Now;
+            TimeSpan timeoutWaitTime = new TimeSpan(0, 0, 
+                ConfigManager.ReadInt(
+                    ConfigManager.TCP_SECONDS_TO_TIMEOUT));
+            int byteRead = networkStream.ReadByte();
+            while(byteRead == -1)
+            {
+                byteRead = networkStream.ReadByte();
+                if(byteRead == -1)
+                {
+                    TimeSpan idleTime = DateTime.Now.Subtract(lastReadTime);
+                    if(idleTime.CompareTo(timeoutWaitTime) >= 0)
+                    {
+                        return -1;
+                    }
+                }
+            }
+            return byteRead;
+        }
 
 
         private byte[] CreateTCPDataPacket(byte[] request,

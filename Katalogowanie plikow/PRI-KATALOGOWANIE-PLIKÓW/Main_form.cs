@@ -3502,7 +3502,26 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
 
         #region Logika zakładki Funkcjonalności sieciowe
 
-        //TODO: Fill me!
+        public bool GrantFileTransferPermission(
+            DistributedNetworkFile distributedNetworkFile)
+        {
+            DialogResult dialogResult = MessageBox.Show(
+                "User requests file: " +
+                distributedNetworkFile.filePathInCatalogue +
+                "\nAllow upload?",
+                "File request",
+                MessageBoxButtons.YesNo,
+                MessageBoxIcon.Question);
+            if(dialogResult == DialogResult.Yes || 
+                dialogResult == DialogResult.OK)
+            {
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
 
         #endregion
 

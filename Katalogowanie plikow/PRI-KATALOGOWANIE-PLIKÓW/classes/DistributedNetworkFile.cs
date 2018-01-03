@@ -7,13 +7,15 @@ using System.Threading.Tasks;
 namespace PRI_KATALOGOWANIE_PLIKÓW.classes
 {
     [Serializable]
-    class DistributedNetworkFile
+    public class DistributedNetworkFile
     {
         public bool allowDistribution;
         public bool allowUnpromptedDistribution;
 
         public String filePathInCatalogue;
         public String realFilePath;
+
+        public long fileSize;
 
         public DistributedNetworkFile()
         {
