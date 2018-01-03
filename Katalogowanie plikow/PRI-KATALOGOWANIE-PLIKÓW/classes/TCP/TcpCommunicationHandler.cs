@@ -392,23 +392,9 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
 
             int packetSize = ByteArrayToInt(sizeBytes);
 
-            int separator = networkStream.ReadByte();
-            lastReadTime = DateTime.Now;
-            while(separator == -1)
-            {
-                separator = networkStream.ReadByte();
-                if(separator == -1)
-                {
-                    TimeSpan idleTime = 
-                        DateTime.Now.Subtract(lastReadTime);
-                    if(idleTime.CompareTo(timeoutWaitTime) >= 0)
-                    {
-                        byte[] responsePacket = CreateTCPDataPacket(
-                            TcpRequestCodebook.TERMINATE,
-                            SerializeString("Terminating due to timeout"));
-                        return RETURN_TIMEOUT;
-                    }
-                }
+            int separator = AwaitNonNegativeByte(networkStream);
+            if (separator == -1) {
+                return RETURN_TIMEOUT;
             }
 
             byte[] serializedFilePath = new byte[packetSize];
@@ -461,8 +447,11 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
             }
             else
             {
-                canSendFile = (bool) mainForm.Invoke(
-                    mainForm.GrantFileTransferPermission;
+                mainForm.Invoke((Action)delegate ()
+                {
+                    canSendFile = mainForm.GrantFileTransferPermission(distributedNetworkFile);
+                });
+                    
                 if(canSendFile == false)
                 {
                     byte[] responsePacket = CreateTCPDataPacket(
