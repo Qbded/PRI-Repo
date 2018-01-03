@@ -447,10 +447,8 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
             }
             else
             {
-                mainForm.Invoke((Action)delegate ()
-                {
-                    canSendFile = mainForm.GrantFileTransferPermission(distributedNetworkFile);
-                });
+                canSendFile = GetUserPermissionToSendFile(mainForm,
+                    distributedNetworkFile);
                     
                 if(canSendFile == false)
                 {
@@ -562,8 +560,12 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
         private bool GetUserPermissionToSendFile(Main_form mainForm,
             DistributedNetworkFile distributedNetworkFile)
         {
-            bool permissionGranted = 
-                
+            bool canSendFile = false;
+            mainForm.Invoke((Action)delegate ()
+            {
+                canSendFile = mainForm.GrantFileTransferPermission(distributedNetworkFile);
+            });
+            return canSendFile;
         }
 
 
