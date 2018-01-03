@@ -13,7 +13,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes
         public bool allowUnpromptedDistribution;
 
         public String filePathInCatalogue;
-        public String realFilePath;
+        //public String realFilePath;
 
         public long fileSize;
 
@@ -31,6 +31,12 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes
 
 
         public bool IsPresentInLocalCatalogue()
+        {
+
+        }
+
+
+        public String ResolveRealFilePath()
         {
 
         }

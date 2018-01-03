@@ -18,11 +18,11 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes
         //TcpFileTransferer tcpFileTransferer = new TcpFileTransferer();
         TcpCommunicationHandler tcpCom;
 
-        public DistributedNetwork()
+        public DistributedNetwork(Main_form mainForm)
         {
             networkSocket = new Socket(AddressFamily.InterNetwork,
                 SocketType.Stream, ProtocolType.Tcp);
-            tcpCom = new TcpCommunicationHandler();
+            tcpCom = new TcpCommunicationHandler(mainForm);
         }
 
         ~DistributedNetwork()

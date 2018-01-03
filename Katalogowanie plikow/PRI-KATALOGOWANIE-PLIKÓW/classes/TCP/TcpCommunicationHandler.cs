@@ -452,7 +452,14 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
                 if (initByte == -1) return RETURN_TIMEOUT;
                 int requestCode = AwaitNonNegativeByte(networkStream);
                 if (requestCode == -1) return RETURN_TIMEOUT;
-                byte[] receivedPacketSize = 
+                byte[] receivedPacketSize = AwaitPacketSize(networkStream);
+                if (receivedPacketSize.Length == 0) return RETURN_TIMEOUT;
+                packetSize = ByteArrayToInt(receivedPacketSize);
+                int separatorByte = AwaitNonNegativeByte(networkStream);
+                if (separatorByte == -1) return RETURN_TIMEOUT;
+                byte[] packetData = AwaitDataPacket(networkStream, packetSize);
+                if (packetData.Length > MAX_DATA_PACKET_SIZE) return RETURN_TIMEOUT;
+
                 if(requestCode != TcpRequestCodebook.CONTINUE_SENDING_FILE[0])
                 {
                     byte[] responsePacket = CreateTCPDataPacket(
@@ -617,8 +624,8 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
 
 
         /// <summary>
-        /// Returns bytes read from stream or empty byte array if 
-        /// time-out occurs before all bytes could be read
+        /// Returns bytes read from stream or array bigger than defined max size
+        /// if time-out occurs before all bytes could be read
         /// </summary>
         /// <param name="networkStream"></param>
         /// <param name="packetSize"></param>
@@ -648,7 +655,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
                         DateTime.Now.Subtract(lastReadTime);
                     if (idleTime.CompareTo(timeoutWaitTime) >= 0)
                     {
-                        return new byte[0];
+                        return new byte[MAX_DATA_PACKET_SIZE + 1];
                     }
                 }
             }
