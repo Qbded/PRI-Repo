@@ -37,6 +37,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
         private static readonly int RETURN_CANCEL = 1;
         private static readonly int RETURN_TIMEOUT = 2;
         private static readonly int RETURN_BAD_REQUEST = 3;
+        #endregion
 
 
         TcpListener serverListener;
