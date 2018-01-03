@@ -70,5 +70,21 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
                 return IsRequest(requestBytes, requestCode);
             }
         }
+
+
+        /// <summary>
+        /// Converts int to 4-element byte array.
+        /// </summary>
+        /// <param name="i"></param>
+        /// <returns>4-element byte array.</returns>
+        public static byte[] IntToByteArray(int i)
+        {
+            byte[] bytes = BitConverter.GetBytes(i);
+            //if (BitConverter.IsLittleEndian)
+            //{
+            //    Array.Reverse(bytes);
+            //}
+            return bytes;
+        }
     }
 }

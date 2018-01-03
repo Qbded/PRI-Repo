@@ -195,7 +195,8 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
 
 
 #region client threading logic
-        private void StartClient()
+        private void StartClient(Main_form mainForm, 
+            bool[] requestToServer)
         {
             BackgroundWorker clientBGWorker = new BackgroundWorker();
             clientBGWorkers.Add(clientBGWorker);
@@ -208,7 +209,9 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
                 new RunWorkerCompletedEventHandler(StopClientEvent);
             List<object> doWorkArgs = new List<object>()
             {
-                _threadLock
+                mainForm,
+                _threadLock,
+                requestToServer
             };
         }
 
@@ -302,7 +305,15 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
             } 
             if(firstByte == TcpRequestCodebook.INITIALIZE[0])
             {
-                int requestCode = networkStream.ReadByte();
+                int requestCode = AwaitNonNegativeByte(networkStream);
+                if (requestCode == -1)
+                {
+                    networkStream.Close();
+                    networkStream.Dispose();
+                    tcpClient.Close();
+                    tcpClient.Dispose();
+                    return;
+                }
                 if(TcpRequestCodebook.IsRequest(
                     requestCode, TcpRequestCodebook.SEND_FILE))
                 {
@@ -362,34 +373,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
             NetworkStream networkStream)
         {
             // Reading size of upcoming packet
-            byte[] sizeBytes = new byte[DATA_SIZE_BYTE_ARRAY_LENGTH];
-            int bytesToRead = DATA_SIZE_BYTE_ARRAY_LENGTH;
-            int bytesDoneRead = 0;
-            DateTime lastReadTime = DateTime.Now;
-            TimeSpan timeoutWaitTime = new TimeSpan(
-                0, 0, ConfigManager.ReadInt(ConfigManager.TCP_SECONDS_TO_TIMEOUT));
-            bool timedOut = false;
-            while (bytesToRead > 0) {
-                int bytesRead = networkStream.Read(
-                    sizeBytes, bytesDoneRead, bytesToRead);
-                bytesToRead -= bytesRead;
-                bytesDoneRead += bytesRead;
-                if (bytesRead > 0)
-                {
-                    lastReadTime = DateTime.Now;
-                }
-                else
-                {
-                    TimeSpan idleTime = 
-                        DateTime.Now.Subtract(lastReadTime);
-                    // if idleTime >= timeoutWaitTime, then timeout
-                    if(idleTime.CompareTo(timeoutWaitTime) >= 0)
-                    {
-                        timedOut = true;
-                        return RETURN_TIMEOUT;
-                    }
-                }
-            }
+            byte[] sizeBytes = AwaitPacketSize(networkStream);
 
             int packetSize = ByteArrayToInt(sizeBytes);
 
@@ -400,32 +384,8 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
 
             byte[] serializedFilePath = new byte[packetSize];
 
-            bytesToRead = packetSize;
-            bytesDoneRead = 0;
-            lastReadTime = DateTime.Now;
-            timedOut = false;
-            while (bytesToRead > 0)
-            {
-                int bytesRead = networkStream.Read(
-                    serializedFilePath, bytesDoneRead, bytesToRead);
-                bytesToRead -= bytesRead;
-                bytesDoneRead += bytesRead;
-                if (bytesRead > 0)
-                {
-                    lastReadTime = DateTime.Now;
-                }
-                else
-                {
-                    TimeSpan idleTime = 
-                        DateTime.Now.Subtract(lastReadTime);
-                    // if idleTime >= timeoutWaitTime, then timeout
-                    if (idleTime.CompareTo(timeoutWaitTime) >= 0)
-                    {
-                        timedOut = true;
-                        return RETURN_TIMEOUT;
-                    }
-                }
-            }
+            serializedFilePath = 
+                AwaitDataPacket(networkStream, packetSize);
             String filePathInCatalogue = DeserializeString(serializedFilePath);
 
             DistributedNetworkFile distributedNetworkFile = DistributedNetworkFile.GetFileByFilePath(filePathInCatalogue);
@@ -488,29 +448,11 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
                     fileFragmentPacket.Length);
                 networkStream.Flush();
 
-                lastReadTime = DateTime.Now;
-                int requestCode = networkStream.ReadByte();
-                while (requestCode == -1)
-                {
-                    requestCode = networkStream.ReadByte();
-
-                    if (requestCode == -1)
-                    {
-                        TimeSpan idleTime =
-                            lastReadTime.Subtract(DateTime.Now);
-                        if(idleTime.CompareTo(timeoutWaitTime) >= 0)
-                        {
-                            byte[] responsePacket = CreateTCPDataPacket(
-                                TcpRequestCodebook.TERMINATE,
-                                SerializeString("Terminating due to timeout"));
-                            networkStream.Write(responsePacket, 0, 
-                                responsePacket.Length);
-                            networkStream.Flush();
-                            return RETURN_TIMEOUT;
-                        }
-                    }
-
-                }
+                int initByte = AwaitNonNegativeByte(networkStream);
+                if (initByte == -1) return RETURN_TIMEOUT;
+                int requestCode = AwaitNonNegativeByte(networkStream);
+                if (requestCode == -1) return RETURN_TIMEOUT;
+                byte[] receivedPacketSize = 
                 if(requestCode != TcpRequestCodebook.CONTINUE_SENDING_FILE[0])
                 {
                     byte[] responsePacket = CreateTCPDataPacket(
@@ -633,6 +575,84 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
                 }
             }
             return byteRead;
+        }
+
+
+        /// <summary>
+        /// Returns bytes read from stream or empty byte array if 
+        /// time-out occurs before all bytes could be read
+        /// </summary>
+        /// <param name="networkStream"></param>
+        /// <returns></returns>
+        private byte[] AwaitPacketSize(NetworkStream networkStream)
+        {
+            DateTime lastReadTime = DateTime.Now;
+            TimeSpan timeoutWaitTime = new TimeSpan(0, 0, 
+                ConfigManager.ReadInt(
+                    ConfigManager.TCP_SECONDS_TO_TIMEOUT));
+            int bytesToRead = DATA_SIZE_BYTE_ARRAY_LENGTH;
+            int bytesReadTotal = 0;
+            byte[] buffer = new byte[DATA_SIZE_BYTE_ARRAY_LENGTH];
+            while(bytesToRead > 0)
+            {
+                int bytesRead = networkStream.Read(
+                    buffer, bytesReadTotal, bytesToRead);
+                if (bytesRead > 0)
+                {
+                    bytesToRead -= bytesRead;
+                    bytesReadTotal += bytesRead;
+                }
+                else
+                {
+                    TimeSpan idleTime = 
+                        DateTime.Now.Subtract(lastReadTime);
+                    if(idleTime.CompareTo(timeoutWaitTime) >= 0)
+                    {
+                        return new byte[0];
+                    }
+                }
+            }
+            return buffer;
+        }
+
+
+        /// <summary>
+        /// Returns bytes read from stream or empty byte array if 
+        /// time-out occurs before all bytes could be read
+        /// </summary>
+        /// <param name="networkStream"></param>
+        /// <param name="packetSize"></param>
+        /// <returns></returns>
+        private byte[] AwaitDataPacket(NetworkStream networkStream,
+            int packetSize)
+        {
+            DateTime lastReadTime = DateTime.Now;
+            TimeSpan timeoutWaitTime = new TimeSpan(0, 0,
+                ConfigManager.ReadInt(
+                    ConfigManager.TCP_SECONDS_TO_TIMEOUT));
+            int bytesToRead = packetSize;
+            int bytesReadTotal = 0;
+            byte[] buffer = new byte[packetSize];
+            while (bytesToRead > 0)
+            {
+                int bytesRead = networkStream.Read(
+                    buffer, bytesReadTotal, bytesToRead);
+                if (bytesRead > 0)
+                {
+                    bytesToRead -= bytesRead;
+                    bytesReadTotal += bytesRead;
+                }
+                else
+                {
+                    TimeSpan idleTime =
+                        DateTime.Now.Subtract(lastReadTime);
+                    if (idleTime.CompareTo(timeoutWaitTime) >= 0)
+                    {
+                        return new byte[0];
+                    }
+                }
+            }
+            return buffer;
         }
 
 
