@@ -10,12 +10,13 @@ using System.Runtime.Serialization.Formatters.Binary;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Windows.Forms;
 
 namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
 {
     public class TcpCommunicationHandler
     {
-
+        Form uiForm;
 
 
         private static readonly int PORT = 100;
@@ -48,14 +49,16 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
         List<object> _clientThreadLocks;
 
 
-        public TcpCommunicationHandler(Main_form mainForm)
+        public TcpCommunicationHandler(Form mainForm)
         {
+            this.uiForm = mainForm;
+
             serverListener = new TcpListener(IPAddress.Any, PORT);
             clientBGWorkers = new List<BackgroundWorker>();
             _clientThreadLocks = new List<object>();
             //tcpListener
 
-            StartServer(mainForm);
+            StartServer(uiForm);
         }
 
 
@@ -71,7 +74,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
         /// Starts a background thread using TcpListener to await 
         /// requests.
         /// </summary>
-        private void StartServer(Main_form main_Form)
+        private void StartServer(Form form)
         {
             serverBGWorker = new BackgroundWorker();
             _serverThreadLock = new object();
@@ -83,7 +86,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
                 new RunWorkerCompletedEventHandler(ServerStoppedEvent);
             List<object> doWorkArguments = new List<object>()
             {
-                main_Form,
+                form,
                 _serverThreadLock
             };
             serverBGWorker.RunWorkerAsync(doWorkArguments);
@@ -109,7 +112,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
             ref DoWorkEventArgs e)
         {
             List<object> arg = e.Argument as List<object>;
-            Main_form mainForm = arg.ElementAt(0) as Main_form;
+            Form mainForm = arg.ElementAt(0) as Form;
             object _threadLock = arg.ElementAt(1) as object;
 
             // Start server listener
@@ -195,8 +198,8 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
 
 
 #region client threading logic
-        private void StartClient(Main_form mainForm, 
-            bool[] requestToServer)
+        private void StartClient(bool[] requestToServer,
+            object requestArg)
         {
             BackgroundWorker clientBGWorker = new BackgroundWorker();
             clientBGWorkers.Add(clientBGWorker);
@@ -204,15 +207,29 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
             _clientThreadLocks.Add(_threadLock);
             clientBGWorker.WorkerSupportsCancellation = true;
             clientBGWorker.WorkerReportsProgress = true;
-            clientBGWorker.DoWork += new DoWorkEventHandler(RunClientEvent);
             clientBGWorker.RunWorkerCompleted +=
                 new RunWorkerCompletedEventHandler(StopClientEvent);
+            //List<object> doWorkArgs = new List<object>()
+            //{
+            //    UIForm,
+            //    _threadLock,
+            //    requestToServer,
+            //    requestArgs
+            //};
+            //clientBGWorker.DoWork += new DoWorkEventHandler(RunClientEvent);
+            //clientBGWorker.RunWorkerAsync();
             List<object> doWorkArgs = new List<object>()
             {
-                mainForm,
+                uiForm,
                 _threadLock,
-                requestToServer
+                requestToServer,
+                requestArg
             };
+            clientBGWorker.DoWork += (s, args) =>
+            {
+                RunClient(ref doWorkArgs);
+            };
+            clientBGWorker.RunWorkerAsync();
         }
 
         private void RunClientEvent(object sender, DoWorkEventArgs e)
@@ -226,6 +243,15 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
             ref DoWorkEventArgs e)
         {
 
+        }
+
+        private void RunClient(ref List<object> args)
+        {
+            Form mainForm = args.ElementAt(0) as Form;
+            object _threadLock = args.ElementAt(1) as object;
+            byte[] requestToServer = args.ElementAt(2) as byte[];
+
+            
         }
 
         private void StopClient(BackgroundWorker client)
@@ -290,7 +316,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
         private void AcceptClientRequest(object parameter)
         {
             List<object> args = parameter as List<object>;
-            Main_form mainForm = args.ElementAt(0) as Main_form;
+            Form mainForm = args.ElementAt(0) as Form;
             TcpClient tcpClient = args.ElementAt(1) as TcpClient;
             NetworkStream networkStream = tcpClient.GetStream();
 
@@ -374,7 +400,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
         }
 
 
-        public int SendFileRequestCallback(Main_form mainForm,
+        public int SendFileRequestCallback(Form mainForm,
             NetworkStream networkStream)
         {
             // Reading size of upcoming packet
@@ -512,7 +538,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
         }
 
 
-        private bool GetUserPermissionToSendFile(Main_form mainForm,
+        private bool GetUserPermissionToSendFile(Form mainForm,
             DistributedNetworkFile distributedNetworkFile)
         {
             bool canSendFile = false;
@@ -535,11 +561,12 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
             return 0;
         }
 
-        public int SendCatalogueRequestCallback(Main_form mainForm,
+        public int SendCatalogueRequestCallback(Form mainForm,
             NetworkStream networkStream)
         {
             // Reading size of upcoming packet
             byte[] sizeBytes = AwaitPacketSize(networkStream);
+            if (sizeBytes.Length == 0) return RETURN_TIMEOUT;
 
             int packetSize = ByteArrayToInt(sizeBytes);
 
@@ -548,6 +575,9 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
             {
                 return RETURN_TIMEOUT;
             }
+
+            byte[] packageData = AwaitDataPacket(networkStream, packetSize);
+            if (packageData.Length > MAX_DATA_PACKET_SIZE) return RETURN_TIMEOUT;
 
             // We should do some checks in the main form and return their results here.
             // On successful exit bool in returns is set to false and it's string is a non-empty string pointing to our external catalog
