@@ -129,6 +129,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
         // 1 - oznacza przeglądanie katalogu lokalnego,
         // 2 - oznacza przeglądanie katalogu obiegowego.
         private int LV_catalog_display_status = 0;
+        private string LV_catalog_display_current_catalog_alias = "";
 
         private ListViewItem[] LV_catalog_display_cache;
         private List<ListViewItem> LV_catalog_display_item_selection = new List<ListViewItem>();
@@ -152,22 +153,8 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
         private void DetermineLocalUser()
         {
             //SHIM - póki nie ustalimy gdzie przechowywać takie dane, wypełniam je tutaj z palca i danymi niepoprawnymi.
-            if(System.Net.NetworkInformation.NetworkInterface.GetIsNetworkAvailable())
-            {
-                /*
-                var host = System.Net.Dns.GetHostEntry(System.Net.Dns.GetHostName());
-                foreach (var ip in host.AddressList)
-                {
-                    if (ip.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork)
-                    {
-                        ip.ToString();
-                    }
-                }
-                */
-                local_user = new DistributedNetworkUser(false, "TEST", new System.Net.IPAddress(new byte[] { 127, 0, 0, 1 }));
-            }
 
-            local_user = null;
+            local_user = new DistributedNetworkUser(false, "TEST", new System.Net.IPAddress(new byte[] { 127, 0, 0, 1 }));
         }
 
         // Ładowanie ścieżek do odpowiednich plików i folderów z pliku konfiguracyjnego.
@@ -1321,6 +1308,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                                                         add_data.Parameters.AddWithValue("@" + values_passed[l], id_tracker_list[i].Item5.ToString());
                                                         break;
                                                     }
+                                                /* Ukrywanie ścieżki i dodatkowych ścieżek, bezpieczniejsze, ale wymaga dużych zmian w kodzie sieciowym...
                                                 case "PATH":
                                                     {
                                                         add_data.Parameters.AddWithValue("@" + values_passed[l], "");
@@ -1331,6 +1319,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                                                         add_data.Parameters.AddWithValue("@" + values_passed[l], null);
                                                         break;
                                                     }
+                                                */
                                                 default:
                                                     {
                                                         add_data.Parameters.AddWithValue("@" + values_passed[l], source_content_container.Rows[k].ItemArray[l + 1]);
@@ -2131,6 +2120,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
 
                 item_to_add.Name = external_catalogs_connection_strings[i];
                 item_to_add.Text = "Katalog użytkownika " + external_catalogs_names[i];
+                item_to_add.Tag = external_catalogs_names[i];
                 item_to_add.SubItems.Add("Katalog");
                 item_to_add.SubItems.Add("---");
                 item_to_add.SubItems.Add("---");
@@ -2759,6 +2749,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                     int index_at = 0;
                     List<string> file_metadata_names = new List<string>();
                     DataTable file_metadata_content_container = new DataTable();
+
                     FbDataAdapter file_metadata_content_extractor = new FbDataAdapter("SELECT * " +
                                                                           "FROM " + current_file.ToolTipText + " " +
                                                                           "WHERE ID = @Id;"
@@ -2784,25 +2775,70 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             if (e.ClickedItem.Text.Equals("Ściągnij"))
             {
                 //Wybieramy tylko pliki, ignorujemy foldery póki co:
+                bool folders_in_selection = false;
+                int total_selected = LV_catalog_display_item_selection.Count(), total_to_download = 0;
                 foreach(ListViewItem selected_item in LV_catalog_display_item_selection)
                 {
-                    if(selected_item.SubItems[1].Text.Equals("Folder"))
+                    if (selected_item.SubItems[1].Text.Equals("Folder"))
                     {
-                        // obsługa folderów w wybieraniu obiektów do wysłania, póki co nie robi nic.
+                        // obsługa folderów w wybieraniu obiektów do wysłania, póki co zwraca pod koniec działania funkcji okno z informacją że jest unsupported.
+                        // TODO: Można zrobić crawl w dół po drzewie folderów dla zaznaczonego folderu i pobierać wszystkie pliki w nim, ale trzeba
+                        // też obsłużyć przypadek powtórzeń plików w wybranych plikach...
+                        folders_in_selection = true;
                     }
                     else
                     {
-                        // obsługa plików w wybieraniu obiektów do wysyłania - pobrać nazwę pliku, jego rozszerzenie i nazwę folderu macierzystego.
-                        string requested_file_name = selected_item.SubItems[0].Text;
-                        string requested_file_extension = selected_item.SubItems[1].Text;
-                        string requested_file_parent_folder = catalog_folder_path_list.Last();
+                        // obsługa plików w wybieraniu obiektów do wysyłania - pobieramy ścieżkę i alias użytkownika, od którego chcemy dane.
+                        // ID w tabeli, z której pochodzi metadana - selected_item.Name
+                        // tabela z której pochodzi metadana - selected_item.ToolTipText
+                        if (selected_item.SubItems[6].Text.Equals("TAK"))
+                        {
+                            // Inkrementujemy licznik rzeczy do ściągnięcia.
+                            total_to_download++;
 
-                        // Trimujemy ostatni backslash z nazwy foldera żeby był w konwencji, w której występuje w bazach danych:
-                        requested_file_parent_folder = requested_file_parent_folder.Remove(requested_file_parent_folder.Length - 1, 1);
+                            // Sprawdzamy czy plik można ściągnąć bez pytania.
+                            bool requested_downloads_without_question = false;
+                            if (selected_item.SubItems[7].Text.Equals("TAK")) requested_downloads_without_question = true;
 
-                        // Wywołanie dla kodu Karola powinno nastąpić tutaj
-                        // TODO - Wywołać kod Karola do przesyłu pliku!
+                            // Bierzemy ścieżkę do pliku z bazy danych:
+                            string requested_filepath, requested_alias;
+
+                            DataTable filepath_container = new DataTable();
+                            FbDataAdapter filepath_grabber = new FbDataAdapter("SELECT PATH " +
+                                                                              "FROM " + selected_item.ToolTipText + " " +
+                                                                              "WHERE ID = @Id;"
+                                                                              ,
+                                                                              new FbConnection(database_connection_string_builder.ConnectionString));
+
+                            filepath_grabber.SelectCommand.Parameters.AddWithValue("@Id", int.Parse(selected_item.Name));
+
+                            filepath_grabber.Fill(filepath_container);
+
+                            if(filepath_container.Rows.Count == 1)
+                            {
+                                // Znalazł nasz plik
+                                requested_filepath = (string)filepath_container.Rows[0].ItemArray[0];
+                            }
+
+                            // Bierzemy alias użytkownika, którego katalogo obiegowy czytamy:
+                            requested_alias = LV_catalog_display_current_catalog_alias;
+
+                            /* Takim sposobem mamy:
+                             * Ścieżkę do pobieranego pliku - w zm. requested_filepath.
+                             * Alias użytkownika, od którego pobieramy - w zm. requested_alias.
+                             * Bool'a czy możemy pobrać go bez pytania - w zm. requested_downloads_without_question.
+                             * Pobieramy je tylko gdy plik może być pobieraly, co sprawdzamy na samym początku.
+                            */
+
+                            // Tutaj wywołujemy przesyłanie plików:
+
+                        }
+
                     }
+                }
+                if(folders_in_selection == true)
+                {
+                    MessageBox.Show("W wybranych plikach znalazł się folder. Program obsługuje tylko przesyłanie plików.");
                 }
             }
             if (e.ClickedItem.Text.Equals("Opcje specjalne"))
@@ -3002,6 +3038,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                     if (LV_catalog_display_status == 2)
                     {
                         file_context_menu_strip.Items.Add("Ściągnij");
+                        file_context_menu_strip.Items.Add("Właściwości");
                     }
                     file_context_menu_strip.ItemClicked += element_context_menu_item_select;
                     if (context_menu_position.Y < context_menu_position.Y) context_menu_position.Y = context_menu_position.Y - file_context_menu_strip.Height - 25;
@@ -3084,12 +3121,13 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                 {
                     if (target.SubItems[1].Text.Equals("Katalog"))
                     {
-                        // Otwieramy katalog
+                        // Otwieramy katalog, przydałoby się sprawdzić czy dalej istnieje...
                         database_connection_string_builder = new FbConnectionStringBuilder(target.Name);
 
                         if (target.Text.Equals("Katalog lokalny"))
                         {
                             catalog_folder_path_list.Add(@"Katalog lokalny\");
+                            LV_catalog_display_current_catalog_alias = local_user.Alias;
                             LV_catalog_display_status = 1;
                             LV_catalog_display_folder_content_display(1);
                             catalog_folder_id_list.Add(1);
@@ -3098,6 +3136,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                         else
                         {
                             catalog_folder_path_list.Add(target.Text + @"\");
+                            LV_catalog_display_current_catalog_alias = (string)target.Tag;
                             LV_catalog_display_status = 2;
                             LV_catalog_display_folder_content_display(1);
                             catalog_folder_id_list.Add(1);
@@ -3164,6 +3203,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             }
         }
 
+        // Obsługuje zmianę długości TextBox'a do wyświetlania ścieżki w przeglądanym katalogu
         private void Catalog_page_top_table_layout_SizeChanged(object sender, EventArgs e)
         {
             int length_new = 0;

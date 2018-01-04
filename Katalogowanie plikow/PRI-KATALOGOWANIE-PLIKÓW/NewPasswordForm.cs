@@ -30,6 +30,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             {
                 AppInstanceLoginManager loginManager = new AppInstanceLoginManager();
                 loginManager.SetDigest(newPasswordInput.Text);
+                loginManager.VerifyPassword(newPasswordInput.Text);
                 this.DialogResult = DialogResult.OK;
             }
         }
