@@ -35,6 +35,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes
         public void RequestFile(DistributedNetworkUser user,
             DistributedNetworkFile file)
         {
+            Console.WriteLine("DistributedNetwork:RequestFile()");
             String downloadDir = Environment.CurrentDirectory + "/Downloaded";
             String fileName = Path.GetFileName(file.realFilePath);
             if (!Directory.Exists(downloadDir))

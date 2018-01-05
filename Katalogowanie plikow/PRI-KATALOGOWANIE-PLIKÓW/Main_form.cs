@@ -2780,6 +2780,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             }
             if (e.ClickedItem.Text.Equals("Ściągnij"))
             {
+                Console.WriteLine("Ściągnij clicked!");
                 //Wybieramy tylko pliki, ignorujemy foldery póki co:
                 bool folders_in_selection = false;
                 int total_selected = LV_catalog_display_item_selection.Count(), total_to_download = 0;
@@ -2842,6 +2843,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                             ipAddressInputForm.Owner = this;
                             ipAddressInputForm.ShowDialog();
                             ipAddr = ipAddressInputForm.resultRef;
+                            Console.WriteLine("Received target user IP address: " + ipAddr.ToString());
                             if(ipAddr == null)
                             {
                                 MessageBox.Show("Wrong IP address format!");

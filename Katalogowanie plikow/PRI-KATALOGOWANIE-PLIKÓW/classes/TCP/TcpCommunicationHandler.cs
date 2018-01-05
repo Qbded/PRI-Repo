@@ -65,6 +65,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
         public void RequestFile(DistributedNetworkFile dnFile, String localDownloadPath,
             DistributedNetworkUser targetUser)
         {
+            Console.WriteLine("TcpCommunicationHandler:RequestFile");
             List<object> args = new List<object>()
             {
                 dnFile,
@@ -206,6 +207,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
         private void StartClient(DistributedNetworkUser targetUser,
             byte[] requestToServer, List<object> requestArgs)
         {
+            Console.WriteLine("StartClient");
             BackgroundWorker clientBGWorker = new BackgroundWorker();
             clientBGWorkers.Add(clientBGWorker);
             object _threadLock = new object();
@@ -260,10 +262,22 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
             DistributedNetworkUser targetUser =
                 args.ElementAt(4) as DistributedNetworkUser;
 
-            TcpClient tcpClient = new TcpClient(
-                targetUser.IPAddress.ToString(),
-                PORT);
-            NetworkStream networkStream = tcpClient.GetStream();
+            TcpClient tcpClient = null;
+            NetworkStream networkStream = null;
+            try
+            {
+                tcpClient = new TcpClient(
+                    targetUser.IPAddress.ToString(),
+                    PORT);
+                networkStream = tcpClient.GetStream();
+            }
+            catch(Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+            }
+            if (tcpClient == null || networkStream == null) return;
+
+            Console.WriteLine("Connecting to " + targetUser.IPAddress.ToString());
 
             if(TcpRequestCodebook.IsRequest(
                 requestToServer, TcpRequestCodebook.SEND_FILE))
