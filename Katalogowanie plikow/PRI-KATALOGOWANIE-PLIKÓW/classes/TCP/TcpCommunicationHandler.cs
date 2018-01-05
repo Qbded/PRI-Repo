@@ -19,7 +19,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
         Main_form uiForm;
 
 
-        private static readonly int PORT = 100;
+        private static readonly int PORT = 8080;
         
         /// <summary>
         /// Maximum byte count of data sent in a single data packet
