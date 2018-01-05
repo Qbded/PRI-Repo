@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace PRI_KATALOGOWANIE_PLIKÓW.classes
 {
-    class DistributedNetworkUser
+    public class DistributedNetworkUser
     {
         public bool IsNetworkOwner { get; }
         public String Alias { get; }

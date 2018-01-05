@@ -1,6 +1,7 @@
 ﻿using PRI_KATALOGOWANIE_PLIKÓW.classes.TCP;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
@@ -31,9 +32,18 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes
         }
 
 
-        public void RequestFile(DistributedNetworkUser user)
+        public void RequestFile(DistributedNetworkUser user,
+            DistributedNetworkFile file)
         {
-
+            String downloadDir = Environment.CurrentDirectory + "/Downloaded";
+            String fileName = Path.GetFileName(file.realFilePath);
+            if (!Directory.Exists(downloadDir))
+            {
+                Directory.CreateDirectory(downloadDir);
+            }
+            tcpCom.RequestFile(file,
+                downloadDir + "/" + fileName,
+                user);
         }
     }
 }

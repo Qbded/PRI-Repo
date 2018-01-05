@@ -16,6 +16,7 @@ using System.Security.Cryptography;
 using System.Xml.Linq;
 using FirebirdSql.Data.FirebirdClient;
 using PRI_KATALOGOWANIE_PLIKÓW.classes;
+using PRI_KATALOGOWANIE_PLIKÓW.popup_forms;
 
 namespace PRI_KATALOGOWANIE_PLIKÓW
 {
@@ -141,9 +142,10 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
         // Zmienne przesyłacza do opcji specialnych:
         private Special_function_window special_option_selector;
         private List<ListViewItem> sent_items;
-
+        
         // Zmienne związane z funkcjonowaniem opcji sieciowych:
         private DistributedNetworkUser local_user = null;
+        private DistributedNetwork distributedNetwork = null;
 
         #endregion
 
@@ -492,6 +494,10 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             metadata = new List<string[]>();
             directories_grabbed = new List<Tuple<int, string, bool, bool, bool>>();
             files_grabbed = new List<Tuple<int, string, string, string, System.DateTime, System.DateTime, long, Tuple<bool,bool,bool>>>();
+
+            // TODO deklaracja obiektu DistributedNetwork powinna następować dopiero po dołączeniu do sieci.
+            // Póki tworzenie sieci nie jest dokończone, tutaj deklarowany jest jeden obiekt służący do testów.
+            distributedNetwork = new DistributedNetwork(this);
         }
 
         #endregion
@@ -2801,7 +2807,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                             if (selected_item.SubItems[7].Text.Equals("TAK")) requested_downloads_without_question = true;
 
                             // Bierzemy ścieżkę do pliku z bazy danych:
-                            string requested_filepath, requested_alias;
+                            string requested_filepath = "", requested_alias = "";
 
                             DataTable filepath_container = new DataTable();
                             FbDataAdapter filepath_grabber = new FbDataAdapter("SELECT PATH " +
@@ -2831,7 +2837,21 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                             */
 
                             // Tutaj wywołujemy przesyłanie plików:
+                            System.Net.IPAddress ipAddr = null;
+                            IPAddressInputForm ipAddressInputForm = new IPAddressInputForm(ref ipAddr);
+                            ipAddressInputForm.Owner = this;
+                            ipAddressInputForm.ShowDialog();
+                            ipAddr = ipAddressInputForm.resultRef;
+                            if(ipAddr == null)
+                            {
+                                MessageBox.Show("Wrong IP address format!");
+                                return;
+                            }
+                            DistributedNetworkUser targetUser = new DistributedNetworkUser(false, requested_alias, ipAddr);
 
+                            DistributedNetworkFile distributedNetworkFile =
+                                new DistributedNetworkFile(requested_filepath, true, requested_downloads_without_question);
+                            distributedNetwork.RequestFile(targetUser, distributedNetworkFile);
                         }
 
                     }
@@ -3622,12 +3642,13 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
         }
 
 
-        public bool GrantFileTransferPermission(
+        public bool RequestFileTransferPermission(
             DistributedNetworkFile distributedNetworkFile)
         {
             DialogResult dialogResult = MessageBox.Show(
                 "User requests file: " +
-                distributedNetworkFile.filePathInCatalogue +
+                distributedNetworkFile.realFilePath + 
+                //distributedNetworkFile.filePathInCatalogue +
                 "\nAllow upload?",
                 "File request",
                 MessageBoxButtons.YesNo,

@@ -16,7 +16,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
 {
     public class TcpCommunicationHandler
     {
-        Form uiForm;
+        Main_form uiForm;
 
 
         private static readonly int PORT = 100;
@@ -49,7 +49,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
         List<object> _clientThreadLocks;
 
 
-        public TcpCommunicationHandler(Form mainForm)
+        public TcpCommunicationHandler(Main_form mainForm)
         {
             this.uiForm = mainForm;
 
@@ -62,10 +62,15 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
         }
 
 
-        public DistributedNetworkFile GetRequestedFile()
+        public void RequestFile(DistributedNetworkFile dnFile, String localDownloadPath,
+            DistributedNetworkUser targetUser)
         {
-            //TODO: Input proper logic
-            return null;
+            List<object> args = new List<object>()
+            {
+                dnFile,
+                localDownloadPath
+            };
+            StartClient(targetUser, TcpRequestCodebook.SEND_FILE, args);
         }
 
 
@@ -74,7 +79,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
         /// Starts a background thread using TcpListener to await 
         /// requests.
         /// </summary>
-        private void StartServer(Form form)
+        private void StartServer(Main_form form)
         {
             serverBGWorker = new BackgroundWorker();
             _serverThreadLock = new object();
@@ -112,7 +117,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
             ref DoWorkEventArgs e)
         {
             List<object> arg = e.Argument as List<object>;
-            Form mainForm = arg.ElementAt(0) as Form;
+            Main_form mainForm = arg.ElementAt(0) as Main_form;
             object _threadLock = arg.ElementAt(1) as object;
 
             // Start server listener
@@ -198,8 +203,8 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
 
 
 #region client threading logic
-        private void StartClient(bool[] requestToServer,
-            object requestArg)
+        private void StartClient(DistributedNetworkUser targetUser,
+            byte[] requestToServer, List<object> requestArgs)
         {
             BackgroundWorker clientBGWorker = new BackgroundWorker();
             clientBGWorkers.Add(clientBGWorker);
@@ -223,7 +228,8 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
                 uiForm,
                 _threadLock,
                 requestToServer,
-                requestArg
+                requestArgs,
+                targetUser
             };
             clientBGWorker.DoWork += (s, args) =>
             {
@@ -232,26 +238,43 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
             clientBGWorker.RunWorkerAsync();
         }
 
-        private void RunClientEvent(object sender, DoWorkEventArgs e)
-        {
-            BackgroundWorker bgWorker = sender as BackgroundWorker;
+        //private void RunClientEvent(object sender, DoWorkEventArgs e)
+        //{
+        //    BackgroundWorker bgWorker = sender as BackgroundWorker;
 
-            RunClient(ref bgWorker, ref e);
-        }
+        //    RunClient(ref bgWorker, ref e);
+        //}
 
-        private void RunClient(ref BackgroundWorker sender,
-            ref DoWorkEventArgs e)
-        {
+        //private void RunClient(ref BackgroundWorker sender,
+        //    ref DoWorkEventArgs e)
+        //{
 
-        }
+        //}
 
         private void RunClient(ref List<object> args)
         {
-            Form mainForm = args.ElementAt(0) as Form;
+            Main_form mainForm = args.ElementAt(0) as Main_form;
             object _threadLock = args.ElementAt(1) as object;
             byte[] requestToServer = args.ElementAt(2) as byte[];
 
-            
+            DistributedNetworkUser targetUser =
+                args.ElementAt(4) as DistributedNetworkUser;
+
+            TcpClient tcpClient = new TcpClient(
+                targetUser.IPAddress.ToString(),
+                PORT);
+            NetworkStream networkStream = tcpClient.GetStream();
+
+            if(TcpRequestCodebook.IsRequest(
+                requestToServer, TcpRequestCodebook.SEND_FILE))
+            {
+                Console.WriteLine("Running client requesting file");
+                List<object> requestArgs = args.ElementAt(3) as List<object>;
+                DistributedNetworkFile dnFile = requestArgs.ElementAt(0) as DistributedNetworkFile;
+                String localDownloadPath = requestArgs.ElementAt(1) as String;
+
+                SendFileRequest(networkStream, dnFile, localDownloadPath);
+            }
         }
 
         private void StopClient(BackgroundWorker client)
@@ -316,7 +339,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
         private void AcceptClientRequest(object parameter)
         {
             List<object> args = parameter as List<object>;
-            Form mainForm = args.ElementAt(0) as Form;
+            Main_form mainForm = args.ElementAt(0) as Main_form;
             TcpClient tcpClient = args.ElementAt(1) as TcpClient;
             NetworkStream networkStream = tcpClient.GetStream();
 
@@ -343,12 +366,18 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
                 if(TcpRequestCodebook.IsRequest(
                     requestCode, TcpRequestCodebook.SEND_FILE))
                 {
+                    Console.WriteLine("Received client request: send file");
                     SendFileRequestCallback(mainForm, networkStream);
                 }
-                if (TcpRequestCodebook.IsRequest(
+                else if (TcpRequestCodebook.IsRequest(
                     requestCode, TcpRequestCodebook.SEND_CATALOGUE))
                 {
+                    Console.WriteLine("Received client request: send file");
                     SendCatalogueRequestCallback(mainForm, networkStream);
+                }
+                else
+                {
+                    Console.WriteLine("Received unrecognized client request");
                 }
             }
 
@@ -385,27 +414,127 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
             binaryFormatter = null;
         }*/
         public int SendFileRequest(NetworkStream networkStream,
-            String filePathInCatalogue)
+            DistributedNetworkFile dnFile, String localDownloadPath)
         {
-            byte[] serializedFilePath = SerializeString(filePathInCatalogue);
+            String realFilePath = dnFile.realFilePath;
+            byte[] serializedFilePath = SerializeString(realFilePath);
             byte[] packet = CreateTCPDataPacket(
                 TcpRequestCodebook.SEND_FILE, serializedFilePath);
             networkStream.Write(packet, 0, packet.Length);
             networkStream.Flush();
+            Console.WriteLine("SendFileRequest: requested " + dnFile.realFilePath);
+
+            int initByte = AwaitNonNegativeByte(networkStream);
+            if (initByte == -1) return RETURN_TIMEOUT;
+            int requestByte = AwaitNonNegativeByte(networkStream);
+            if (requestByte == -1) return RETURN_TIMEOUT;
+            if (requestByte != TcpRequestCodebook.SENDING_FILE_FRAGMENT[0])
+                return RETURN_BAD_REQUEST;
+            Console.WriteLine("SendFileRequest: received request:" + requestByte);
+
+            byte[] packetSizeBytes = AwaitPacketSize(networkStream);
+            if (packetSizeBytes.Length == 0) return RETURN_TIMEOUT;
+            int packetSize = ByteArrayToInt(packetSizeBytes);
+
+            int separatorByte = AwaitNonNegativeByte(networkStream);
+            if (separatorByte == -1) return RETURN_TIMEOUT;
+
+            byte[] fileFragmentPacket =
+                AwaitDataPacket(networkStream, packetSize);
+
+            int bytesReceived = packetSize;
+            int bytesWritten = 0;
+
+            FileStream fileStream = new FileStream(
+                localDownloadPath, FileMode.OpenOrCreate);
+            fileStream.Write(fileFragmentPacket, bytesWritten, fileFragmentPacket.Length);
+            fileStream.Flush();
+            bytesWritten += fileFragmentPacket.Length;
+
+            byte[] responsePacket = CreateTCPDataPacket(
+                TcpRequestCodebook.CONTINUE_SENDING_FILE,
+                new byte[0]);
+            networkStream.Write(responsePacket, 0, responsePacket.Length);
+            networkStream.Flush();
+            Console.WriteLine("SendFileRequest: sent request: Continue sending file");
+
+            while (true)
+            {
+                initByte = AwaitNonNegativeByte(networkStream);
+                if (initByte == -1)
+                {
+                    Console.WriteLine("Timeout in SendFileRequest");
+                    return RETURN_TIMEOUT;
+                }
+                requestByte = AwaitNonNegativeByte(networkStream);
+                if (requestByte == -1)
+                {
+                    Console.WriteLine("Timeout in SendFileRequest");
+                    return RETURN_TIMEOUT;
+                }
+                Console.WriteLine("SendFileRequest: received request: " + requestByte);
+                if (!TcpRequestCodebook.IsRequest(
+                    requestByte, TcpRequestCodebook.SENDING_FILE_FRAGMENT))
+                {
+                    //Console.WriteLine("SendFileRequest() request code received is not SENDING_FILE_FRAGMENT");
+                    if (TcpRequestCodebook.IsRequest(
+                        requestByte, TcpRequestCodebook.DONE_SENDING_FILE))
+                    {
+                        Console.WriteLine("Successfully received file");
+                    }
+                    break;
+                }
+                else
+                {
+                    packetSizeBytes = null;
+                    packetSizeBytes = AwaitPacketSize(networkStream);
+                    if (packetSizeBytes.Length == 0)
+                    {
+                        Console.WriteLine("Timeout in SendFileRequest");
+                        return RETURN_TIMEOUT;
+                    }
+                    packetSize = ByteArrayToInt(packetSizeBytes);
+                    bytesReceived += packetSize;
+
+                    separatorByte = AwaitNonNegativeByte(networkStream);
+                    if (separatorByte == -1)
+                    {
+                        Console.WriteLine("Timeout in SendFileRequest");
+                        return RETURN_TIMEOUT;
+                    }
+
+                    fileFragmentPacket = null;
+                    fileFragmentPacket = AwaitDataPacket(networkStream, packetSize);
+                    fileStream.Write(fileFragmentPacket, 0, fileFragmentPacket.Length);
+                    fileStream.Flush();
+                    bytesWritten += fileFragmentPacket.Length;
+
+                    responsePacket = null;
+                    responsePacket = CreateTCPDataPacket(
+                        TcpRequestCodebook.CONTINUE_SENDING_FILE,
+                        new byte[0]);
+                    networkStream.Write(responsePacket, 0, responsePacket.Length);
+                    networkStream.Flush();
+                    Console.WriteLine("SendFileRequest: sent request: Continue sending file");
+                }
+            }
 
             packet = null;
             serializedFilePath = null;
 
-            return 0;
+            fileStream.Close();
+            fileStream.Dispose();
+
+            return RETURN_OK;
         }
 
 
-        public int SendFileRequestCallback(Form mainForm,
+        public int SendFileRequestCallback(Main_form mainForm,
             NetworkStream networkStream)
         {
             // Reading size of upcoming packet
             byte[] sizeBytes = AwaitPacketSize(networkStream);
-
+            if (sizeBytes.Length == 0) return RETURN_TIMEOUT;
             int packetSize = ByteArrayToInt(sizeBytes);
 
             int separator = AwaitNonNegativeByte(networkStream);
@@ -417,9 +546,11 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
 
             serializedFilePath = 
                 AwaitDataPacket(networkStream, packetSize);
-            String filePathInCatalogue = DeserializeString(serializedFilePath);
+            String filePath = DeserializeString(serializedFilePath);
+            Console.WriteLine("SendFileRequestCallback: Received request for file " + filePath);
 
-            DistributedNetworkFile distributedNetworkFile = DistributedNetworkFile.GetFileByFilePath(filePathInCatalogue);
+            //DistributedNetworkFile distributedNetworkFile = DistributedNetworkFile.GetFileByFilePath(filePath);
+            DistributedNetworkFile distributedNetworkFile = new DistributedNetworkFile(filePath, true, false);
 
             if (!distributedNetworkFile.IsPresentInLocalCatalogue())
             {
@@ -453,19 +584,21 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
                     return RETURN_OK;
                 }
             }
+            Console.WriteLine("SendFileRequestCallback: canSendFile == " + canSendFile);
 
             // serialize and send file
 
+            FileInfo fileInfo = new FileInfo(distributedNetworkFile.realFilePath);
             FileStream fileStream = new FileStream(
                 distributedNetworkFile.realFilePath, FileMode.Open);
 
             long totalBytesRead = 0;
-            long remainingFileBytes = distributedNetworkFile.fileSize;
+            long remainingFileBytes = fileInfo.Length;
+            Console.WriteLine("SendFileRequestCallback: remainingFileBytes == " + remainingFileBytes);
             while (remainingFileBytes > 0)
             {
                 long fileFragmentSize =
-                    Math.Min(distributedNetworkFile.fileSize,
-                        MAX_DATA_PACKET_SIZE);
+                    Math.Min(fileInfo.Length, MAX_DATA_PACKET_SIZE);
                 byte[] fileFragment = new byte[fileFragmentSize];
                 int bytesRead = fileStream.Read(
                     fileFragment, 0, fileFragment.Length);
@@ -475,6 +608,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
                 byte[] fileFragmentPacket = CreateTCPDataPacket(
                     TcpRequestCodebook.SENDING_FILE_FRAGMENT,
                     fileFragment);
+                Console.WriteLine("SendFileRequestCallback: Sending file fragment");
                 networkStream.Write(fileFragmentPacket, 0,
                     fileFragmentPacket.Length);
                 networkStream.Flush();
@@ -538,13 +672,13 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
         }
 
 
-        private bool GetUserPermissionToSendFile(Form mainForm,
+        private bool GetUserPermissionToSendFile(Main_form mainForm,
             DistributedNetworkFile distributedNetworkFile)
         {
             bool canSendFile = false;
             mainForm.Invoke((Action)delegate ()
             {
-                canSendFile = mainForm.GrantFileTransferPermission(distributedNetworkFile);
+                canSendFile = mainForm.RequestFileTransferPermission(distributedNetworkFile);
             });
             return canSendFile;
         }
@@ -561,7 +695,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
             return 0;
         }
 
-        public int SendCatalogueRequestCallback(Form mainForm,
+        public int SendCatalogueRequestCallback(Main_form mainForm,
             NetworkStream networkStream)
         {
             // Reading size of upcoming packet

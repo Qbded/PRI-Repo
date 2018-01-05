@@ -47,6 +47,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes
             byte[] key = AppCryptoDataStorage.DB_local_key;
 
             RijndaelManaged rijndaelManaged = new RijndaelManaged();
+           
 
             using (FileStream inputFileStream = new FileStream(
                 decryptedFileDirectory,
