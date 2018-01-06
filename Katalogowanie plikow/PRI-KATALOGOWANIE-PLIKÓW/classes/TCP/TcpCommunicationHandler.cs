@@ -147,7 +147,14 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
                     }
                 }
 
+                Console.WriteLine("Server's local endpoint: " +
+                    ((IPEndPoint)serverListener.LocalEndpoint).Address.ToString() + ":" +
+                    ((IPEndPoint)serverListener.LocalEndpoint).Port.ToString());
+                Console.WriteLine("Awaiting connection...");
                 TcpClient tcpClient = serverListener.AcceptTcpClient();
+                Console.WriteLine("Connection request received from " +
+                    ((IPEndPoint)tcpClient.Client.RemoteEndPoint).Address.ToString() + ":" +
+                    ((IPEndPoint)tcpClient.Client.RemoteEndPoint).Port.ToString());
                 List<object> threadArgs = new List<object>()
                 {
                     mainForm,
@@ -266,9 +273,15 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
             NetworkStream networkStream = null;
             try
             {
-                tcpClient = new TcpClient(
-                    targetUser.IPAddress.ToString(),
-                    PORT);
+                Console.WriteLine("Attempting connection to " + targetUser.IPAddress.ToString());
+                //tcpClient = new TcpClient(
+                //    targetUser.IPAddress.ToString(),
+                //    PORT);
+                //tcpClient = new TcpClient(AddressFamily.InterNetwork);
+                tcpClient = new TcpClient(AddressFamily.InterNetwork);
+                Console.WriteLine("Attempting connection to " + targetUser.IPAddress.ToString() + ":" + PORT);
+                tcpClient.Connect(targetUser.IPAddress, PORT);
+                Console.WriteLine("TcpClient initialized successfully.");
                 networkStream = tcpClient.GetStream();
             }
             catch(Exception ex)
@@ -277,7 +290,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
             }
             if (tcpClient == null || networkStream == null) return;
 
-            Console.WriteLine("Connecting to " + targetUser.IPAddress.ToString());
+            Console.WriteLine("Attempted connection to " + targetUser.IPAddress.ToString());
 
             if(TcpRequestCodebook.IsRequest(
                 requestToServer, TcpRequestCodebook.SEND_FILE))
