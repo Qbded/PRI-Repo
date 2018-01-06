@@ -1,19 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Data;
 using System.Drawing;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
-using System.Text.RegularExpressions;
-using TikaOnDotNet;
-using TikaOnDotNet.TextExtraction;
 using System.IO;
-using System.Xml;
-using System.Security.Cryptography;
-using System.Xml.Linq;
 using FirebirdSql.Data.FirebirdClient;
 using PRI_KATALOGOWANIE_PLIKÓW.classes;
 using PRI_KATALOGOWANIE_PLIKÓW.popup_forms;
@@ -156,7 +147,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
         {
             //SHIM - póki nie ustalimy gdzie przechowywać takie dane, wypełniam je tutaj z palca i danymi niepoprawnymi.
 
-            local_user = new DistributedNetworkUser(false, "TEST", new System.Net.IPAddress(new byte[] { 127, 0, 0, 1 }));
+            local_user = new DistributedNetworkUser(false, "JA", new System.Net.IPAddress(new byte[] { 46, 250, 168, 46 }));
         }
 
         // Ładowanie ścieżek do odpowiednich plików i folderów z pliku konfiguracyjnego.
@@ -484,13 +475,6 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             LoadLocalCatalog();
             DetermineLocalUser();
 
-            /*
-            this.chkMetadata.LostFocus += ChkMetadata_LostFocus;
-            this.Load += Form1_Load;
-            this.KeyDown += Form1_KeyDown;
-            excludedMetadata = new List<string>();
-            */
-
             metadata = new List<string[]>();
             directories_grabbed = new List<Tuple<int, string, bool, bool, bool>>();
             files_grabbed = new List<Tuple<int, string, string, string, System.DateTime, System.DateTime, long, Tuple<bool,bool,bool>>>();
@@ -555,7 +539,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             }
             else
             {
-                MessageBox.Show("Nie znalazłem bazy, tworze nową w katalogu:\n" + database_file_path);
+                MessageBox.Show("Nie znalazłem bazy, tworze nową w katalogu:\n" + program_path + @"\db");
 
                 if (!Directory.Exists(program_path + @"\db"))
                 {
@@ -1102,6 +1086,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
 
             database_virtual_folder_make("root", -1, false, database_connection_string);
 
+            // Jeżeli katalog ma być katalogiem obiegowym nie dodajemy do niego domyślnych folderów.
             if (external == false)
             {
                 database_virtual_folder_make("Pliki tekstowe", 1, false, database_connection_string);
@@ -2089,6 +2074,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
 
         #region Logika zakładki Wyświetlanie katalogów
 
+        // Ładowanie wyświetlania katalogów w widoku nadrzędnym.
         private void LV_catalog_display_catalogs_load()
         {
             ListViewItem local_catalog = LV_loaded_catalogs[0];
@@ -2107,7 +2093,9 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                 FbConnectionStringBuilder connection_string_builder = new FbConnectionStringBuilder();
                 if (grabbed_file.Extension.Equals(".fdb") || grabbed_file.Extension.Equals(".FDB"))
                 {
-                    external_catalogs_names.Add(grabbed_file.Name.Split('_')[0]);
+                    // Walidujemy czy katalogi obiegowe są skonstruowane odpowiednio z szablonem bazy.
+                    int[] validation_result = new int[database_columns.Count];
+
                     connection_string_builder.ServerType = FbServerType.Embedded;
                     connection_string_builder.UserID = "SYSDBA"; // Defaultowy uzytkownik z najwyzszymi uprawnieniami do systemu bazodanowego.
                     connection_string_builder.Password = ""; // Haslo nie jest sprawdzane w wersji embedded, można dać tu cokolwiek.
@@ -2115,6 +2103,20 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                     connection_string_builder.ClientLibrary = database_engine_path;
                     connection_string_builder.Charset = "UTF8";
                     external_catalogs_connection_strings.Add(connection_string_builder.ConnectionString);
+
+                    try
+                    {
+                        validation_result = database_validate(connection_string_builder.ConnectionString);
+                        if (validation_result.All(x => x.Equals(2)) == true)
+                        {
+                            external_catalogs_names.Add(grabbed_file.Name.Split('_')[0]);
+                            external_catalogs_connection_strings.Add(connection_string_builder.ConnectionString);
+                        }
+                    }
+                    catch
+                    {
+                        Console.WriteLine("Połączenie z katalogiem " + grabbed_file.Name + " nie powidło się.");
+                    }
                 }
             }
 
