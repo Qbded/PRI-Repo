@@ -2102,7 +2102,6 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                     connection_string_builder.Database = filepath;
                     connection_string_builder.ClientLibrary = database_engine_path;
                     connection_string_builder.Charset = "UTF8";
-                    external_catalogs_connection_strings.Add(connection_string_builder.ConnectionString);
 
                     try
                     {
