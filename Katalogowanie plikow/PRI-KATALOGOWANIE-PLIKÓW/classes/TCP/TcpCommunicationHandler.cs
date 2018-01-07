@@ -151,7 +151,15 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
                 //    ((IPEndPoint)serverListener.LocalEndpoint).Address.ToString() + ":" +
                 //    ((IPEndPoint)serverListener.LocalEndpoint).Port.ToString());
                 // Console.WriteLine("Awaiting connection...");
-                TcpClient tcpClient = serverListener.AcceptTcpClient();
+                TcpClient tcpClient = null;
+                try
+                {
+                    tcpClient = serverListener.AcceptTcpClient();
+                }
+                catch(Exception ex)
+                {
+                    DisplayMessageBoxInMainForm(mainForm, "Exception while accepting client connection: " + ex.Message);
+                }
                 // Console.WriteLine("Connection request received from " +
                 //    ((IPEndPoint)tcpClient.Client.RemoteEndPoint).Address.ToString() + ":" +
                 //    ((IPEndPoint)tcpClient.Client.RemoteEndPoint).Port.ToString());
@@ -286,7 +294,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
             }
             catch(Exception ex)
             {
-                // Console.WriteLine(ex.Message);
+                DisplayMessageBoxInMainForm(mainForm, "Exception while attempting connection: " + ex.Message);
             }
             if (tcpClient == null || networkStream == null) return;
 
@@ -421,25 +429,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
             }
         }
 
-
-        /*public int SendFileRequest(NetworkStream networkStream,
-            DistributedNetworkFile dnFile)
-        {
-            BinaryFormatter binaryFormatter = new BinaryFormatter();
-            byte[] fileData;
-            using(MemoryStream memoryStream = new MemoryStream())
-            {
-                binaryFormatter.Serialize(memoryStream, dnFile);
-                fileData = memoryStream.ToArray();
-            }
-            byte[] packet = CreateFileDataPacket(
-                TcpRequestCodebook.SEND_FILE, fileData);
-            networkStream.Write(packet, 0, packet.Length);
-
-            packet = null;
-            fileData = null;
-            binaryFormatter = null;
-        }*/
+        
         public int SendFileRequest(NetworkStream networkStream,
             DistributedNetworkFile dnFile, String localDownloadPath, Main_form mainForm)
         {
@@ -472,17 +462,47 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
             int bytesReceived = packetSize;
             int bytesWritten = 0;
 
-            FileStream fileStream = new FileStream(
+            FileStream fileStream = null;
+            try
+            {
+                fileStream = new FileStream(
                 localDownloadPath, FileMode.OpenOrCreate);
-            fileStream.Write(fileFragmentPacket, bytesWritten, fileFragmentPacket.Length);
-            fileStream.Flush();
+            }
+            catch(Exception ex)
+            {
+                DisplayMessageBoxInMainForm(mainForm,
+                    "file download stopped, unable to open file stream at " +
+                    localDownloadPath + "\n" + ex.Message);
+                return RETURN_CANCEL;
+            }
+            try
+            {
+                fileStream.Write(fileFragmentPacket, bytesWritten, fileFragmentPacket.Length);
+                fileStream.Flush();
+            }
+            catch(Exception ex)
+            {
+                DisplayMessageBoxInMainForm(mainForm,
+                    "file download stopped, unable to write to file stream at " +
+                    localDownloadPath + "\n" + ex.Message);
+                return RETURN_CANCEL;
+            }
             bytesWritten += fileFragmentPacket.Length;
 
             byte[] responsePacket = CreateTCPDataPacket(
                 TcpRequestCodebook.CONTINUE_SENDING_FILE,
                 new byte[0]);
-            networkStream.Write(responsePacket, 0, responsePacket.Length);
-            networkStream.Flush();
+            try
+            {
+                networkStream.Write(responsePacket, 0, responsePacket.Length);
+                networkStream.Flush();
+            }
+            catch (Exception ex)
+            {
+                DisplayMessageBoxInMainForm(mainForm,
+                    "File download stopped, unable to write to network stream.\n" + ex.Message);
+                return RETURN_CANCEL;
+            }
             // Console.WriteLine("SendFileRequest: sent request: Continue sending file");
 
             while (true)
@@ -536,16 +556,36 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
 
                     fileFragmentPacket = null;
                     fileFragmentPacket = AwaitDataPacket(networkStream, packetSize, mainForm);
-                    fileStream.Write(fileFragmentPacket, 0, fileFragmentPacket.Length);
-                    fileStream.Flush();
+                    try
+                    {
+                        fileStream.Write(fileFragmentPacket, 0, fileFragmentPacket.Length);
+                        fileStream.Flush();
+                    }
+                    catch (Exception ex)
+                    {
+                        DisplayMessageBoxInMainForm(mainForm,
+                            "File download stopped, unable to write to file stream at " +
+                            localDownloadPath + "\n" + ex.Message);
+                        return RETURN_CANCEL;
+                    }
                     bytesWritten += fileFragmentPacket.Length;
 
                     responsePacket = null;
                     responsePacket = CreateTCPDataPacket(
                         TcpRequestCodebook.CONTINUE_SENDING_FILE,
                         new byte[0]);
-                    networkStream.Write(responsePacket, 0, responsePacket.Length);
-                    networkStream.Flush();
+                    try
+                    {
+                        networkStream.Write(responsePacket, 0, responsePacket.Length);
+                        networkStream.Flush();
+                    }
+                    catch (Exception ex)
+                    {
+                        DisplayMessageBoxInMainForm(mainForm,
+                            "File download stopped, unable to write to network stream at " +
+                            localDownloadPath + "\n" + ex.Message);
+                        return RETURN_CANCEL;
+                    }
                     // Console.WriteLine("SendFileRequest: sent request: Continue sending file");
                 }
             }
@@ -589,8 +629,17 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
                     TcpRequestCodebook.FILE_NOT_IN_MY_CATALOGUE,
                     SerializeString("FileNotFound"));
 
-                networkStream.Write(responsePacket, 0, responsePacket.Length);
-                networkStream.Flush();
+                try
+                {
+                    networkStream.Write(responsePacket, 0, responsePacket.Length);
+                    networkStream.Flush();
+                }
+                catch(Exception ex)
+                {
+                    DisplayMessageBoxInMainForm(mainForm,
+                        "Cannot send \"file not found\" response: " +
+                        ex.Message);
+                }
                 return RETURN_OK;
             }
 
@@ -610,8 +659,17 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
                         TcpRequestCodebook.REFUSED_TO_SEND_FILE,
                         SerializeString("User refused to send file"));
 
-                    networkStream.Write(responsePacket, 0, responsePacket.Length);
-                    networkStream.Flush();
+                    try
+                    {
+                        networkStream.Write(responsePacket, 0, responsePacket.Length);
+                        networkStream.Flush();
+                    }
+                    catch(Exception ex)
+                    {
+                        DisplayMessageBoxInMainForm(mainForm,
+                            "Cannot send \"refused to send file\" response, " + 
+                            ex.Message);
+                    }
                     return RETURN_OK;
                 }
             }
@@ -619,9 +677,31 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
 
             // serialize and send file
 
-            FileInfo fileInfo = new FileInfo(distributedNetworkFile.realFilePath);
-            FileStream fileStream = new FileStream(
-                distributedNetworkFile.realFilePath, FileMode.Open);
+            FileInfo fileInfo = null;
+            try
+            {
+                fileInfo = new FileInfo(distributedNetworkFile.realFilePath);
+            }
+            catch(Exception ex)
+            {
+                DisplayMessageBoxInMainForm(mainForm,
+                    "File upload halted, cannot acquire file information, " +
+                    ex.Message);
+                return RETURN_CANCEL;
+            }
+            FileStream fileStream = null;
+            try
+            {
+                fileStream = new FileStream(
+                    distributedNetworkFile.realFilePath, FileMode.Open);
+            }
+            catch(Exception ex)
+            {
+                DisplayMessageBoxInMainForm(mainForm,
+                    "File upload halted, cannot open file stream: " +
+                    ex.Message);
+                return RETURN_CANCEL;
+            }
 
             long totalBytesRead = 0;
             long remainingFileBytes = fileInfo.Length;
@@ -631,8 +711,18 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
                 long fileFragmentSize =
                     Math.Min(fileInfo.Length, MAX_DATA_PACKET_SIZE);
                 byte[] fileFragment = new byte[fileFragmentSize];
-                int bytesRead = fileStream.Read(
-                    fileFragment, 0, fileFragment.Length);
+                int bytesRead = 0;
+                try
+                {
+                    bytesRead = fileStream.Read(fileFragment, 0, fileFragment.Length);
+                }
+                catch(Exception ex)
+                {
+                    DisplayMessageBoxInMainForm(mainForm,
+                        "File upload halted, unable to read from file stream: " +
+                        ex.Message);
+                    return RETURN_CANCEL;
+                }
                 totalBytesRead += bytesRead;
                 remainingFileBytes -= bytesRead;
 
@@ -640,9 +730,19 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
                     TcpRequestCodebook.SENDING_FILE_FRAGMENT,
                     fileFragment);
                 // Console.WriteLine("SendFileRequestCallback: Sending file fragment");
-                networkStream.Write(fileFragmentPacket, 0,
-                    fileFragmentPacket.Length);
-                networkStream.Flush();
+                try
+                {
+                    networkStream.Write(fileFragmentPacket, 0,
+                        fileFragmentPacket.Length);
+                    networkStream.Flush();
+                }
+                catch (Exception ex)
+                {
+                    DisplayMessageBoxInMainForm(mainForm,
+                        "File upload halted, unable to write to network stream: " +
+                        ex.Message);
+                    return RETURN_CANCEL;
+                }
 
                 int initByte = AwaitNonNegativeByte(networkStream, mainForm);
                 if (initByte == -1)
@@ -681,9 +781,18 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
                     byte[] responsePacket = CreateTCPDataPacket(
                         TcpRequestCodebook.TERMINATE,
                         SerializeString("Bad response"));
-                    networkStream.Write(responsePacket, 0, 
-                        responsePacket.Length);
-                    networkStream.Flush();
+                    try
+                    {
+                        networkStream.Write(responsePacket, 0,
+                            responsePacket.Length);
+                        networkStream.Flush();
+                    }
+                    catch(Exception ex)
+                    {
+                        DisplayMessageBoxInMainForm(mainForm,
+                            "Unable to send \"bad response\" response, " +
+                            "cannot write to network stream.\n" + ex.Message);
+                    }
                     return RETURN_BAD_REQUEST;
                 }
             }
@@ -692,16 +801,35 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
             byte[] finalMessagePacket = CreateTCPDataPacket(
                 TcpRequestCodebook.DONE_SENDING_FILE,
                 SerializeString("Entire file has been sent"));
-            networkStream.Write(finalMessagePacket, 0, finalMessagePacket.Length);
-            networkStream.Flush();
+            try
+            {
+                networkStream.Write(finalMessagePacket, 0, finalMessagePacket.Length);
+                networkStream.Flush();
+            }
+            catch (Exception ex)
+            {
+                DisplayMessageBoxInMainForm(mainForm,
+                    "Cannot finalize file uploda, unable to write to network stream: " +
+                    ex.Message);
+                return RETURN_CANCEL;
+            }
             finalMessagePacket = null;
             finalMessagePacket = CreateTCPDataPacket(
                  TcpRequestCodebook.TERMINATE,
                  SerializeString("End connection"));
-            networkStream.Write(finalMessagePacket, 0, finalMessagePacket.Length);
-            networkStream.Flush();
+            try
+            {
+                networkStream.Write(finalMessagePacket, 0, finalMessagePacket.Length);
+                networkStream.Flush();
+            }
+            catch(Exception ex)
+            {
+                DisplayMessageBoxInMainForm(mainForm,
+                    "File upload connection: cannot request connection termination: " +
+                    ex.Message);
+            }
 
-            return 0;
+            return RETURN_OK;
 
 
             //byte[] serializedDNFile = new byte[packetSize];
@@ -733,6 +861,15 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
                 canSendFile = mainForm.RequestFileTransferPermission(distributedNetworkFile);
             });
             return canSendFile;
+        }
+
+        private void DisplayMessageBoxInMainForm(Main_form mainFormRef,
+            String msg)
+        {
+            mainFormRef.Invoke((Action)delegate ()
+            {
+                mainFormRef.DisplayMessageBoxFromAnotherThread(msg);
+            });
         }
 
         public int SendCatalogueRequest(NetworkStream networkStream)
@@ -854,43 +991,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
 
             return 0;
         }
-
-        //public byte[] RequestFile(DistributedNetworkUser targetUser,
-        //    DistributedNetworkFile file)
-        //{
-        //    //TODO: Input proper logic
-        //    return null;
-        //}
-
-
-        //public void SendFile(DistributedNetworkUser targetUser,
-        //    DistributedNetworkFile file)
-        //{
-        //    //TODO: Input proper logic
-        //}
-
-
-
-
-
-        //private byte[] CreateMessageDataPacket(byte[] request,
-        //    String base64String)
-        //{
-        //    MemoryStream memoryStream = new MemoryStream();
-
-        //    byte[] initializingBytes = TcpRequestCodebook.INITIALIZE;
-        //    memoryStream.Write(
-        //        initializingBytes, 0, initializingBytes.Length);
-
-        //    byte[] requestBytes = request;
-        //    memoryStream.Write(
-        //        request, 0, request.Length);
-
-        //    byte[] stringBytes = StringToByteArray(base64String);
-        //    int stringByteCount = stringBytes.Length;
-        //    byte[] 
-        //}
-
+        
 
         /// <summary>
         /// Will return first non-negative byte from NetworkStream
@@ -923,18 +1024,12 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
             }
             catch (SocketException ex)
             {
-                mainForm.Invoke((Action)delegate ()
-                {
-                    mainForm.DisplayMessageBoxFromAnotherThread("Execution stopped due to socket exception: " + ex.Message);
-                });
+                DisplayMessageBoxInMainForm(mainForm, "Execution stopped due to socket exception: " + ex.Message);
                 return -1;
             }
             catch (IOException ex)
             {
-                mainForm.Invoke((Action)delegate ()
-                {
-                    mainForm.DisplayMessageBoxFromAnotherThread("Execution stopped due to I/O exception: " + ex.Message);
-                });
+                DisplayMessageBoxInMainForm(mainForm, "Execution stopped due to I/O exception: " + ex.Message);
                 return -1;
             }
             return byteRead;
@@ -980,18 +1075,12 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
             }
             catch (SocketException ex)
             {
-                mainForm.Invoke((Action)delegate ()
-                {
-                    mainForm.DisplayMessageBoxFromAnotherThread("Execution stopped due to socket exception: " + ex.Message);
-                });
+                DisplayMessageBoxInMainForm(mainForm, "Execution stopped due to socket exception: " + ex.Message);
                 return new byte[0];
             }
             catch (IOException ex)
             {
-                mainForm.Invoke((Action)delegate ()
-                {
-                    mainForm.DisplayMessageBoxFromAnotherThread("Execution stopped due to I/O exception: " + ex.Message);
-                });
+                DisplayMessageBoxInMainForm(mainForm, "Execution stopped due to I/O exception: " + ex.Message);
                 return new byte[0];
             }
             return buffer;
@@ -1039,18 +1128,12 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
             }
             catch (SocketException ex)
             {
-                mainForm.Invoke((Action)delegate ()
-                {
-                    mainForm.DisplayMessageBoxFromAnotherThread("Execution stopped due to socket exception: " + ex.Message);
-                });
+                DisplayMessageBoxInMainForm(mainForm, "Execution stopped due to socket exception: " + ex.Message);
                 return new byte[MAX_DATA_PACKET_SIZE + 1];
             }
             catch (IOException ex)
             {
-                mainForm.Invoke((Action)delegate ()
-                {
-                    mainForm.DisplayMessageBoxFromAnotherThread("Execution stopped due to I/O exception: " + ex.Message);
-                });
+                DisplayMessageBoxInMainForm(mainForm, "Execution stopped due to I/O exception: " + ex.Message);
                 return new byte[MAX_DATA_PACKET_SIZE + 1];
             }
             return buffer;

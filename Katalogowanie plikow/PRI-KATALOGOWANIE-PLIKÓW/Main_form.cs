@@ -147,7 +147,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
         {
             //SHIM - póki nie ustalimy gdzie przechowywać takie dane, wypełniam je tutaj z palca i danymi niepoprawnymi.
 
-            local_user = new DistributedNetworkUser(false, "JA", new System.Net.IPAddress(new byte[] { 46, 250, 168, 46 }));
+            local_user = new DistributedNetworkUser(false, "JA", new System.Net.IPAddress(new byte[] { 25,72,201,237 }));
         }
 
         // Ładowanie ścieżek do odpowiednich plików i folderów z pliku konfiguracyjnego.
