@@ -147,7 +147,35 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
         {
             //SHIM - póki nie ustalimy gdzie przechowywać takie dane, wypełniam je tutaj z palca i danymi niepoprawnymi.
 
-            local_user = new DistributedNetworkUser(false, "JA", new System.Net.IPAddress(new byte[] { 25,72,201,237 }));
+            String ipAddressString = ConfigManager.ReadString(ConfigManager.TCP_COMM_IP_ADDRESS);
+            System.Net.IPAddress ipAddress = null;
+            try
+            {
+                ipAddress = System.Net.IPAddress.Parse(ipAddressString);
+            }
+            catch(Exception ex)
+            {
+                MessageBox.Show("Adres ip w pliku konifuracyjnym jest niepoprawny! Proszę go naprawić!\n" +
+                    "Adres IP zostanie przypisany automatycznie. Może być błędny!");
+                System.Net.IPHostEntry host = System.Net.Dns.GetHostEntry(System.Net.Dns.GetHostName());
+                foreach (System.Net.IPAddress address in host.AddressList)
+                {
+                    if (address.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork)
+                    {
+                        ipAddress = address;
+                        break;
+                    }
+                }
+            }
+            if(ipAddress == null)
+            {
+                MessageBox.Show("Nie udało się ustalić prawidłowego adresu sieciowego komputera. " +
+                    "Nie można nawiązać połączenia sieciowego. Do widzenia.");
+                Application.Exit();
+                Environment.Exit(0);
+            }
+
+            local_user = new DistributedNetworkUser(false, "JA", ipAddress);
         }
 
         // Ładowanie ścieżek do odpowiednich plików i folderów z pliku konfiguracyjnego.
@@ -464,6 +492,25 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             // Only allow app to run after successful login 
             // or password setting
             new AppInstanceLoginManager().DisplayLoginRegisterForm();
+
+            MessageBox.Show("Please input IP address used for communiation!");
+            System.Net.IPAddress localUserIPAddress = null;
+                            IPAddressInputForm ipAddressInputForm = new IPAddressInputForm(ref localUserIPAddress);
+            ipAddressInputForm.Owner = this;
+            ipAddressInputForm.ShowDialog();
+            localUserIPAddress = ipAddressInputForm.resultRef;
+            if (localUserIPAddress == null)
+            {
+                MessageBox.Show("Wrong IP address format!");
+                Application.Exit();
+                Environment.Exit(0);
+            }
+            else
+            {
+                ConfigManager.WriteValue(ConfigManager.TCP_COMM_IP_ADDRESS,
+                    localUserIPAddress.ToString());
+            }
+
             AppCryptoDataStorage.UserAuthorized = true;
             new DatabaseEncryptor().DecryptDatabaseFile();
             InitializeComponent();

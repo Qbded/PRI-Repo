@@ -22,6 +22,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes
         public static readonly String OUTPUT_LOCATION = "OutputLocation";
 
         public static readonly String TCP_SECONDS_TO_TIMEOUT = "TCPSecondsToTimeout";
+        public static readonly String TCP_COMM_IP_ADDRESS = "externalIPAddress";
 
         private static readonly String configFileLocation =
             AppDomain.CurrentDomain.SetupInformation.ConfigurationFile;
@@ -46,7 +47,9 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes
                 { PROGRAM_LOCATION, "" },
                 { OUTPUT_LOCATION, ""},
 
-                { TCP_SECONDS_TO_TIMEOUT, "5" }
+                { TCP_SECONDS_TO_TIMEOUT, "5" },
+
+                { TCP_COMM_IP_ADDRESS, "" }
             };
 
         private static void determineDirectoryStructure()
