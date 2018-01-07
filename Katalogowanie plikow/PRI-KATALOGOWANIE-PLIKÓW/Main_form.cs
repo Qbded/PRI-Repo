@@ -3667,6 +3667,12 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             }
         }
 
+
+        public void DisplayMessageBoxFromAnotherThread(String msg)
+        {
+            MessageBox.Show(msg);
+        }
+
         #endregion
 
         #region Kod legacy
