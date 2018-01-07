@@ -927,6 +927,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
                 {
                     mainForm.DisplayMessageBoxFromAnotherThread("Execution stopped due to socket exception: " + ex.Message);
                 });
+                return -1;
             }
             catch (IOException ex)
             {
@@ -934,6 +935,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
                 {
                     mainForm.DisplayMessageBoxFromAnotherThread("Execution stopped due to I/O exception: " + ex.Message);
                 });
+                return -1;
             }
             return byteRead;
         }
@@ -982,6 +984,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
                 {
                     mainForm.DisplayMessageBoxFromAnotherThread("Execution stopped due to socket exception: " + ex.Message);
                 });
+                return new byte[0];
             }
             catch (IOException ex)
             {
@@ -989,6 +992,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
                 {
                     mainForm.DisplayMessageBoxFromAnotherThread("Execution stopped due to I/O exception: " + ex.Message);
                 });
+                return new byte[0];
             }
             return buffer;
         }
@@ -1039,6 +1043,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
                 {
                     mainForm.DisplayMessageBoxFromAnotherThread("Execution stopped due to socket exception: " + ex.Message);
                 });
+                return new byte[MAX_DATA_PACKET_SIZE + 1];
             }
             catch (IOException ex)
             {
@@ -1046,6 +1051,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
                 {
                     mainForm.DisplayMessageBoxFromAnotherThread("Execution stopped due to I/O exception: " + ex.Message);
                 });
+                return new byte[MAX_DATA_PACKET_SIZE + 1];
             }
             return buffer;
         }
