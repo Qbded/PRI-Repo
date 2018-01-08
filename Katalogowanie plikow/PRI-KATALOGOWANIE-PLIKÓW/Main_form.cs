@@ -137,45 +137,173 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
         // Zmienne związane z funkcjonowaniem opcji sieciowych:
         private DistributedNetworkUser local_user = null;
         private DistributedNetwork distributedNetwork = null;
+        public bool networking_lock = true;
 
         #endregion
 
         #region Konstruktor i jego logika
 
-        // Ładowanie z konfiga(?) danych o użytkowniku lokalnym. Póki co SHIM nie zależy od konfigu.
-        private void DetermineLocalUser()
+        // Ładowanie z konfiga danych o użytkowniku lokalnym.
+        private bool DetermineLocalUser(bool inital_check)
         {
-            //SHIM - póki nie ustalimy gdzie przechowywać takie dane, wypełniam je tutaj z palca i danymi niepoprawnymi.
+            bool alias_determined = false, address_determined = false;
 
-            String ipAddressString = ConfigManager.ReadString(ConfigManager.TCP_COMM_IP_ADDRESS);
-            System.Net.IPAddress ipAddress = null;
-            try
+            string final_alias = "DEFAULT";
+            System.Net.IPAddress final_IP_address = new System.Net.IPAddress(new byte[] { 0, 0, 0 ,0 });
+
+            //Ładujemy dane z pliku konfiguracyjnego
+
+            String grabbed_alias = ConfigManager.ReadString(ConfigManager.USER_ALIAS);
+            String grabbed_IP_address_string = ConfigManager.ReadString(ConfigManager.TCP_COMM_IP_ADDRESS);
+
+            if(grabbed_alias.Length == 0 || grabbed_IP_address_string.Length == 0 || grabbed_alias == null || grabbed_IP_address_string == null)
             {
-                ipAddress = System.Net.IPAddress.Parse(ipAddressString);
-            }
-            catch(Exception ex)
-            {
-                MessageBox.Show("Adres ip w pliku konifuracyjnym jest niepoprawny! Proszę go naprawić!\n" +
-                    "Adres IP zostanie przypisany automatycznie. Może być błędny!");
-                System.Net.IPHostEntry host = System.Net.Dns.GetHostEntry(System.Net.Dns.GetHostName());
-                foreach (System.Net.IPAddress address in host.AddressList)
+                DialogResult dialogResult = DialogResult.Yes;
+                if (inital_check)
                 {
-                    if (address.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork)
+                    dialogResult = MessageBox.Show("Użytkownik programu jest albo niezdefiniowany albo zdefiniowany niepoprawnie.\n" +
+                                                            "Czy chcesz zdefiniować nowego?\n" +
+                                                            "Bez poprawnie zdefiniowanego użytkownika funkcjonalności sieciowe są niedostepne.", "Niepoprawny użytkownik"
+                                                            , MessageBoxButtons.YesNo);
+                }
+                
+                if(dialogResult==DialogResult.Yes || dialogResult==DialogResult.OK)
+                {
+                    // Jeżeli niezdefiniowany jest alias - poproś o nowy
+                    if (grabbed_alias.Length == 0 || grabbed_alias == null)
                     {
-                        ipAddress = address;
+                        MessageBox.Show("Prosimy podać nazwę użytkownika.");
+                        String localUserAlias = "";
+                        AliasInputForm AliasInputForm = new AliasInputForm(ref localUserAlias);
+                        AliasInputForm.Owner = this;
+                        AliasInputForm.ShowDialog();
+                        localUserAlias = AliasInputForm.resultRef;
+                        if (localUserAlias == null || localUserAlias.Equals(""))
+                        {
+                            MessageBox.Show("Pobieranie nazwy użytkownika zakonczyło się niepowodzeniem!");
+                            alias_determined = false;
+                        }
+                        else
+                        {
+                            ConfigManager.WriteValue(ConfigManager.USER_ALIAS,
+                                localUserAlias);
+                            final_alias = localUserAlias;
+                            alias_determined = true;
+                        }
+                    }
+
+                    // Jeżeli niezdefiniowany jest adres IP - poproś o nowy. Zakładamy sukces poprzedniego sprawdzenia
+                    if ((grabbed_IP_address_string.Length == 0 || grabbed_IP_address_string == null) && alias_determined == true)
+                    {
+                        MessageBox.Show("Prosimy podać adres IP, pod którym widoczny ma być program.");
+                        System.Net.IPAddress localUserIPAddress = null;
+                        IPAddressInputForm ipAddressInputForm = new IPAddressInputForm(ref localUserIPAddress);
+                        ipAddressInputForm.Owner = this;
+                        ipAddressInputForm.ShowDialog();
+                        localUserIPAddress = ipAddressInputForm.resultRef;
+                        if (localUserIPAddress == null)
+                        {
+                            MessageBox.Show("Format podanego adresu IP nie może zostać uznany za poprawny!");
+                            address_determined = false;
+                        }
+                        else
+                        {
+                            ConfigManager.WriteValue(ConfigManager.TCP_COMM_IP_ADDRESS,
+                                localUserIPAddress.ToString());
+                            final_IP_address = localUserIPAddress;
+                            address_determined = true;
+                        }
+                    }
+                    if(address_determined == true && alias_determined == true)
+                    {
+                        local_user = new DistributedNetworkUser(false, final_alias, final_IP_address);
+                        networking_lock = false;
+                        distributedNetwork = new DistributedNetwork(this);
+                        return true;
+                    }
+                    else
+                    {
+                        local_user = new DistributedNetworkUser(false, final_alias, final_IP_address);
+                        networking_lock = true;
+                        return false;
+                    }
+                }
+                else
+                {
+                    local_user = new DistributedNetworkUser(false, final_alias, final_IP_address);
+                    networking_lock = true;
+                    return false;
+                }
+            }
+            else
+            {
+                // Wszystkie dane zostały załadowane - walidujemy i jeżeli walidacje są pomyślne - tworzymy użytkownika
+
+                // Najpierw sprawdzamy alias użytkownika - czy nie zawiera nielegalnych znaków
+                bool validation_result = true;
+                char[] grabbed_alias_checker = grabbed_alias.ToArray();
+                List<char> illegal_characters = System.IO.Path.GetInvalidFileNameChars().ToList();
+
+                illegal_characters.Add('_');
+
+                foreach (char illegal_character in illegal_characters)
+                {
+                    if (grabbed_alias_checker.Contains(illegal_character))
+                    {
+                        validation_result = false;
                         break;
                     }
                 }
-            }
-            if(ipAddress == null)
-            {
-                MessageBox.Show("Nie udało się ustalić prawidłowego adresu sieciowego komputera. " +
-                    "Nie można nawiązać połączenia sieciowego. Do widzenia.");
-                Application.Exit();
-                Environment.Exit(0);
-            }
 
-            local_user = new DistributedNetworkUser(false, "JA", ipAddress);
+                if (validation_result == true)
+                {
+                    final_alias = grabbed_alias;
+                    alias_determined = true;
+                }
+                else
+                {
+                    MessageBox.Show("Pobrany z pliku konfiguracyjnego alias zawiera niepoprawne znaki.\nPrzywracam mu wartość domyślną.");
+                    ConfigManager.WriteValue(ConfigManager.USER_ALIAS, "");
+                    alias_determined = false;
+                }
+
+                // Pobieramy adres IP i sprawdzamy czy da się go sparsować do czegoś użytecznego.
+
+                System.Net.IPAddress ipAddress = null;
+                try
+                {
+                    ipAddress = System.Net.IPAddress.Parse(grabbed_IP_address_string);
+                    final_IP_address = ipAddress;
+                    address_determined = true;
+                }
+                catch
+                {
+                    MessageBox.Show("Pobrany z pliku konfiguracyjnego adres nie może być uznany za poprawny!\nPrzywracam wartość domyślną.");
+                    ConfigManager.WriteValue(ConfigManager.TCP_COMM_IP_ADDRESS, "");
+                    address_determined = false;
+                }
+
+                // Teraz powinniśmy już mieć jasną sytuację - sprawdzamy wartości w flagach address_determined i alias_determined
+
+                if (address_determined == true && alias_determined == true)
+                {
+                    local_user = new DistributedNetworkUser(false, final_alias, final_IP_address);
+                    MessageBox.Show("Pomyślnie pobrano dane użytkownika " + final_alias);
+                    networking_lock = false;
+                    distributedNetwork = new DistributedNetwork(this);
+                    return true;
+                }
+                else
+                {
+                    // robimy to samo co wcześniej, ale z wartościami ustalanymi na samym początku jako domyślne
+                    local_user = new DistributedNetworkUser(false, final_alias, final_IP_address);
+                    MessageBox.Show("Nie udało pobrać się danych użytkownika lub były one niepoprawne.\n" +
+                                    "Funkcjonalności sieciowe są niedostępne.\n" +
+                                    "Aby uzyskać do nich dostęp prosimy zredefiniować użytkownika.");
+                    networking_lock = true;
+                    return false;
+                }
+            }
         }
 
         // Ładowanie ścieżek do odpowiednich plików i folderów z pliku konfiguracyjnego.
@@ -480,6 +608,56 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             LV_loaded_catalogs.Add(local_catalog);
         }
 
+        /* LEGACY - sprawdzanie czy adres IP jest zdefiniowany i poprawny. Teraz jest już w kodzie DetermineLocalUser
+        bool DetermineLocalAddress()
+        {
+            try
+            {
+                String ipAddressString = ConfigManager.ReadString(ConfigManager.TCP_COMM_IP_ADDRESS);
+                if (ipAddressString.Length == 0 || ipAddressString == null)
+                {
+                    MessageBox.Show("Prosimy podać adres IP, pod którym widoczny ma być program.");
+                    System.Net.IPAddress localUserIPAddress = null;
+                    IPAddressInputForm ipAddressInputForm = new IPAddressInputForm(ref localUserIPAddress);
+                    ipAddressInputForm.Owner = this;
+                    ipAddressInputForm.ShowDialog();
+                    localUserIPAddress = ipAddressInputForm.resultRef;
+                    if (localUserIPAddress == null)
+                    {
+                        MessageBox.Show("Format podanego adresu IP nie może zostać uznany za poprawny!");
+                        return false;
+                    }
+                    else
+                    {
+                        ConfigManager.WriteValue(ConfigManager.TCP_COMM_IP_ADDRESS,
+                            localUserIPAddress.ToString());
+                        return true;
+                    }
+                }
+                else
+                {
+                    System.Net.IPAddress ipAddress = null;
+                    try
+                    {
+                        ipAddress = System.Net.IPAddress.Parse(ipAddressString);
+                        return true;
+                    }
+                    catch
+                    {
+                        MessageBox.Show("Pobrany z pliku konfiguracyjnego adres nie może być uznany za poprawny!\nPrzywracam wartość domyślną.");
+                        ConfigManager.WriteValue(ConfigManager.TCP_COMM_IP_ADDRESS, "");
+                        return false;
+                    }
+                }
+            }
+            catch
+            {
+                MessageBox.Show("Błąd podczas pobierania pola przechowującego adres IP z pliku konfiguracyjnego!");
+                return false;
+            }
+        }
+        */
+
         // Obsługa logiki wymaganej przez WPF i resizing okna.
         public Main_form()
         {
@@ -493,23 +671,42 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             // or password setting
             new AppInstanceLoginManager().DisplayLoginRegisterForm();
 
-            MessageBox.Show("Please input IP address used for communiation!");
-            System.Net.IPAddress localUserIPAddress = null;
-                            IPAddressInputForm ipAddressInputForm = new IPAddressInputForm(ref localUserIPAddress);
-            ipAddressInputForm.Owner = this;
-            ipAddressInputForm.ShowDialog();
-            localUserIPAddress = ipAddressInputForm.resultRef;
-            if (localUserIPAddress == null)
+
+            /*
+            String ipAddressString = ConfigManager.ReadString(ConfigManager.TCP_COMM_IP_ADDRESS);
+            if(ipAddressString.Length == 0)
             {
-                MessageBox.Show("Wrong IP address format!");
-                Application.Exit();
-                Environment.Exit(0);
-            }
+                MessageBox.Show("Prosimy podać adres IP, pod którym widoczny ma być program.");
+                System.Net.IPAddress localUserIPAddress = null;
+                IPAddressInputForm ipAddressInputForm = new IPAddressInputForm(ref localUserIPAddress);
+                ipAddressInputForm.Owner = this;
+                ipAddressInputForm.ShowDialog();
+                localUserIPAddress = ipAddressInputForm.resultRef;
+                if (localUserIPAddress == null)
+                {
+                    MessageBox.Show("Format podanego adresu IP nie może zostać uznany za poprawny!");
+                    networking_lock = true;
+                }
+                else
+                {
+                    ConfigManager.WriteValue(ConfigManager.TCP_COMM_IP_ADDRESS,
+                        localUserIPAddress.ToString());
+                }
+            } 
             else
             {
-                ConfigManager.WriteValue(ConfigManager.TCP_COMM_IP_ADDRESS,
-                    localUserIPAddress.ToString());
+                System.Net.IPAddress ipAddress = null;
+                try
+                {
+                    ipAddress = System.Net.IPAddress.Parse(ipAddressString);
+
+                }
+                catch
+                {
+
+                }
             }
+            */
 
             AppCryptoDataStorage.UserAuthorized = true;
             new DatabaseEncryptor().DecryptDatabaseFile();
@@ -520,15 +717,14 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             LoadCreationScripts();
             PrepareConnectionString();
             LoadLocalCatalog();
-            DetermineLocalUser();
+            // zbedne? DetermineLocalAddress();
+            DetermineLocalUser(true);
 
             metadata = new List<string[]>();
             directories_grabbed = new List<Tuple<int, string, bool, bool, bool>>();
             files_grabbed = new List<Tuple<int, string, string, string, System.DateTime, System.DateTime, long, Tuple<bool,bool,bool>>>();
 
-            // TODO deklaracja obiektu DistributedNetwork powinna następować dopiero po dołączeniu do sieci.
-            // Póki tworzenie sieci nie jest dokończone, tutaj deklarowany jest jeden obiekt służący do testów.
-            distributedNetwork = new DistributedNetwork(this);
+            // Funkcjonalności sieciowe są włączane w kodzie DetermineLocalUser!
         }
 
         #endregion
@@ -2464,7 +2660,23 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             var temp = parent.HitTest(e.Location).Item;
             if (e.Button == MouseButtons.Right && parent.HitTest(e.Location).Item == null)
             {
-                if (LV_catalog_display_status == 1)
+                if (LV_catalog_display_status == 0) // przeglądanie katalogów - daj możliwość ściągnięcia katalogu obiegowego jeżeli funkcje sieciowe są włączone.
+                {
+                    if (!networking_lock)
+                    {
+                        Point context_menu_position = PointToScreen(e.Location);
+                        context_menu_position.X = context_menu_position.X + parent.Location.X + 2 * parent.Margin.Left;
+                        context_menu_position.Y = context_menu_position.Y + parent.Location.Y + 30; // kolumna ma rozmiar 30px
+
+                        ContextMenuStrip background_context_menu_strip = new ContextMenuStrip();
+                        background_context_menu_strip.Items.Add("Sciągnij katalog obiegowy");
+                        background_context_menu_strip.ItemClicked += element_context_menu_item_select;
+                        parent.ContextMenuStrip = background_context_menu_strip;
+                    }
+                    else parent.ContextMenuStrip = null;
+                }
+
+                if (LV_catalog_display_status == 1) // przeglądanie katalogu lokalnego.
                 {
                     Point context_menu_position = PointToScreen(e.Location);
                     context_menu_position.X = context_menu_position.X + parent.Location.X + 2 * parent.Margin.Left;
@@ -2477,7 +2689,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                     background_context_menu_strip.ItemClicked += element_context_menu_item_select;
                     parent.ContextMenuStrip = background_context_menu_strip;
                 }
-                if (LV_catalog_display_status != 1)
+                if (LV_catalog_display_status == 2) // przeglądanie katalogu obiegowego.
                 {
                     parent.ContextMenuStrip = null;
                 }
@@ -2546,6 +2758,13 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                 LV_catalog_display_folder_content_display(catalog_folder_id_list.Last());
             }
             
+            if(e.ClickedItem.Text.Equals("Sciągnij katalog obiegowy"))
+            {
+                //TODO: wywołaj ściągnięcie katalogu obiegowego.
+                MessageBox.Show("Unimplemented");
+            }
+
+
             // Menu kontekstowe dla obiektów w folderze
             if (e.ClickedItem.Text.Equals("Otwórz"))
             {
@@ -3107,7 +3326,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                     }
                     if (LV_catalog_display_status == 2)
                     {
-                        file_context_menu_strip.Items.Add("Ściągnij");
+                        if(!networking_lock) file_context_menu_strip.Items.Add("Ściągnij");
                         file_context_menu_strip.Items.Add("Właściwości");
                     }
                     file_context_menu_strip.ItemClicked += element_context_menu_item_select;
@@ -3641,12 +3860,36 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             special_option_selector.extends = extends;
             special_option_selector.OnDataAvalible += new EventHandler(Special_function_window_OnDataAvalible);
             special_option_selector.Show();
+            if (networking_lock == true)
+            {
+                var BT_external_catalog_create_grabber = special_option_selector.Controls.Find("BT_external_catalog_create", true);
+                if(BT_external_catalog_create_grabber != null)
+                {
+                    if(BT_external_catalog_create_grabber.Count() != 0)
+                    {
+                        Control BT_external_catalog_create = BT_external_catalog_create_grabber[0];
+                        if (BT_external_catalog_create.Enabled) BT_external_catalog_create.Enabled = false;
+                    }
+                }
+            }
+            else
+            {
+                var BT_external_catalog_create_grabber = special_option_selector.Controls.Find("BT_external_catalog_create", true);
+                if (BT_external_catalog_create_grabber != null)
+                {
+                    if (BT_external_catalog_create_grabber.Count() != 0)
+                    {
+                        Control BT_external_catalog_create = BT_external_catalog_create_grabber[0];
+                        if (!BT_external_catalog_create.Enabled) BT_external_catalog_create.Enabled = true;
+                    }
+                }
+            }
             this.Hide();
         }
 
         #endregion
         
-        #region Logika zakładki Funkcjonalności sieciowe
+        #region Logika związana z sieciowością
 
         public Tuple<bool,string> ExternalCatalogTransfer()
         {
@@ -3691,7 +3934,6 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             return result;
         }
 
-
         public bool RequestFileTransferPermission(
             DistributedNetworkFile distributedNetworkFile)
         {
@@ -3718,6 +3960,30 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
         public void DisplayMessageBoxFromAnotherThread(String msg)
         {
             MessageBox.Show(msg);
+        }
+
+        private void BT_define_user_Click(object sender, EventArgs e)
+        {
+            if(networking_lock == false)
+            {
+                // Pobraliśmy już działającego użytkownika. Pytamy użytkownika czy chce zastąpić starego użytkownika.
+                DialogResult dialogResult = MessageBox.Show("Użytkownik jest już zdefiniowany\nCzy mam nadpisać go nowymi danymi?", "Próba nadpisania użytkownika", MessageBoxButtons.YesNo); ;
+                if (dialogResult == DialogResult.Yes)
+                {
+                    ConfigManager.WriteValue(ConfigManager.USER_ALIAS, "");
+                    ConfigManager.WriteValue(ConfigManager.TCP_COMM_IP_ADDRESS, "");
+                    distributedNetwork.Shutdown();
+                    DetermineLocalUser(false);
+                }
+                else if (dialogResult == DialogResult.No)
+                {
+                    //Nie robimy nic.
+                }
+            }
+            else
+            {
+                DetermineLocalUser(false);
+            }
         }
 
         #endregion

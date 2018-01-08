@@ -61,6 +61,15 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
             StartServer(uiForm);
         }
 
+        public void Shutdown()
+        {
+            foreach (BackgroundWorker client in clientBGWorkers)
+            {
+                StopClient(client);
+            }
+            StopServer();
+        }
+
 
         public void RequestFile(DistributedNetworkFile dnFile, String localDownloadPath,
             DistributedNetworkUser targetUser)
@@ -158,20 +167,23 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
                 }
                 catch(Exception ex)
                 {
-                    DisplayMessageBoxInMainForm(mainForm, "Exception while accepting client connection: " + ex.Message);
+                    //DisplayMessageBoxInMainForm(mainForm, "Exception while accepting client connection: " + ex.Message);
                 }
                 // Console.WriteLine("Connection request received from " +
                 //    ((IPEndPoint)tcpClient.Client.RemoteEndPoint).Address.ToString() + ":" +
                 //    ((IPEndPoint)tcpClient.Client.RemoteEndPoint).Port.ToString());
-                List<object> threadArgs = new List<object>()
+                if (!bgWorker.CancellationPending)
                 {
-                    mainForm,
-                    tcpClient
-                };
-                //NetworkStream networkStream = tcpClient.GetStream();
-                Thread thread = new Thread(
-                    new ParameterizedThreadStart(AcceptClientRequest));
-                thread.Start(threadArgs);
+                    List<object> threadArgs = new List<object>()
+                    {
+                        mainForm,
+                        tcpClient
+                    };
+                    //NetworkStream networkStream = tcpClient.GetStream();
+                    Thread thread = new Thread(
+                        new ParameterizedThreadStart(AcceptClientRequest));
+                    thread.Start(threadArgs);
+                }
             }
 
             // Stop serverListener after receiving worker cancellation
@@ -203,16 +215,20 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
             }
         }
 
-        private void ServerStoppedEvent(object sender, 
+        private void ServerStoppedEvent(object sender,
             RunWorkerCompletedEventArgs e)
         {
-            if (!e.Error.Message.Equals(""))
+            if (e.Error != null)
             {
-                System.Windows.Forms.MessageBox.Show(e.Error.Message);
-            }
+                if (!e.Error.Message.Equals(""))
+                {
+                    System.Windows.Forms.MessageBox.Show(e.Error.Message);
+                }
 
-            if (!((String)e.Result).Equals("")){
-                System.Windows.Forms.MessageBox.Show((String)e.Result);
+                if (!((String)e.Result).Equals(""))
+                {
+                    System.Windows.Forms.MessageBox.Show((String)e.Result);
+                }
             }
         }
 #endregion
@@ -809,7 +825,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
             catch (Exception ex)
             {
                 DisplayMessageBoxInMainForm(mainForm,
-                    "Cannot finalize file uploda, unable to write to network stream: " +
+                    "Cannot finalize file uplodad, unable to write to network stream: " +
                     ex.Message);
                 return RETURN_CANCEL;
             }

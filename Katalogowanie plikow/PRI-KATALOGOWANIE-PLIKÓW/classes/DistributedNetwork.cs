@@ -26,11 +26,11 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes
             tcpCom = new TcpCommunicationHandler(mainForm);
         }
 
-        ~DistributedNetwork()
+        public void Shutdown()
         {
             networkSocket.Close();
+            tcpCom.Shutdown();
         }
-
 
         public void RequestFile(DistributedNetworkUser user,
             DistributedNetworkFile file)
