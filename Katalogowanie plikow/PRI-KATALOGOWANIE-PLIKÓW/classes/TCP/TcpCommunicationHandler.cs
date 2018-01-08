@@ -420,12 +420,14 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
                     // Console.WriteLine("Received client request: send file");
                     SendFileRequestCallback(mainForm, networkStream);
                 }
+                /*
                 else if (TcpRequestCodebook.IsRequest(
                     requestCode, TcpRequestCodebook.SEND_CATALOGUE))
                 {
                     // Console.WriteLine("Received client request: send file");
                     SendCatalogueRequestCallback(mainForm, networkStream);
                 }
+                */
                 else
                 {
                     // Console.WriteLine("Received unrecognized client request");
@@ -458,19 +460,46 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
             // Console.WriteLine("SendFileRequest: requested " + dnFile.realFilePath);
 
             int initByte = AwaitNonNegativeByte(networkStream, mainForm);
-            if (initByte == -1) return RETURN_TIMEOUT;
+            if (initByte == -1)
+            {
+                IncrementFailedDownloadCountInMainForm(mainForm);
+                CheckIfDoneInMainForm(mainForm);
+                return RETURN_TIMEOUT;
+            }
             int requestByte = AwaitNonNegativeByte(networkStream, mainForm);
-            if (requestByte == -1) return RETURN_TIMEOUT;
+            if (requestByte == -1)
+            {
+                IncrementFailedDownloadCountInMainForm(mainForm);
+                CheckIfDoneInMainForm(mainForm);
+                return RETURN_TIMEOUT;
+            }
             if (requestByte != TcpRequestCodebook.SENDING_FILE_FRAGMENT[0])
+            {
+                IncrementFailedDownloadCountInMainForm(mainForm);
+                CheckIfDoneInMainForm(mainForm);
                 return RETURN_BAD_REQUEST;
+            }
+                
             // Console.WriteLine("SendFileRequest: received request:" + requestByte);
 
             byte[] packetSizeBytes = AwaitPacketSize(networkStream, mainForm);
-            if (packetSizeBytes.Length == 0) return RETURN_TIMEOUT;
+            if (packetSizeBytes.Length == 0)
+            {
+                IncrementFailedDownloadCountInMainForm(mainForm);
+                CheckIfDoneInMainForm(mainForm);
+                return RETURN_TIMEOUT;
+            }
             int packetSize = ByteArrayToInt(packetSizeBytes);
 
             int separatorByte = AwaitNonNegativeByte(networkStream, mainForm);
-            if (separatorByte == -1) return RETURN_TIMEOUT;
+
+            if (separatorByte == -1)
+            {
+                IncrementFailedDownloadCountInMainForm(mainForm);
+                CheckIfDoneInMainForm(mainForm);
+                return RETURN_TIMEOUT;
+            }
+            
 
             byte[] fileFragmentPacket =
                 AwaitDataPacket(networkStream, packetSize, mainForm);
@@ -489,6 +518,8 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
                 DisplayMessageBoxInMainForm(mainForm,
                     "file download stopped, unable to open file stream at " +
                     localDownloadPath + "\n" + ex.Message);
+                IncrementFailedDownloadCountInMainForm(mainForm);
+                CheckIfDoneInMainForm(mainForm);
                 return RETURN_CANCEL;
             }
             try
@@ -501,6 +532,8 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
                 DisplayMessageBoxInMainForm(mainForm,
                     "file download stopped, unable to write to file stream at " +
                     localDownloadPath + "\n" + ex.Message);
+                IncrementFailedDownloadCountInMainForm(mainForm);
+                CheckIfDoneInMainForm(mainForm);
                 return RETURN_CANCEL;
             }
             bytesWritten += fileFragmentPacket.Length;
@@ -517,6 +550,8 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
             {
                 DisplayMessageBoxInMainForm(mainForm,
                     "File download stopped, unable to write to network stream.\n" + ex.Message);
+                IncrementFailedDownloadCountInMainForm(mainForm);
+                CheckIfDoneInMainForm(mainForm);
                 return RETURN_CANCEL;
             }
             // Console.WriteLine("SendFileRequest: sent request: Continue sending file");
@@ -528,6 +563,8 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
                 {
                     // Console.WriteLine("Timeout in SendFileRequest");
                     fileStream.Close();
+                    IncrementFailedDownloadCountInMainForm(mainForm);
+                    CheckIfDoneInMainForm(mainForm);
                     return RETURN_TIMEOUT;
                 }
                 requestByte = AwaitNonNegativeByte(networkStream, mainForm);
@@ -535,6 +572,8 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
                 {
                     // Console.WriteLine("Timeout in SendFileRequest");
                     fileStream.Close();
+                    IncrementFailedDownloadCountInMainForm(mainForm);
+                    CheckIfDoneInMainForm(mainForm);
                     return RETURN_TIMEOUT;
                 }
                 // Console.WriteLine("SendFileRequest: received request: " + requestByte);
@@ -546,6 +585,9 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
                         requestByte, TcpRequestCodebook.DONE_SENDING_FILE))
                     {
                         // Console.WriteLine("Successfully received file");
+                        AddSuccessfulDownloadNameInMainForm(mainForm, dnFile.realFileName);
+                        IncrementSuccessfulDownloadCountInMainForm(mainForm);
+                        CheckIfDoneInMainForm(mainForm);
                     }
                     break;
                 }
@@ -557,6 +599,8 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
                     {
                         // Console.WriteLine("Timeout in SendFileRequest");
                         fileStream.Close();
+                        IncrementFailedDownloadCountInMainForm(mainForm);
+                        CheckIfDoneInMainForm(mainForm);
                         return RETURN_TIMEOUT;
                     }
                     packetSize = ByteArrayToInt(packetSizeBytes);
@@ -567,6 +611,8 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
                     {
                         // Console.WriteLine("Timeout in SendFileRequest");
                         fileStream.Close();
+                        IncrementFailedDownloadCountInMainForm(mainForm);
+                        CheckIfDoneInMainForm(mainForm);
                         return RETURN_TIMEOUT;
                     }
 
@@ -582,6 +628,8 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
                         DisplayMessageBoxInMainForm(mainForm,
                             "File download stopped, unable to write to file stream at " +
                             localDownloadPath + "\n" + ex.Message);
+                        IncrementFailedDownloadCountInMainForm(mainForm);
+                        CheckIfDoneInMainForm(mainForm);
                         return RETURN_CANCEL;
                     }
                     bytesWritten += fileFragmentPacket.Length;
@@ -600,6 +648,8 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
                         DisplayMessageBoxInMainForm(mainForm,
                             "File download stopped, unable to write to network stream at " +
                             localDownloadPath + "\n" + ex.Message);
+                        IncrementFailedDownloadCountInMainForm(mainForm);
+                        CheckIfDoneInMainForm(mainForm);
                         return RETURN_CANCEL;
                     }
                     // Console.WriteLine("SendFileRequest: sent request: Continue sending file");
@@ -634,10 +684,11 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
             serializedFilePath = 
                 AwaitDataPacket(networkStream, packetSize, mainForm);
             String filePath = DeserializeString(serializedFilePath);
+            String fileName = Path.GetFileName(filePath);
             // Console.WriteLine("SendFileRequestCallback: Received request for file " + filePath);
 
             //DistributedNetworkFile distributedNetworkFile = DistributedNetworkFile.GetFileByFilePath(filePath);
-            DistributedNetworkFile distributedNetworkFile = new DistributedNetworkFile(filePath, true, false);
+            DistributedNetworkFile distributedNetworkFile = new DistributedNetworkFile(fileName,filePath, true, false);
 
             if (!distributedNetworkFile.IsPresentInLocalCatalogue())
             {
@@ -888,6 +939,50 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
             });
         }
 
+        private void AddSuccessfulDownloadNameInMainForm(Main_form mainFormRef,
+            String filename)
+        {
+            mainFormRef.Invoke((Action)delegate ()
+            {
+                mainFormRef.AddSuccessfulDownloadNameFromAnotherThread(filename);
+            });
+        }
+
+        private void AddFailedDownloadNameInMainForm(Main_form mainFormRef,
+            String filename)
+        {
+            mainFormRef.Invoke((Action)delegate ()
+            {
+                mainFormRef.AddFailedDownloadNameFromAnotherThread(filename);
+            });
+        }
+
+        private void IncrementSuccessfulDownloadCountInMainForm(Main_form mainFormRef)
+        {
+            mainFormRef.Invoke((Action)delegate ()
+            {
+                mainFormRef.IncrementSuccessfulDownloadCountFromAnotherThread();
+            });
+        }
+
+        private void IncrementFailedDownloadCountInMainForm(Main_form mainFormRef)
+        {
+            mainFormRef.Invoke((Action)delegate ()
+            {
+                mainFormRef.IncrementFailedDownloadCountFromAnotherThread();
+            });
+        }
+
+        private void CheckIfDoneInMainForm(Main_form mainFormRef)
+        {
+            mainFormRef.Invoke((Action)delegate ()
+            {
+                mainFormRef.CheckIfDoneFromOtherThread();
+            });
+        }
+
+
+        /* Legacy - wysyłanie i odbieranie katalogu dzieje się przez kod przesyłania pliku
         public int SendCatalogueRequest(NetworkStream networkStream)
         {
             byte[] packet = CreateTCPDataPacket(
@@ -1007,7 +1102,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
 
             return 0;
         }
-        
+        */
 
         /// <summary>
         /// Will return first non-negative byte from NetworkStream

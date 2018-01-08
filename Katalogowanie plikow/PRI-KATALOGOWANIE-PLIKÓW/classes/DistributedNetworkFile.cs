@@ -14,11 +14,13 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes
 
         //public String filePathInCatalogue;
         public String realFilePath;
+        public String realFileName;
 
         public long fileSize;
 
-        public DistributedNetworkFile(String filePath, bool allowDistribution, bool allowUnpromptedDistribution)
+        public DistributedNetworkFile(String fileName, String filePath, bool allowDistribution, bool allowUnpromptedDistribution)
         {
+            this.realFileName = fileName;
             this.realFilePath = filePath;
             this.allowDistribution = allowDistribution;
             this.allowUnpromptedDistribution = allowUnpromptedDistribution;

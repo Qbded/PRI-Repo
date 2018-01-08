@@ -137,6 +137,12 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
         // Zmienne związane z funkcjonowaniem opcji sieciowych:
         private DistributedNetworkUser local_user = null;
         private DistributedNetwork distributedNetwork = null;
+        private List<string> successful_downloads = new List<string>();
+        private List<string> failed_downloads = new List<string>();
+        private int total_selected = 0;
+        private int total_to_download = 0;
+        private int successful_downloads_count = 0;
+        private int failed_downloads_count = 0;
         public bool networking_lock = true;
 
         #endregion
@@ -2760,8 +2766,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             
             if(e.ClickedItem.Text.Equals("Sciągnij katalog obiegowy"))
             {
-                //TODO: wywołaj ściągnięcie katalogu obiegowego.
-                MessageBox.Show("Unimplemented");
+                
             }
 
 
@@ -3048,16 +3053,147 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             if (e.ClickedItem.Text.Equals("Ściągnij"))
             {
                 Console.WriteLine("Ściągnij clicked!");
-                //Wybieramy tylko pliki, ignorujemy foldery póki co:
+                
+                total_selected = LV_catalog_display_item_selection.Count();
                 bool folders_in_selection = false;
-                int total_selected = LV_catalog_display_item_selection.Count(), total_to_download = 0;
-                foreach(ListViewItem selected_item in LV_catalog_display_item_selection)
+
+                // Resetujemy informację o poprawnie pobranych plikach:
+                total_to_download = 0;
+                successful_downloads = new List<string>();
+                successful_downloads_count = 0;
+                failed_downloads = new List<string>();
+                failed_downloads_count = 0;
+
+                System.Net.IPAddress ipAddr = null;
+
+                // Przeszukiwanie przechowywanych par alias adres:
+                // Przechowujemy je w formacie ALIAS0_ADRES IP0|ALIAS1_ADRES IP1|...
+
+                string grabbed_aliases = "";
+                bool error_on_aliases_read = false;
+
+                try
+                {
+                    grabbed_aliases = ConfigManager.ReadString(ConfigManager.KNOWN_ALIASES);
+
+                    string[] alias_address_pairs = new string[0];
+
+                    if (!grabbed_aliases.Equals(""))
+                    {
+                        try
+                        {
+                            alias_address_pairs = grabbed_aliases.Split('|');
+                            string[] pair_split = new string[2] { "", "" };
+
+                            List<string> aliases_list = new List<string>();
+                            List<string> addresses_list = new List<string>();
+
+                            foreach (string pair in alias_address_pairs)
+                            {
+                                try
+                                {
+                                    pair_split = pair.Split('_');
+                                    aliases_list.Add(pair_split[0]);
+                                    addresses_list.Add(pair_split[1]);
+                                }
+                                catch
+                                {
+                                    MessageBox.Show("Błąd dzielenia pary alias-adres na składowe!\n" +
+                                                    "Czyszczę zawartość znanych aliasów!");
+                                    ConfigManager.WriteValue(ConfigManager.KNOWN_ALIASES, "");
+                                    error_on_aliases_read = true;
+                                    break;
+                                }
+                            }
+
+                            if (error_on_aliases_read == false)
+                            {
+                                string alias_to_find = LV_catalog_display_current_catalog_alias;
+                                int pair_index = aliases_list.IndexOf(alias_to_find.ToUpper());
+                                if(pair_index != -1)
+                                {
+                                    // Znaleźliśmy alias w liście - ustalamy ipAddr
+                                    try
+                                    {
+                                        ipAddr = System.Net.IPAddress.Parse(addresses_list[pair_index]);
+                                    }
+                                    catch
+                                    {
+                                        MessageBox.Show("Błąd przy parsowaniu adresu z znalezionej pary!");
+                                    }
+                                }
+                                else
+                                {
+                                    // Nie znaleźliśmy aliasu w liście - nic nie robimy.
+                                }
+                            }
+                        }
+                        catch
+                        {
+                            MessageBox.Show("Błąd dzielenia kontenera znanych aliasów na pary alias-adres!\n" +
+                                            "Czyszczę zawartość znanych aliasów!");
+                            ConfigManager.WriteValue(ConfigManager.KNOWN_ALIASES, "");
+                            error_on_aliases_read = true;
+                        }
+                    }
+                }
+                catch
+                {
+                    MessageBox.Show("Błąd odczytu znanych aliasów z pliku konfiguracyjnego!\n" +
+                                    "Resetuję miejsce przechowywania aliasów!");
+                    try
+                    {
+                        ConfigManager.WriteValue(ConfigManager.KNOWN_ALIASES, "");
+                    }
+                    catch
+                    {
+                        MessageBox.Show("Błąd resetowania miejsca przechowywania aliasów!\n" +
+                                        "Prawdopodobne uszkodzenie/błąd dostępu do pliku konfiguracyjnego!");
+                        return;
+                    }
+                    error_on_aliases_read = true;
+                }
+
+                // Nie znaleźliśmy w konfigu podanego aliasu - tworzymy nowy rekord w pliku konfiguracyjnym.
+                if (ipAddr == null)
+                {
+                    IPAddressInputForm ipAddressInputForm = new IPAddressInputForm(ref ipAddr);
+                    ipAddressInputForm.Owner = this;
+                    ipAddressInputForm.ShowDialog();
+                    ipAddr = ipAddressInputForm.resultRef;
+
+                    if (ipAddr == null)
+                    {
+                        // Podany adres IP jest niepoprawny - okno o tym informujące jest wywoływane gdzie indziej, tutaj po prostu przerywamy funkcję!
+                        return;
+                    }
+                    else
+                    {
+                        // Podano adres IP zwalidowany - pobieramy zawartość grabbed_aliases i badamy co w nim jest
+                        if(grabbed_aliases.Length == 0)
+                        {
+                            // Grabbed aliases był pusty albo próba jego wzięcia zakonczyła się błędem - nadpisz nowym stringiem z pojedynczym aliasem.
+                            string entity_to_add = "";
+                            entity_to_add = LV_catalog_display_current_catalog_alias;
+                            entity_to_add += '_' + ipAddr.ToString();
+                            ConfigManager.WriteValue(ConfigManager.KNOWN_ALIASES, entity_to_add);
+                        }
+                        else
+                        {
+                            // Grabbed aliases zawiera już zawartość, która przeszła poprawnie walidację - pobieramy zawartość dotychczasową i dodajemy nowy.
+                            string entity_to_add = grabbed_aliases;
+                            entity_to_add += '|' + LV_catalog_display_current_catalog_alias;
+                            entity_to_add += '_' + ipAddr.ToString();
+                            ConfigManager.WriteValue(ConfigManager.KNOWN_ALIASES, entity_to_add);
+                        }
+                    }
+                }
+
+                foreach (ListViewItem selected_item in LV_catalog_display_item_selection)
                 {
                     if (selected_item.SubItems[1].Text.Equals("Folder"))
                     {
-                        // obsługa folderów w wybieraniu obiektów do wysłania, póki co zwraca pod koniec działania funkcji okno z informacją że jest unsupported.
-                        // TODO: Można zrobić crawl w dół po drzewie folderów dla zaznaczonego folderu i pobierać wszystkie pliki w nim, ale trzeba
-                        // też obsłużyć przypadek powtórzeń plików w wybranych plikach...
+                        // obsługa folderów w wybieraniu obiektów do wysłania, zwraca pod koniec działania funkcji okno z informacją że jest unsupported.
                         folders_in_selection = true;
                     }
                     else
@@ -3075,10 +3211,10 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                             if (selected_item.SubItems[7].Text.Equals("TAK")) requested_downloads_without_question = true;
 
                             // Bierzemy ścieżkę do pliku z bazy danych:
-                            string requested_filepath = "", requested_alias = "";
+                            string requested_filepath = "", requested_filename = "", requested_alias = "";
 
                             DataTable filepath_container = new DataTable();
-                            FbDataAdapter filepath_grabber = new FbDataAdapter("SELECT PATH " +
+                            FbDataAdapter filepath_grabber = new FbDataAdapter("SELECT ORIGINAL_NAME,PATH " +
                                                                               "FROM " + selected_item.ToolTipText + " " +
                                                                               "WHERE ID = @Id;"
                                                                               ,
@@ -3088,10 +3224,11 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
 
                             filepath_grabber.Fill(filepath_container);
 
-                            if(filepath_container.Rows.Count == 1)
+                            if (filepath_container.Rows.Count == 1)
                             {
                                 // Znalazł nasz plik
-                                requested_filepath = (string)filepath_container.Rows[0].ItemArray[0];
+                                requested_filepath = (string)filepath_container.Rows[0].ItemArray[1];
+                                requested_filename = (string)filepath_container.Rows[0].ItemArray[0];
                             }
 
                             // Bierzemy alias użytkownika, którego katalogo obiegowy czytamy:
@@ -3105,30 +3242,19 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                             */
 
                             // Tutaj wywołujemy przesyłanie plików:
-                            System.Net.IPAddress ipAddr = null;
-                            IPAddressInputForm ipAddressInputForm = new IPAddressInputForm(ref ipAddr);
-                            ipAddressInputForm.Owner = this;
-                            ipAddressInputForm.ShowDialog();
-                            ipAddr = ipAddressInputForm.resultRef;
-                            Console.WriteLine("Received target user IP address: " + ipAddr.ToString());
-                            if(ipAddr == null)
-                            {
-                                MessageBox.Show("Wrong IP address format!");
-                                return;
-                            }
                             DistributedNetworkUser targetUser = new DistributedNetworkUser(false, requested_alias, ipAddr);
 
                             DistributedNetworkFile distributedNetworkFile =
-                                new DistributedNetworkFile(requested_filepath, true, requested_downloads_without_question);
+                                new DistributedNetworkFile(requested_filename, requested_filepath, true, requested_downloads_without_question);
                             distributedNetwork.RequestFile(targetUser, distributedNetworkFile);
                         }
-
                     }
                 }
                 if(folders_in_selection == true)
                 {
                     MessageBox.Show("W wybranych plikach znalazł się folder. Program obsługuje tylko przesyłanie plików.");
                 }
+
             }
             if (e.ClickedItem.Text.Equals("Opcje specjalne"))
             {
@@ -3956,10 +4082,42 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             }
         }
 
-
         public void DisplayMessageBoxFromAnotherThread(String msg)
         {
             MessageBox.Show(msg);
+        }
+
+        public void AddSuccessfulDownloadNameFromAnotherThread(String filename)
+        {
+            this.successful_downloads.Add(filename);
+        }
+
+        public void AddFailedDownloadNameFromAnotherThread(String filename)
+        {
+            this.failed_downloads.Add(filename);
+        }
+
+        public void IncrementSuccessfulDownloadCountFromAnotherThread()
+        {
+            this.successful_downloads_count++;
+        }
+
+        public void IncrementFailedDownloadCountFromAnotherThread()
+        {
+            this.failed_downloads_count++;
+        }
+
+        public void CheckIfDoneFromOtherThread()
+        {
+            if(failed_downloads_count + successful_downloads_count == total_to_download)
+            {
+                // Czas reportować o ściągnięciu:
+
+                MessageBox.Show("Ściąganie plików zakonczone!\n" +
+                                "Liczba wszystkich plików do ściągnięcia: " + total_to_download + "\n" +
+                                "Liczba plików, które udało się ściągnąć: " + successful_downloads_count + "\n" +
+                                "Liczba niepowodzeń: " + failed_downloads_count + "\n");
+            }
         }
 
         private void BT_define_user_Click(object sender, EventArgs e)
@@ -3972,6 +4130,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                 {
                     ConfigManager.WriteValue(ConfigManager.USER_ALIAS, "");
                     ConfigManager.WriteValue(ConfigManager.TCP_COMM_IP_ADDRESS, "");
+                    ConfigManager.WriteValue(ConfigManager.KNOWN_ALIASES, "");
                     distributedNetwork.Shutdown();
                     DetermineLocalUser(false);
                 }
