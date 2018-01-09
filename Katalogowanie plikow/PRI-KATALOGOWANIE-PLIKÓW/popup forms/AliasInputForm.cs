@@ -48,7 +48,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.popup_forms
 
             if(validation_result == true)
             {
-                resultRef = TB_alias_input.Text;
+                resultRef = TB_alias_input.Text.ToUpper();
 
                 this.Close();
             }

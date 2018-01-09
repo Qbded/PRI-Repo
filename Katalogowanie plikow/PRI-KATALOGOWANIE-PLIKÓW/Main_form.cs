@@ -147,6 +147,9 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
         public bool networking_lock = true;
         private string recieved_external_catalog_name = "";
         private Timer catalog_download_finalizer = new Timer();
+        private string used_IP_address_string = "";
+        private string used_alias = ""; 
+
 
         #endregion
 
@@ -1353,15 +1356,34 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
         // Alias nie może zawierać w nazwie znaku '_', oprócz tego wszystkie chwyty dozwolone.
         private bool external_catalog_build(string alias)
         {
-            bool result = false;
-            if (alias.Contains('_')) MessageBox.Show("ERROR! Nazwa aliasu nie może zawierać znaku: _");
+            bool clear = false;
+
+            if (alias.Contains('_'))
+            {
+                MessageBox.Show("ERROR! Nazwa aliasu nie może zawierać znaku: _");
+                return false;
+            }
             else
             {
-                if(File.Exists(database_externals_path + alias + "_CATALOG.FDB"))
+                if (File.Exists(database_externals_path + alias + "_CATALOG.FDB"))
                 {
-                    MessageBox.Show("ERROR! Katalog obiegowy już istnieje!");
+                    try
+                    {
+                        File.Delete(database_externals_path + alias + "_CATALOG.FDB");
+                        clear = true;
+                    }
+                    catch
+                    {
+                        MessageBox.Show("Generowanie katalogu obiegowego zakonczyło się niepowodzeniem!");
+                        return false;
+                    }
                 }
                 else
+                {
+                    clear = true;
+                }
+
+                if (clear)
                 {
                     // Na samym początku pobieramy z bazy wszystkie foldery wirtualne oznaczone jako widoczne dla katalogu obiegowego
                     DataTable source_folder_structure_container = new DataTable();
@@ -1377,10 +1399,11 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                     {
                         // Jezeli takowych nie było - zwracamy informację o próbie stworzenia pustego katalogu obiegowego i konczymy działanie procedury!
                         MessageBox.Show("Uwaga - próba wygenerowania pustego katalogu obiegowego!\nKatalog nie został wygenerowany.");
+                        source_folder_structure_grabber.Dispose();
+                        return false;
                     }
                     else
                     {
-                        result = true;
                         // Jeżeli takowe są to tworzymy string połączeniowy do nowej bazy danych:
                         FbConnectionStringBuilder external_catalog_connecton_string_builder = new FbConnectionStringBuilder();
 
@@ -1430,8 +1453,8 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                             {
                                 parent_id = -1;
                             }
-                            
-                            if(parent_id != -1)
+
+                            if (parent_id != -1)
                             {
                                 // Tworzymy nowy folder w odpowienim katalogu
                                 Tuple<string, int, int, int, int> redirect_parent = id_tracker_list.Find(x => x.Item3 == parent_id);
@@ -1443,7 +1466,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                                 {
                                     database_virtual_folder_make(initial_data.Item1, redirect_parent.Item5, false, external_catalog_connecton_string_builder.ConnectionString);
                                 }
-                                
+
 
                                 // I tworzymy zapytanie o jego nowy ID i DIR_ID
                                 DataTable new_folder_container = new DataTable();
@@ -1452,7 +1475,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                                                                                      "WHERE NAME = @Name AND DIR_ID = @Parent_directory_ID"
                                                                                      ,
                                                                                      new FbConnection(external_catalog_connecton_string_builder.ConnectionString));
-                                if(redirect_parent == null)
+                                if (redirect_parent == null)
                                 {
                                     new_folder_grabber.SelectCommand.Parameters.AddWithValue("@Parent_directory_ID", initial_data.Item2);
                                 }
@@ -1576,14 +1599,16 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
 
                                         add_data.Dispose();
                                     }
-                                } 
+                                }
                             }
                         }
+                        source_folder_structure_grabber.Dispose();
+                        MessageBox.Show("Generowanie katalogu obiegowego przebiegło pomyślnie!");
+                        return true;
                     }
-                    source_folder_structure_grabber.Dispose();
                 }
             }
-            return result;
+            return true;
         }
 
         // Pobranie indeksu, folderu macierzystego, nazwy, typu (z której tabeli pochodzi) i rozszerzenia każdego pliku w zadanym folderze
@@ -2537,7 +2562,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                     }
                     LV_catalog_display.Enabled = true;
                     BT_previous.Enabled = true;
-                    BT_specials.Enabled = false;
+                    BT_specials.Enabled = true;
                     TB_catalog_path_current.Enabled = false;
                 }
             }
@@ -2680,7 +2705,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                         context_menu_position.Y = context_menu_position.Y + parent.Location.Y + 30; // kolumna ma rozmiar 30px
 
                         ContextMenuStrip background_context_menu_strip = new ContextMenuStrip();
-                        background_context_menu_strip.Items.Add("Sciągnij katalog obiegowy");
+                        background_context_menu_strip.Items.Add("Ściągnij katalog obiegowy");
                         background_context_menu_strip.ItemClicked += element_context_menu_item_select;
                         parent.ContextMenuStrip = background_context_menu_strip;
                     }
@@ -2768,10 +2793,11 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                 }
                 LV_catalog_display_folder_content_display(catalog_folder_id_list.Last());
             }
-            
-            if(e.ClickedItem.Text.Equals("Sciągnij katalog obiegowy"))
+
+            if (e.ClickedItem.Text.Equals("Ściągnij katalog obiegowy"))
             {
                 last_message_to_broadcast = "";
+                used_alias = "";
                 System.Net.IPAddress ipAddr = null;
                 String alias = null;
 
@@ -2781,7 +2807,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                 alias = inputForm.alias_result;
                 ipAddr = inputForm.address_result;
 
-                if(alias == null && ipAddr == null)
+                if (alias == null && ipAddr == null)
                 {
                     MessageBox.Show("Nie podano ani adresu, ani aliasu.");
                 }
@@ -2790,121 +2816,168 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                     String requested_filename = "EXTERNAL_CATALOG.FDB";
                     String requested_filepath = "TO_DETERMINE";
 
-                    if (alias == null)
+                    // Czytamy plik konfiguracyjny w poszukuwaniu wprowadzonej danej
+                    string grabbed_aliases = "";
+                    bool error_on_aliases_read = false;
+
+                    string provided_alias = "";
+                    string provided_address_string = "";
+
+                    if (alias != null) provided_alias = alias;
+                    if (ipAddr != null) provided_address_string = ipAddr.ToString();
+
+                    try
                     {
-                        // Mamy tylko adres - łączymy z hostem i wysyłamy pytanie o katalog.
-                        DistributedNetworkUser targetUser = new DistributedNetworkUser(false, "UNKNOWN", ipAddr);
+                        grabbed_aliases = ConfigManager.ReadString(ConfigManager.KNOWN_ALIASES);
 
-                        DistributedNetworkFile distributedNetworkFile =
-                            new DistributedNetworkFile(requested_filename, requested_filepath, true, true);
-                        distributedNetwork.RequestFile(targetUser, distributedNetworkFile);
-                    }
-                    if (ipAddr == null)
-                    {
-                        // Mamy tylko alias - patrzymy czy jest w naszym konfigu:
+                        string[] alias_address_pairs = new string[0];
 
-                        string grabbed_aliases = "";
-                        bool error_on_aliases_read = false;
-
-                        try
+                        if (!grabbed_aliases.Equals(""))
                         {
-                            grabbed_aliases = ConfigManager.ReadString(ConfigManager.KNOWN_ALIASES);
-
-                            string[] alias_address_pairs = new string[0];
-
-                            if (!grabbed_aliases.Equals(""))
+                            try
                             {
-                                try
+                                alias_address_pairs = grabbed_aliases.Split('|');
+                                string[] pair_split = new string[2] { "", "" };
+
+                                List<string> aliases_list = new List<string>();
+                                List<string> addresses_list = new List<string>();
+
+                                foreach (string pair in alias_address_pairs)
                                 {
-                                    alias_address_pairs = grabbed_aliases.Split('|');
-                                    string[] pair_split = new string[2] { "", "" };
-
-                                    List<string> aliases_list = new List<string>();
-                                    List<string> addresses_list = new List<string>();
-
-                                    foreach (string pair in alias_address_pairs)
+                                    try
                                     {
-                                        try
-                                        {
-                                            pair_split = pair.Split('_');
-                                            aliases_list.Add(pair_split[0]);
-                                            addresses_list.Add(pair_split[1]);
-                                        }
-                                        catch
-                                        {
-                                            MessageBox.Show("Błąd dzielenia pary alias-adres na składowe!\n" +
-                                                            "Czyszczę zawartość znanych aliasów!");
-                                            ConfigManager.WriteValue(ConfigManager.KNOWN_ALIASES, "");
-                                            error_on_aliases_read = true;
-                                            break;
-                                        }
+                                        pair_split = pair.Split('_');
+                                        aliases_list.Add(pair_split[0]);
+                                        addresses_list.Add(pair_split[1]);
                                     }
-
-                                    if (error_on_aliases_read == false)
+                                    catch
                                     {
-                                        string alias_to_find = alias;
+                                        ConfigManager.WriteValue(ConfigManager.KNOWN_ALIASES, "");
+                                        error_on_aliases_read = true;
+                                        break;
+                                    }
+                                }
+
+                                if (error_on_aliases_read == false)
+                                {
+                                    if (alias != null)
+                                    {
+                                        if(alias.Equals(ConfigManager.ReadString(ConfigManager.USER_ALIAS)))
+                                        {
+                                            MessageBox.Show("Pobieranie własnego katalogu jest niemożliwe!");
+                                            return;
+                                        }
+                                        
+                                        // Szukamy w pliku konfiguracyjnym aliasu
+                                        string alias_to_find = provided_alias;
                                         int pair_index = aliases_list.IndexOf(alias_to_find.ToUpper());
                                         if (pair_index != -1)
                                         {
-                                            // Znaleźliśmy alias w liście - ustalamy ipAddr
+                                            // Znaleźliśmy alias w liście - ustalamy used_IP_address_string.
                                             try
                                             {
                                                 ipAddr = System.Net.IPAddress.Parse(addresses_list[pair_index]);
+
+                                                alias = provided_alias;
+                                                provided_address_string = ipAddr.ToString();
                                             }
                                             catch
                                             {
-                                                MessageBox.Show("Błąd przy parsowaniu adresu z znalezionej pary!");
+                                                return;
                                             }
                                         }
                                         else
                                         {
-                                            // Nie znaleźliśmy aliasu w liście - zwracamy informację o błędzie i kończymy procedurę.
+                                            // Nie znaleźliśmy aliasu - konczymy błędem próbę ściągnięcia katalogu obiegowego!
                                             MessageBox.Show("Nie znaleziono w pliku konfiguracyjnym użytkownika o aliasie: " + alias);
                                             return;
                                         }
                                     }
+                                    if (ipAddr != null)
+                                    {
+                                        if(provided_address_string.Equals(ConfigManager.ReadString(ConfigManager.TCP_COMM_IP_ADDRESS)))
+                                        {
+                                            MessageBox.Show("Pobieranie własnego katalogu jest niemożliwe!");
+                                            return;
+                                        }
+                                        
+                                        // Szukamy w pliku konfiguracyjnym adresu
+                                        string address_to_find = provided_address_string;
+                                        int pair_index = addresses_list.IndexOf(address_to_find);
+                                        if (pair_index != -1)
+                                        {
+                                            // Znaleźliśmy adres w liście - ustalamy alias.
+                                            try
+                                            {
+                                                provided_alias = aliases_list[pair_index];
+                                                used_IP_address_string = provided_address_string;
+                                            }
+                                            catch
+                                            {
+                                                return;
+                                            }
+                                        }
+                                        else
+                                        {
+                                            // Nie znaleźliśmy adresu w liście - przekazujemy tylko wartość adresu do used_IP_address_string
+                                            provided_alias = "UNKNOWN";
+                                            used_alias = "UNKNOWN";
+                                            used_IP_address_string = provided_address_string;
+                                        }
+                                    }
                                 }
-                                catch
-                                {
-                                    MessageBox.Show("Błąd dzielenia kontenera znanych aliasów na pary alias-adres!\n" +
-                                                    "Czyszczę zawartość znanych aliasów!");
-                                    ConfigManager.WriteValue(ConfigManager.KNOWN_ALIASES, "");
-                                    error_on_aliases_read = true;
-                                }
-                            }
-                            else
-                            {
-                                // Nasza lista aliasów jest pusta - zwracamy informację o błędzie i kończymy procedurę.
-                                MessageBox.Show("Połączenie po aliasie nie jest możliwe!\n" + 
-                                                "Dotychczas nie został zdefiniowany żadny alias.");
-                                return;
-                            }
-                        }
-                        catch
-                        {
-                            MessageBox.Show("Błąd odczytu znanych aliasów z pliku konfiguracyjnego!\n" +
-                                            "Resetuję miejsce przechowywania aliasów!");
-                            try
-                            {
-                                ConfigManager.WriteValue(ConfigManager.KNOWN_ALIASES, "");
                             }
                             catch
                             {
-                                MessageBox.Show("Błąd resetowania miejsca przechowywania aliasów!\n" +
-                                                "Prawdopodobne uszkodzenie/błąd dostępu do pliku konfiguracyjnego!");
-                                return;
+                                ConfigManager.WriteValue(ConfigManager.KNOWN_ALIASES, "");
                             }
-                            error_on_aliases_read = true;
                         }
-
-                        DistributedNetworkUser targetUser = new DistributedNetworkUser(false, alias, ipAddr);
-
-                        DistributedNetworkFile distributedNetworkFile =
-                            new DistributedNetworkFile(requested_filename, requested_filepath, true, true);
-                        distributedNetwork.RequestFile(targetUser, distributedNetworkFile);
+                        else
+                        {
+                            // Nasza lista aliasów jest pusta - idziemy dalej przez program.
+                            used_IP_address_string = ipAddr.ToString();
+                            provided_address_string = ipAddr.ToString();
+                            used_alias = "UNKNOWN";
+                            provided_alias = "UNKNOWN";
+                        }
                     }
+                    catch
+                    {
+                        MessageBox.Show("Błąd odczytu znanych aliasów z pliku konfiguracyjnego!\n" +
+                                        "Resetuję miejsce przechowywania aliasów!");
+                        try
+                        {
+                            ConfigManager.WriteValue(ConfigManager.KNOWN_ALIASES, "");
+                        }
+                        catch
+                        {
+                            MessageBox.Show("Błąd resetowania miejsca przechowywania aliasów!\n" +
+                                            "Prawdopodobne uszkodzenie/błąd dostępu do pliku konfiguracyjnego!");
+                            return;
+                        }
+                    }
+
+                    if (!provided_alias.Equals("UNKNOWN")) 
+                    {
+                        if (new FileInfo(database_externals_path + provided_alias + "_CATALOG.FDB").Exists)
+                        {
+                            try
+                            {
+                                File.Delete(database_externals_path + provided_alias + "_CATALOG.FDB");
+                            }
+                            catch
+                            {
+
+                            }
+                        }
+                    }
+                    
+                    DistributedNetworkUser targetUser = new DistributedNetworkUser(false, provided_alias, System.Net.IPAddress.Parse(provided_address_string));
+
+                    DistributedNetworkFile distributedNetworkFile =
+                        new DistributedNetworkFile(requested_filename, requested_filepath, true, true);
+                    distributedNetwork.RequestFile(targetUser, distributedNetworkFile);
                 }
-                
             }
 
 
@@ -3393,6 +3466,10 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                 {
                     MessageBox.Show("W wybranych plikach znalazł się folder. Program obsługuje tylko przesyłanie plików.");
                 }
+                if(total_to_download == 0)
+                {
+                    MessageBox.Show("W wybranych plikach nie było żadnego pliku, który możnaby ściągnąć.");
+                }
 
             }
             if (e.ClickedItem.Text.Equals("Opcje specjalne"))
@@ -3549,6 +3626,10 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                     ContextMenuStrip folder_context_menu_strip = new ContextMenuStrip();
                     folder_context_menu_strip.Name = parent.HitTest(e.Location).Item.SubItems[1].Text; // typ obiektu na którym jesteśmy
                     folder_context_menu_strip.Text = parent.HitTest(e.Location).Item.Index.ToString(); // indeks na liście obiektu na ktorym jestesmy
+                    if (LV_catalog_display_status == 0)
+                    {
+                        folder_context_menu_strip.Items.Add("Otwórz");
+                    }
                     if (LV_catalog_display_status == 1)
                     {
                         folder_context_menu_strip.Items.Add("Otwórz");
@@ -3560,9 +3641,10 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                         folder_context_menu_strip.Items.Add("Zmień dostępność do pobrania (bez pytania)");
                         folder_context_menu_strip.Items.Add("Opcje specjalne");
                     }
-                    else
+                    if(LV_catalog_display_status == 2)
                     {
                         folder_context_menu_strip.Items.Add("Otwórz");
+                        folder_context_menu_strip.Items.Add("Opcje specjalne");
                     }
                     folder_context_menu_strip.ItemClicked += element_context_menu_item_select;
                     if (context_menu_position.Y < context_menu_position.Y) context_menu_position.Y = context_menu_position.Y - folder_context_menu_strip.Height - 25;
@@ -3593,6 +3675,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                     {
                         if(!networking_lock) file_context_menu_strip.Items.Add("Ściągnij");
                         file_context_menu_strip.Items.Add("Właściwości");
+                        file_context_menu_strip.Items.Add("Opcje specjalne");
                     }
                     file_context_menu_strip.ItemClicked += element_context_menu_item_select;
                     if (context_menu_position.Y < context_menu_position.Y) context_menu_position.Y = context_menu_position.Y - file_context_menu_strip.Height - 25;
@@ -4096,7 +4179,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                     LV_catalog_display_folder_content_display(catalog_folder_id_list.Last());
                     break;
                 case 4:
-                    // Budowanie katalogu obiegowego, na razie z aliasem test dopóki nie bedzie częśći sieciowej...
+                    // Budowanie katalogu obiegowego.
                     if(local_user != null)
                     {
                         external_catalog_build(local_user.Alias);
@@ -4116,6 +4199,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             // Wywołujemy nowego Forma w którym mamy wybór poszczególnych opcji specjalnych i przekazujemy do niego listę naszych wybranych obiektów.
             special_option_selector = new Special_function_window();
             special_option_selector.Owner = this;
+            special_option_selector.mode = LV_catalog_display_status;
             // Z data to manipulate wyciagamy wszystkie pliki - potrzebujemy ich nazwy, rozszerzenia i ścieżki fizyczne.
             special_option_selector.DB_connection_string = database_connection_string_builder.ConnectionString;
             special_option_selector.database_tables = database_tables;
@@ -4139,13 +4223,16 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             }
             else
             {
-                var BT_external_catalog_create_grabber = special_option_selector.Controls.Find("BT_external_catalog_create", true);
-                if (BT_external_catalog_create_grabber != null)
+                if (LV_catalog_display_status != 2)
                 {
-                    if (BT_external_catalog_create_grabber.Count() != 0)
+                    var BT_external_catalog_create_grabber = special_option_selector.Controls.Find("BT_external_catalog_create", true);
+                    if (BT_external_catalog_create_grabber != null)
                     {
-                        Control BT_external_catalog_create = BT_external_catalog_create_grabber[0];
-                        if (!BT_external_catalog_create.Enabled) BT_external_catalog_create.Enabled = true;
+                        if (BT_external_catalog_create_grabber.Count() != 0)
+                        {
+                            Control BT_external_catalog_create = BT_external_catalog_create_grabber[0];
+                            if (!BT_external_catalog_create.Enabled) BT_external_catalog_create.Enabled = true;
+                        }
                     }
                 }
             }
@@ -4155,49 +4242,6 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
         #endregion
         
         #region Logika związana z sieciowością
-
-        public Tuple<bool,string> ExternalCatalogTransfer()
-        {
-            Tuple<bool, string> result;
-
-            // Zakładam tutaj, że Main_form jest świadomy jakim DistributedNetworkUser'em jest
-
-            // Sprawdzamy po kolei następujące rzeczy:
-            // 1. Czy jesteśmy wpięci do jakiejkolwiek sieci - czy local_user nie jest nullem. Jeżeli jest to zwracamy error, jeżeli nie to idziemy do pp.2 .
-            // 2. Czy istnieje katalog lokalny - jeżeli istnieje to skonstruuj poprawny result i go zwróć, jeżeli nie to sprawdź pp.3 .
-            // 3. Czy próba stworzenia katalogu lokalnego konczy się sukcesem (jeżeli nie, to ze względu na punkt 2. jedyna opcja to próba stworzenia pustego).
-
-            if(local_user != null)
-            {
-                // Istnieje, stąd sprawdzamy czy wygenerował już swój katalog obiegowy.
-                if (new FileInfo(database_externals_path + local_user.Alias + "_CATALOG.FDB").Exists)
-                {
-                    // Istnieje - tworzymy poprawny result i returnujemy go.
-                    result = new Tuple<bool, string>(false, database_externals_path + local_user.Alias + "_CATALOG.FDB");
-                }
-                else
-                {
-                    // Nie istnieje - sprawdzamy czy stworzenie nowego da pozytywny wynik:
-                    if (external_catalog_build(local_user.Alias))
-                    {
-                        // Zbudowany poprawnie - najwyraźniej nie został nigdy utworzony. Tworzymy poprawny result i returnujemy go
-                        result = new Tuple<bool, string>(false, database_externals_path + local_user.Alias + "_CATALOG.FDB");
-                    }
-                    else
-                    {
-                        // Próbowaliśmy stworzyć pusty katalog obiegowy - zwróć błędny result:
-                        result = new Tuple<bool, string>(true, "");
-                    }
-                }
-            }
-            else
-            {
-                // Pracujemy będąc niepodłączonymi do sieci - zwróć błędny result:
-                result = new Tuple<bool, string>(true, "");
-            }
-
-            return result;
-        }
 
         public bool RequestFileTransferPermission(
             DistributedNetworkFile distributedNetworkFile)
@@ -4262,6 +4306,45 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                                 "Liczba wszystkich plików do ściągnięcia: " + total_to_download + "\n" +
                                 "Liczba plików, które udało się ściągnąć: " + successful_downloads_count + "\n" +
                                 "Liczba niepowodzeń: " + failed_downloads_count + "\n");
+
+                if(failed_downloads_count > 0)
+                {
+                    DialogResult dialogResult = MessageBox.Show("Czy chcesz wyświelić nazwy plików, dla których pobieranie nie powidło się?", 
+                                                                "",
+                                                                MessageBoxButtons.YesNo);
+
+                    if (dialogResult == DialogResult.OK || dialogResult == DialogResult.Yes)
+                    {
+                        String reporter_content = "";
+                        int failures_to_report_count = failed_downloads_count, i = 0;
+
+                        // Przechodzimy przez wszystkie porażki w ściągnięciu pliku.
+                        while (failures_to_report_count != 0)
+                        {
+                            reporter_content += failed_downloads[i] + "\n";
+
+                            // Raportujemy 16 niepowodzeń za jednym razem.
+                            if (failures_to_report_count > 16)
+                            {
+                                if (i % 15 == 0 && i != 0)
+                                {
+                                    MessageBox.Show(reporter_content);
+                                    reporter_content = "";
+                                }
+                            }
+
+                            i++;
+                            failures_to_report_count--;
+                        }
+
+                        // Wszystkie które zostały po wcześniejszej pętli tutaj wyświetlamy jako ostatnie.
+                        if(!reporter_content.Equals(""))
+                        {
+                            MessageBox.Show(reporter_content);
+                            reporter_content = "";
+                        }
+                    }
+                }
             }
         }
 
@@ -4382,11 +4465,28 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
         {
             try
             {
-                if(new FileInfo(database_externals_path + "TO_DETERMINE").Exists)
+                if (used_alias.Equals("UNKNOWN"))
+                {
+                    // Nie mieliśmy użytkownika o takim aliasie - wydobywamy go z nowej nazwy katalogu i dodajemy do pliku konfiguracyjnego:
+
+                    string[] alias_grabber = Path.GetFileName(recieved_external_catalog_name).Split('_');
+
+                    used_alias = alias_grabber[0];
+
+                    AddAliasFromOtherThread(used_alias, used_IP_address_string);
+                }
+                if (new FileInfo(database_externals_path + "TO_DETERMINE").Exists)
                 {
                     File.Move(database_externals_path + "TO_DETERMINE", recieved_external_catalog_name);
                     catalog_download_finalizer.Stop();
                     MessageBox.Show("Pobranie katalogu zakonczone sukcesem!");
+                    
+
+                    if(new FileInfo(database_externals_path + "TO_DETERMINE").Exists)
+                    {
+                        File.Delete(database_externals_path + "TO_DETERMINE");
+                    }
+
                     LV_catalog_display_visible_changed(this, new EventArgs());
                 }
             }
@@ -4418,6 +4518,91 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             else
             {
                 DetermineLocalUser(false);
+            }
+        }
+
+        private void BT_display_known_aliases_Click(object sender, EventArgs e)
+        {
+            string grabbed_aliases = ConfigManager.ReadString(ConfigManager.KNOWN_ALIASES);
+
+            if(grabbed_aliases.Equals(""))
+            {
+                MessageBox.Show("Nie zostały jeszcze zapamiętane żadne aliasy");
+            }
+            else
+            {
+                bool error_on_aliases_read = false;
+
+                string[] alias_address_pairs = new string[0];
+
+                try
+                {
+                    alias_address_pairs = grabbed_aliases.Split('|');
+                    string[] pair_split = new string[2] { "", "" };
+
+                    List<string> aliases_list = new List<string>();
+                    List<string> addresses_list = new List<string>();
+
+                    foreach (string pair in alias_address_pairs)
+                    {
+                        try
+                        {
+                            if (!pair.Equals(""))
+                            {
+                                pair_split = pair.Split('_');
+                                aliases_list.Add(pair_split[0]);
+                                addresses_list.Add(pair_split[1]);
+                            }
+                        }
+                        catch
+                        {
+                            MessageBox.Show("Błąd dzielenia pary alias-adres na składowe!\n" +
+                                            "Czyszczę zawartość znanych aliasów!");
+                            ConfigManager.WriteValue(ConfigManager.KNOWN_ALIASES, "");
+                            error_on_aliases_read = true;
+                            break;
+                        }
+                    }
+
+                    if (error_on_aliases_read == false)
+                    {
+                        int aliases_count = aliases_list.Count, i = 0;
+                        string reporter_content = "";
+
+                        // Przechodzimy przez wszystkie porażki w ściągnięciu pliku.
+                        while (aliases_count != 0)
+                        {
+                            reporter_content += aliases_list[i] + " ma adres " + addresses_list[i] + '\n';
+
+                            // Raportujemy 16 niepowodzeń za jednym razem.
+                            if (aliases_count > 16)
+                            {
+                                if (i % 15 == 0 && i != 0)
+                                {
+                                    MessageBox.Show(reporter_content);
+                                    reporter_content = "";
+                                }
+                            }
+
+                            i++;
+                            aliases_count--;
+                        }
+
+                        // Wszystkie które zostały po wcześniejszej pętli tutaj wyświetlamy jako ostatnie.
+                        if (!reporter_content.Equals(""))
+                        {
+                            MessageBox.Show(reporter_content);
+                            reporter_content = "";
+                        }
+                    }
+                }
+                catch
+                {
+                    MessageBox.Show("Błąd dzielenia kontenera znanych aliasów na pary alias-adres!\n" +
+                                    "Czyszczę zawartość znanych aliasów!");
+                    ConfigManager.WriteValue(ConfigManager.KNOWN_ALIASES, "");
+                    error_on_aliases_read = true;
+                }
             }
         }
 
@@ -5033,6 +5218,50 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                 file_rights_modifier.Connection.Close();
             }
             return successful_changes;
+        }
+
+        /*
+        public Tuple<bool,string> ExternalCatalogTransfer()
+        {
+            Tuple<bool, string> result;
+
+            // Zakładam tutaj, że Main_form jest świadomy jakim DistributedNetworkUser'em jest
+
+            // Sprawdzamy po kolei następujące rzeczy:
+            // 1. Czy jesteśmy wpięci do jakiejkolwiek sieci - czy local_user nie jest nullem. Jeżeli jest to zwracamy error, jeżeli nie to idziemy do pp.2 .
+            // 2. Czy istnieje katalog lokalny - jeżeli istnieje to skonstruuj poprawny result i go zwróć, jeżeli nie to sprawdź pp.3 .
+            // 3. Czy próba stworzenia katalogu lokalnego konczy się sukcesem (jeżeli nie, to ze względu na punkt 2. jedyna opcja to próba stworzenia pustego).
+
+            if(local_user != null)
+            {
+                // Istnieje, stąd sprawdzamy czy wygenerował już swój katalog obiegowy.
+                if (new FileInfo(database_externals_path + local_user.Alias + "_CATALOG.FDB").Exists)
+                {
+                    // Istnieje - tworzymy poprawny result i returnujemy go.
+                    result = new Tuple<bool, string>(false, database_externals_path + local_user.Alias + "_CATALOG.FDB");
+                }
+                else
+                {
+                    // Nie istnieje - sprawdzamy czy stworzenie nowego da pozytywny wynik:
+                    if (external_catalog_build(local_user.Alias))
+                    {
+                        // Zbudowany poprawnie - najwyraźniej nie został nigdy utworzony. Tworzymy poprawny result i returnujemy go
+                        result = new Tuple<bool, string>(false, database_externals_path + local_user.Alias + "_CATALOG.FDB");
+                    }
+                    else
+                    {
+                        // Próbowaliśmy stworzyć pusty katalog obiegowy - zwróć błędny result:
+                        result = new Tuple<bool, string>(true, "");
+                    }
+                }
+            }
+            else
+            {
+                // Pracujemy będąc niepodłączonymi do sieci - zwróć błędny result:
+                result = new Tuple<bool, string>(true, "");
+            }
+
+            return result;
         }
         */
 

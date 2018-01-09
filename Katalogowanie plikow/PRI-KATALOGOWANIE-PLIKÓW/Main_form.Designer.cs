@@ -35,6 +35,10 @@
             this.toolTip1 = new System.Windows.Forms.ToolTip(this.components);
             this.TP_catalog_display = new System.Windows.Forms.TabPage();
             this.Catalog_page_main_layout = new System.Windows.Forms.TableLayoutPanel();
+            this.Catalog_page_top_table_layout = new System.Windows.Forms.TableLayoutPanel();
+            this.BT_specials = new System.Windows.Forms.Button();
+            this.TB_catalog_path_current = new System.Windows.Forms.TextBox();
+            this.BT_previous = new System.Windows.Forms.Button();
             this.LV_catalog_display = new System.Windows.Forms.ListView();
             this.Nazwa = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.Typ = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
@@ -44,15 +48,12 @@
             this.Widoczność_w_sieci = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.Kopiowalność_w_sieci = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.Kopiowalność_bez_pytania = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
-            this.Catalog_page_top_table_layout = new System.Windows.Forms.TableLayoutPanel();
-            this.BT_previous = new System.Windows.Forms.Button();
-            this.TB_catalog_path_current = new System.Windows.Forms.TextBox();
-            this.BT_specials = new System.Windows.Forms.Button();
             this.TP_main_menu = new System.Windows.Forms.TabPage();
             this.TL_main_menu = new System.Windows.Forms.TableLayoutPanel();
-            this.BT_define_user = new System.Windows.Forms.Button();
-            this.BT_extract_metadata = new System.Windows.Forms.Button();
             this.BT_test_database = new System.Windows.Forms.Button();
+            this.BT_extract_metadata = new System.Windows.Forms.Button();
+            this.BT_define_user = new System.Windows.Forms.Button();
+            this.BT_display_known_aliases = new System.Windows.Forms.Button();
             this.TC_catalog_display = new System.Windows.Forms.TabControl();
             this.contextMenuStrip1.SuspendLayout();
             this.TP_catalog_display.SuspendLayout();
@@ -111,6 +112,53 @@
             this.Catalog_page_main_layout.RowStyles.Add(new System.Windows.Forms.RowStyle());
             this.Catalog_page_main_layout.Size = new System.Drawing.Size(441, 388);
             this.Catalog_page_main_layout.TabIndex = 4;
+            // 
+            // Catalog_page_top_table_layout
+            // 
+            this.Catalog_page_top_table_layout.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
+            this.Catalog_page_top_table_layout.ColumnCount = 3;
+            this.Catalog_page_top_table_layout.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 70F));
+            this.Catalog_page_top_table_layout.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle());
+            this.Catalog_page_top_table_layout.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 70F));
+            this.Catalog_page_top_table_layout.Controls.Add(this.BT_specials, 2, 0);
+            this.Catalog_page_top_table_layout.Controls.Add(this.TB_catalog_path_current, 1, 0);
+            this.Catalog_page_top_table_layout.Controls.Add(this.BT_previous, 0, 0);
+            this.Catalog_page_top_table_layout.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.Catalog_page_top_table_layout.Location = new System.Drawing.Point(3, 3);
+            this.Catalog_page_top_table_layout.Name = "Catalog_page_top_table_layout";
+            this.Catalog_page_top_table_layout.RowCount = 1;
+            this.Catalog_page_top_table_layout.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
+            this.Catalog_page_top_table_layout.Size = new System.Drawing.Size(435, 36);
+            this.Catalog_page_top_table_layout.TabIndex = 0;
+            this.Catalog_page_top_table_layout.SizeChanged += new System.EventHandler(this.Catalog_page_top_table_layout_SizeChanged);
+            // 
+            // BT_specials
+            // 
+            this.BT_specials.Location = new System.Drawing.Point(371, 3);
+            this.BT_specials.Name = "BT_specials";
+            this.BT_specials.Size = new System.Drawing.Size(63, 29);
+            this.BT_specials.TabIndex = 2;
+            this.BT_specials.Text = "Inne";
+            this.BT_specials.UseVisualStyleBackColor = true;
+            this.BT_specials.Click += new System.EventHandler(this.BT_specials_Click);
+            // 
+            // TB_catalog_path_current
+            // 
+            this.TB_catalog_path_current.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.TB_catalog_path_current.Location = new System.Drawing.Point(73, 3);
+            this.TB_catalog_path_current.Name = "TB_catalog_path_current";
+            this.TB_catalog_path_current.Size = new System.Drawing.Size(292, 26);
+            this.TB_catalog_path_current.TabIndex = 3;
+            // 
+            // BT_previous
+            // 
+            this.BT_previous.Location = new System.Drawing.Point(3, 3);
+            this.BT_previous.Name = "BT_previous";
+            this.BT_previous.Size = new System.Drawing.Size(63, 29);
+            this.BT_previous.TabIndex = 1;
+            this.BT_previous.Text = "Cofnij";
+            this.BT_previous.UseVisualStyleBackColor = true;
+            this.BT_previous.Click += new System.EventHandler(this.BT_previous_click);
             // 
             // LV_catalog_display
             // 
@@ -182,53 +230,6 @@
             // 
             this.Kopiowalność_bez_pytania.Text = "Czy użytkownicy sieci mogą skopiować go bez pytania?";
             // 
-            // Catalog_page_top_table_layout
-            // 
-            this.Catalog_page_top_table_layout.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
-            this.Catalog_page_top_table_layout.ColumnCount = 3;
-            this.Catalog_page_top_table_layout.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 70F));
-            this.Catalog_page_top_table_layout.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle());
-            this.Catalog_page_top_table_layout.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 70F));
-            this.Catalog_page_top_table_layout.Controls.Add(this.BT_specials, 2, 0);
-            this.Catalog_page_top_table_layout.Controls.Add(this.TB_catalog_path_current, 1, 0);
-            this.Catalog_page_top_table_layout.Controls.Add(this.BT_previous, 0, 0);
-            this.Catalog_page_top_table_layout.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.Catalog_page_top_table_layout.Location = new System.Drawing.Point(3, 3);
-            this.Catalog_page_top_table_layout.Name = "Catalog_page_top_table_layout";
-            this.Catalog_page_top_table_layout.RowCount = 1;
-            this.Catalog_page_top_table_layout.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
-            this.Catalog_page_top_table_layout.Size = new System.Drawing.Size(435, 36);
-            this.Catalog_page_top_table_layout.TabIndex = 0;
-            this.Catalog_page_top_table_layout.SizeChanged += new System.EventHandler(this.Catalog_page_top_table_layout_SizeChanged);
-            // 
-            // BT_previous
-            // 
-            this.BT_previous.Location = new System.Drawing.Point(3, 3);
-            this.BT_previous.Name = "BT_previous";
-            this.BT_previous.Size = new System.Drawing.Size(63, 29);
-            this.BT_previous.TabIndex = 1;
-            this.BT_previous.Text = "Cofnij";
-            this.BT_previous.UseVisualStyleBackColor = true;
-            this.BT_previous.Click += new System.EventHandler(this.BT_previous_click);
-            // 
-            // TB_catalog_path_current
-            // 
-            this.TB_catalog_path_current.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.TB_catalog_path_current.Location = new System.Drawing.Point(73, 3);
-            this.TB_catalog_path_current.Name = "TB_catalog_path_current";
-            this.TB_catalog_path_current.Size = new System.Drawing.Size(292, 26);
-            this.TB_catalog_path_current.TabIndex = 3;
-            // 
-            // BT_specials
-            // 
-            this.BT_specials.Location = new System.Drawing.Point(371, 3);
-            this.BT_specials.Name = "BT_specials";
-            this.BT_specials.Size = new System.Drawing.Size(63, 29);
-            this.BT_specials.TabIndex = 2;
-            this.BT_specials.Text = "Inne";
-            this.BT_specials.UseVisualStyleBackColor = true;
-            this.BT_specials.Click += new System.EventHandler(this.BT_specials_Click);
-            // 
             // TP_main_menu
             // 
             this.TP_main_menu.Controls.Add(this.TL_main_menu);
@@ -248,10 +249,12 @@
             this.TL_main_menu.Controls.Add(this.BT_test_database, 0, 0);
             this.TL_main_menu.Controls.Add(this.BT_extract_metadata, 0, 1);
             this.TL_main_menu.Controls.Add(this.BT_define_user, 0, 2);
+            this.TL_main_menu.Controls.Add(this.BT_display_known_aliases, 0, 3);
             this.TL_main_menu.Dock = System.Windows.Forms.DockStyle.Fill;
             this.TL_main_menu.Location = new System.Drawing.Point(2, 2);
             this.TL_main_menu.Name = "TL_main_menu";
-            this.TL_main_menu.RowCount = 4;
+            this.TL_main_menu.RowCount = 5;
+            this.TL_main_menu.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 36F));
             this.TL_main_menu.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 36F));
             this.TL_main_menu.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 36F));
             this.TL_main_menu.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 36F));
@@ -259,16 +262,16 @@
             this.TL_main_menu.Size = new System.Drawing.Size(443, 390);
             this.TL_main_menu.TabIndex = 7;
             // 
-            // BT_define_user
+            // BT_test_database
             // 
-            this.BT_define_user.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.BT_define_user.Location = new System.Drawing.Point(3, 75);
-            this.BT_define_user.Name = "BT_define_user";
-            this.BT_define_user.Size = new System.Drawing.Size(437, 30);
-            this.BT_define_user.TabIndex = 7;
-            this.BT_define_user.Text = "Zdefiniuj użytkownika";
-            this.BT_define_user.UseVisualStyleBackColor = true;
-            this.BT_define_user.Click += new System.EventHandler(this.BT_define_user_Click);
+            this.BT_test_database.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.BT_test_database.Location = new System.Drawing.Point(3, 3);
+            this.BT_test_database.Name = "BT_test_database";
+            this.BT_test_database.Size = new System.Drawing.Size(437, 30);
+            this.BT_test_database.TabIndex = 1;
+            this.BT_test_database.Text = "Test bazy";
+            this.BT_test_database.UseVisualStyleBackColor = true;
+            this.BT_test_database.Click += new System.EventHandler(this.BT_test_database_click);
             // 
             // BT_extract_metadata
             // 
@@ -282,16 +285,27 @@
             this.BT_extract_metadata.UseVisualStyleBackColor = true;
             this.BT_extract_metadata.Click += new System.EventHandler(this.BT_extract_metadata_click);
             // 
-            // BT_test_database
+            // BT_define_user
             // 
-            this.BT_test_database.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.BT_test_database.Location = new System.Drawing.Point(3, 3);
-            this.BT_test_database.Name = "BT_test_database";
-            this.BT_test_database.Size = new System.Drawing.Size(437, 30);
-            this.BT_test_database.TabIndex = 1;
-            this.BT_test_database.Text = "Test bazy";
-            this.BT_test_database.UseVisualStyleBackColor = true;
-            this.BT_test_database.Click += new System.EventHandler(this.BT_test_database_click);
+            this.BT_define_user.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.BT_define_user.Location = new System.Drawing.Point(3, 75);
+            this.BT_define_user.Name = "BT_define_user";
+            this.BT_define_user.Size = new System.Drawing.Size(437, 30);
+            this.BT_define_user.TabIndex = 7;
+            this.BT_define_user.Text = "Zdefiniuj użytkownika";
+            this.BT_define_user.UseVisualStyleBackColor = true;
+            this.BT_define_user.Click += new System.EventHandler(this.BT_define_user_Click);
+            // 
+            // BT_display_known_aliases
+            // 
+            this.BT_display_known_aliases.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.BT_display_known_aliases.Location = new System.Drawing.Point(3, 111);
+            this.BT_display_known_aliases.Name = "BT_display_known_aliases";
+            this.BT_display_known_aliases.Size = new System.Drawing.Size(437, 30);
+            this.BT_display_known_aliases.TabIndex = 8;
+            this.BT_display_known_aliases.Text = "Wyświetl znane aliasy";
+            this.BT_display_known_aliases.UseVisualStyleBackColor = true;
+            this.BT_display_known_aliases.Click += new System.EventHandler(this.BT_display_known_aliases_Click);
             // 
             // TC_catalog_display
             // 
@@ -358,6 +372,7 @@
         private System.Windows.Forms.Button BT_extract_metadata;
         private System.Windows.Forms.Button BT_define_user;
         private System.Windows.Forms.TabControl TC_catalog_display;
+        private System.Windows.Forms.Button BT_display_known_aliases;
     }
 }
 

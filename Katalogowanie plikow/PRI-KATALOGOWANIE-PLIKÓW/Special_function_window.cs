@@ -31,7 +31,8 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
         public string program_path;
         public int working_directory;
 
-    // Przechowywanie danych wejściowych do podprogramów
+        // Przechowywanie danych wejściowych do podprogramów
+        public int mode;
         public List<ListViewItem> items_to_work_on;
         public List<string> names;
 
@@ -174,19 +175,35 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
     // Obsługa blokowania dostępu do funkcji zaawansowanych wymagających danych z katalogu przy starcie Special_function_window
         private void Special_function_window_Load(object sender, EventArgs e)
         {
-            if (items_to_work_on.Count == 0)
+            // Jako że nigdy nie wejdziemy tutaj z zerem w mode sprawdzamy tylko czy równy 1 - czy manipulujemy katalogiem lokalnym
+            if (mode == 1)
             {
+                // Logika okna dla katalogu lokalnego
+                if (items_to_work_on.Count == 0)
+                {
+                    BT_extract_from_images.Enabled = false;
+                    BT_compare_audio_files.Enabled = false;
+                    BT_process_image.Enabled = false;
+                    BT_search_catalog.Enabled = false;
+                }
+                else
+                {
+                    BT_extract_from_images.Enabled = true;
+                    BT_compare_audio_files.Enabled = true;
+                    BT_process_image.Enabled = true;
+                    BT_search_catalog.Enabled = true;
+                }
+            }
+            else
+            {
+                // Tutaj wyświetlamy okno dla katalogu obiegowego
                 BT_extract_from_images.Enabled = false;
                 BT_compare_audio_files.Enabled = false;
                 BT_process_image.Enabled = false;
-                BT_search_catalog.Enabled = false;
-            } else
-            {
-                BT_extract_from_images.Enabled = true;
-                BT_compare_audio_files.Enabled = true;
-                BT_process_image.Enabled = true;
                 BT_search_catalog.Enabled = true;
+                BT_external_catalog_create.Enabled = false;
             }
+            
         }
 
     // Obsługa ładowania danych dla wybranej opcji, w zależności od wartości zm. index zmienia typ zwracanych danych.

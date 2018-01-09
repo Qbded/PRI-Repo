@@ -20,6 +20,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes
 
         public static readonly String PROGRAM_LOCATION = "ProgramLocation";
         public static readonly String OUTPUT_LOCATION = "OutputLocation";
+        public static readonly String DOWNLOAD_LOCATION = "DownloadLocation";
 
         public static readonly String USER_ALIAS = "UserAlias";
         public static readonly String KNOWN_ALIASES = "AliaseswithIPs";
@@ -48,6 +49,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes
 
                 { PROGRAM_LOCATION, "" },
                 { OUTPUT_LOCATION, ""},
+                { DOWNLOAD_LOCATION, ""},
 
                 { USER_ALIAS, "" },
                 { KNOWN_ALIASES, "" },
@@ -74,6 +76,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes
 
             ConfigManager.WriteValue(PROGRAM_LOCATION, applicationLocation.FullName.ToString());
             ConfigManager.WriteValue(OUTPUT_LOCATION, applicationLocation.FullName.ToString() + @"\output\");
+            ConfigManager.WriteValue(DOWNLOAD_LOCATION, applicationLocation.FullName.ToString() + @"\downloads\");
         }
 
         //public ConfigManager()

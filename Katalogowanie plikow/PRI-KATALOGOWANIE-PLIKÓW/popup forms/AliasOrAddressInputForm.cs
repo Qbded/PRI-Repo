@@ -101,7 +101,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.popup_forms
 
                 if (enteredAlias.Count() == 0)
                 {
-                    MessageBox.Show("Nie podano nazwy.");
+                    MessageBox.Show("Nie podano aliasu.");
                     return;
                 }
 
@@ -116,7 +116,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.popup_forms
 
                 if (validation_result == true)
                 {
-                    alias_result = TB_alias_input.Text;
+                    alias_result = TB_alias_input.Text.ToUpper();
 
                     this.Close();
                 }

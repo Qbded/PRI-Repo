@@ -51,7 +51,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes
             }
             else
             {
-                downloadDir = Environment.CurrentDirectory + "/Downloaded";
+                downloadDir =  ConfigManager.ReadString(ConfigManager.DOWNLOAD_LOCATION);
                 fileName = Path.GetFileName(file.realFilePath);
                 if (!Directory.Exists(downloadDir))
                 {
