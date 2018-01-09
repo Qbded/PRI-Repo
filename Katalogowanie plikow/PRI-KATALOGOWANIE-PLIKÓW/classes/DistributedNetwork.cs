@@ -36,12 +36,29 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes
             DistributedNetworkFile file)
         {
             Console.WriteLine("DistributedNetwork:RequestFile()");
-            String downloadDir = Environment.CurrentDirectory + "/Downloaded";
-            String fileName = Path.GetFileName(file.realFilePath);
-            if (!Directory.Exists(downloadDir))
+
+            String downloadDir;
+            String fileName;
+
+            if (file.realFileName.Equals("EXTERNAL_CATALOG.FDB") && file.realFilePath.Equals("TO_DETERMINE"))
             {
-                Directory.CreateDirectory(downloadDir);
+                downloadDir = ConfigManager.ReadString(ConfigManager.EXTERNAL_DATABASES_LOCATION);
+                fileName = file.realFilePath;
+                
+                tcpCom.RequestFile(file,
+                    downloadDir + "/" + fileName,
+                    user);
             }
+            else
+            {
+                downloadDir = Environment.CurrentDirectory + "/Downloaded";
+                fileName = Path.GetFileName(file.realFilePath);
+                if (!Directory.Exists(downloadDir))
+                {
+                    Directory.CreateDirectory(downloadDir);
+                }
+            }
+            
             tcpCom.RequestFile(file,
                 downloadDir + "/" + fileName,
                 user);

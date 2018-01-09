@@ -32,6 +32,11 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.popup_forms
             validation_result = true;
             enteredAlias = TB_alias_input.Text.ToArray();
 
+            if (enteredAlias.Count() == 0)
+            {
+                MessageBox.Show("Nie podano nazwy.");
+            }
+
             foreach (char illegal_character in illegal_characters)
             {
                 if (enteredAlias.Contains(illegal_character)) 

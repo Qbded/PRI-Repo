@@ -247,6 +247,12 @@
     <Compile Include="popup forms\AliasInputForm.Designer.cs">
       <DependentUpon>AliasInputForm.cs</DependentUpon>
     </Compile>
+    <Compile Include="popup forms\AliasOrAddressInputForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="popup forms\AliasOrAddressInputForm.Designer.cs">
+      <DependentUpon>AliasOrAddressInputForm.cs</DependentUpon>
+    </Compile>
     <Compile Include="popup forms\IPAddressInputForm.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -347,6 +353,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="popup forms\AliasInputForm.resx">
       <DependentUpon>AliasInputForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="popup forms\AliasOrAddressInputForm.resx">
+      <DependentUpon>AliasOrAddressInputForm.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="popup forms\IPAddressInputForm.resx">
       <DependentUpon>IPAddressInputForm.cs</DependentUpon>

@@ -22,8 +22,9 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes
         public static readonly String OUTPUT_LOCATION = "OutputLocation";
 
         public static readonly String USER_ALIAS = "UserAlias";
+        public static readonly String KNOWN_ALIASES = "AliaseswithIPs";
         public static readonly String TCP_SECONDS_TO_TIMEOUT = "TCPSecondsToTimeout";
-        public static readonly String TCP_COMM_IP_ADDRESS = "externalIPAddress";
+        public static readonly String TCP_COMM_IP_ADDRESS = "externalIPAddress"; 
 
         private static readonly String configFileLocation =
             AppDomain.CurrentDomain.SetupInformation.ConfigurationFile;
@@ -49,6 +50,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes
                 { OUTPUT_LOCATION, ""},
 
                 { USER_ALIAS, "" },
+                { KNOWN_ALIASES, "" },
                 { TCP_SECONDS_TO_TIMEOUT, "5" },
                 { TCP_COMM_IP_ADDRESS, "" }
             };

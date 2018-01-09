@@ -452,9 +452,20 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
             DistributedNetworkFile dnFile, String localDownloadPath, Main_form mainForm)
         {
             String realFilePath = dnFile.realFilePath;
-            byte[] serializedFilePath = SerializeString(realFilePath);
+            byte[] serializedFilePath;
+            if (dnFile.allowUnpromptedDistribution)
+            {
+                serializedFilePath = SerializeString(realFilePath + "1");
+            }
+            else
+            {
+                serializedFilePath = SerializeString(realFilePath + "0");
+            }
+
+            byte[] packetPayload = serializedFilePath;
+
             byte[] packet = CreateTCPDataPacket(
-                TcpRequestCodebook.SEND_FILE, serializedFilePath);
+                TcpRequestCodebook.SEND_FILE, packetPayload);
             networkStream.Write(packet, 0, packet.Length);
             networkStream.Flush();
             // Console.WriteLine("SendFileRequest: requested " + dnFile.realFilePath);
@@ -475,9 +486,36 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
             }
             if (requestByte != TcpRequestCodebook.SENDING_FILE_FRAGMENT[0])
             {
-                IncrementFailedDownloadCountInMainForm(mainForm);
-                CheckIfDoneInMainForm(mainForm);
-                return RETURN_BAD_REQUEST;
+                if (requestByte == TCP.TcpRequestCodebook.NO_EXTERNAL_CATALOG[0])
+                {
+                    byte[] sizeBytes = AwaitPacketSize(networkStream, mainForm);
+                    if (sizeBytes.Length == 0)
+                    {
+                        return RETURN_TIMEOUT;
+                    }
+                    int sizeofPacket = ByteArrayToInt(sizeBytes);
+
+                    int separator = AwaitNonNegativeByte(networkStream, mainForm);
+                    if (separator == -1)
+                    {
+                        return RETURN_TIMEOUT;
+                    }
+
+                    byte[] serializedData = AwaitDataPacket(networkStream, sizeofPacket, mainForm);
+                    string deserializedData = DeserializeString(serializedData);
+
+                    string[] deserializedDataChunks = deserializedData.Split('|');
+
+                    DisplayMessageBoxInMainForm(mainForm, "Użytkownik o aliasie " + deserializedDataChunks[0] + " nie wygenerował katalogu obiegowego!");
+                    AddAliasInMainForm(mainForm, deserializedDataChunks[0], deserializedDataChunks[1]);
+                    return RETURN_CANCEL;
+                }
+                else
+                {
+                    IncrementFailedDownloadCountInMainForm(mainForm);
+                    CheckIfDoneInMainForm(mainForm);
+                    return RETURN_BAD_REQUEST;
+                }
             }
                 
             // Console.WriteLine("SendFileRequest: received request:" + requestByte);
@@ -584,10 +622,36 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
                     if (TcpRequestCodebook.IsRequest(
                         requestByte, TcpRequestCodebook.DONE_SENDING_FILE))
                     {
-                        // Console.WriteLine("Successfully received file");
+                        // Pobieramy wartość przesłanego nam stringa.
+
+                        byte[] sizeBytes = AwaitPacketSize(networkStream, mainForm);
+                        if (sizeBytes.Length == 0)
+                        {
+                            return RETURN_TIMEOUT;
+                        }
+                        int sizeofPacket = ByteArrayToInt(sizeBytes);
+
+                        int separator = AwaitNonNegativeByte(networkStream, mainForm);
+                        if (separator == -1)
+                        {
+                            return RETURN_TIMEOUT;
+                        }
+
+                        byte[] serializedData = AwaitDataPacket(networkStream, sizeofPacket, mainForm);
+                        string deserializedData = DeserializeString(serializedData);
+                        
+                        // Jeżeli kopiowaliśmy katalog - zmieniamy nazwę kopii roboczej na rzeczywistą nazwę.
+                        if (dnFile.realFileName.Equals("EXTERNAL_CATALOG.FDB"))
+                        {
+                            string file_location = ConfigManager.ReadString(ConfigManager.EXTERNAL_DATABASES_LOCATION);
+                            string target_filename = file_location + deserializedData;
+                            AttemptToFinalizeInMainForm(mainForm, target_filename);
+                        }
+
                         AddSuccessfulDownloadNameInMainForm(mainForm, dnFile.realFileName);
                         IncrementSuccessfulDownloadCountInMainForm(mainForm);
                         CheckIfDoneInMainForm(mainForm);
+                        
                     }
                     break;
                 }
@@ -670,6 +734,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
             NetworkStream networkStream)
         {
             // Reading size of upcoming packet
+            bool sendsExternalCatalog = false, unpromptedDistribution = false;
             byte[] sizeBytes = AwaitPacketSize(networkStream, mainForm);
             if (sizeBytes.Length == 0) return RETURN_TIMEOUT;
             int packetSize = ByteArrayToInt(sizeBytes);
@@ -679,35 +744,99 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
                 return RETURN_TIMEOUT;
             }
 
-            byte[] serializedFilePath = new byte[packetSize];
+            byte[] serializedPacketPayload = new byte[packetSize];
 
-            serializedFilePath = 
+            serializedPacketPayload =
                 AwaitDataPacket(networkStream, packetSize, mainForm);
-            String filePath = DeserializeString(serializedFilePath);
-            String fileName = Path.GetFileName(filePath);
+
+            string deserializedPacketPayload = DeserializeString(serializedPacketPayload);
+
+            if(deserializedPacketPayload[deserializedPacketPayload.Length-1].Equals('1'))
+            {
+                // Kopiujemy bez pytania
+                unpromptedDistribution = true;
+            }
+            else
+            {
+                // Kopiujemy z pytaniem
+                unpromptedDistribution = false;
+            }
+            
+            String filePath = deserializedPacketPayload.Remove(deserializedPacketPayload.Length-1);
+            String fileName = "";
+
+            if (!filePath.Equals("TO_DETERMINE"))
+            {
+                // Standardowa logika przesyłania.
+                fileName = Path.GetFileName(filePath);
+            }
+            else
+            {
+                // Logika pobierania katalogu
+                sendsExternalCatalog = true;
+                // Najpierw rozkazujemy mainformowi zerwać wszystkie połączenia z bazą
+                TerminateDBConnectionsInMainForm(mainForm);
+
+                // Pobieramy dane z konfiga.
+                //filePath = GrabExternalCatalogPathInMainForm(mainForm);
+                filePath = ConfigManager.ReadString(ConfigManager.EXTERNAL_DATABASES_LOCATION) +
+                           ConfigManager.ReadString(ConfigManager.USER_ALIAS).ToUpper() + "_CATALOG.FDB";
+                fileName = Path.GetFileName(filePath);
+            }
+
             // Console.WriteLine("SendFileRequestCallback: Received request for file " + filePath);
 
-            //DistributedNetworkFile distributedNetworkFile = DistributedNetworkFile.GetFileByFilePath(filePath);
-            DistributedNetworkFile distributedNetworkFile = new DistributedNetworkFile(fileName,filePath, true, false);
+            DistributedNetworkFile distributedNetworkFile = new DistributedNetworkFile(fileName,filePath, true, unpromptedDistribution);
 
-            if (!distributedNetworkFile.IsPresentInLocalCatalogue())
+            if(!sendsExternalCatalog)
             {
-                byte[] responsePacket = CreateTCPDataPacket(
-                    TcpRequestCodebook.FILE_NOT_IN_MY_CATALOGUE,
-                    SerializeString("FileNotFound"));
+                if (!distributedNetworkFile.IsPresentInLocalCatalogue())
+                {
+                    byte[] responsePacket = CreateTCPDataPacket(
+                        TcpRequestCodebook.FILE_NOT_IN_MY_CATALOGUE,
+                        SerializeString("FileNotFound"));
 
-                try
-                {
-                    networkStream.Write(responsePacket, 0, responsePacket.Length);
-                    networkStream.Flush();
+                    try
+                    {
+                        networkStream.Write(responsePacket, 0, responsePacket.Length);
+                        networkStream.Flush();
+                    }
+                    catch (Exception ex)
+                    {
+                        DisplayMessageBoxInMainForm(mainForm,
+                            "Cannot send \"file not found\" response: " +
+                            ex.Message);
+                    }
+                    return RETURN_OK;
                 }
-                catch(Exception ex)
+            } 
+            else
+            {
+                // Sprawdzamy czy został wygenerowany katalog obiegowy
+                FileInfo externalCatalogChecker = new FileInfo(distributedNetworkFile.realFilePath);
+
+                if(!externalCatalogChecker.Exists)
                 {
-                    DisplayMessageBoxInMainForm(mainForm,
-                        "Cannot send \"file not found\" response: " +
-                        ex.Message);
+                    string[] username_grabber = fileName.Split('_');
+                    
+                    // Katalog obiegowy nie istnieje, wysyłamy przerwanie.
+                    byte[] responsePacket = CreateTCPDataPacket(
+                        TcpRequestCodebook.NO_EXTERNAL_CATALOG,
+                        SerializeString(username_grabber[0] + '|' + ConfigManager.ReadString(ConfigManager.TCP_COMM_IP_ADDRESS)));
+
+                    try
+                    {
+                        networkStream.Write(responsePacket, 0, responsePacket.Length);
+                        networkStream.Flush();
+                    }
+                    catch (Exception ex)
+                    {
+                        DisplayMessageBoxInMainForm(mainForm,
+                            "Cannot send \"file not found\" response: " +
+                            ex.Message);
+                    }
+                    return RETURN_CANCEL;
                 }
-                return RETURN_OK;
             }
 
             bool canSendFile = false;
@@ -865,9 +994,18 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
             }
 
             fileStream.Close();
+            string final_message;
+            if(sendsExternalCatalog)
+            {
+                final_message = fileName;
+            }
+            else
+            {
+                final_message = "Entire file has been sent";
+            }
             byte[] finalMessagePacket = CreateTCPDataPacket(
                 TcpRequestCodebook.DONE_SENDING_FILE,
-                SerializeString("Entire file has been sent"));
+                SerializeString(final_message));
             try
             {
                 networkStream.Write(finalMessagePacket, 0, finalMessagePacket.Length);
@@ -978,6 +1116,44 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
             mainFormRef.Invoke((Action)delegate ()
             {
                 mainFormRef.CheckIfDoneFromOtherThread();
+            });
+        }
+
+        private void AddAliasInMainForm(Main_form mainFormRef, 
+            String alias,
+            String address)
+        {
+            mainFormRef.Invoke((Action)delegate ()
+            {
+                mainFormRef.AddAliasFromOtherThread(alias,address);
+            });
+        }
+
+        private string GrabExternalCatalogPathInMainForm(Main_form mainFormRef)
+        {
+            string result_from_main = "";
+
+            mainFormRef.Invoke((Action)delegate ()
+            {
+                result_from_main = mainFormRef.GrabExternalCatalogPathFromOtherThread();
+            });
+
+            return result_from_main;
+        }
+
+        private void TerminateDBConnectionsInMainForm(Main_form mainFormRef)
+        {
+            mainFormRef.Invoke((Action)delegate ()
+            {
+                mainFormRef.TerminateDBConnectionsFromOtherThread();
+            });
+        }
+
+        private void AttemptToFinalizeInMainForm(Main_form mainFormRef, string target_filename)
+        {
+            mainFormRef.Invoke((Action)delegate ()
+            {
+                mainFormRef.AttemptToFinalizeFromOtherThread(target_filename);
             });
         }
 

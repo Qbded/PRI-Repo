@@ -139,11 +139,14 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
         private DistributedNetwork distributedNetwork = null;
         private List<string> successful_downloads = new List<string>();
         private List<string> failed_downloads = new List<string>();
+        private string last_message_to_broadcast = "";
         private int total_selected = 0;
         private int total_to_download = 0;
         private int successful_downloads_count = 0;
         private int failed_downloads_count = 0;
         public bool networking_lock = true;
+        private string recieved_external_catalog_name = "";
+        private Timer catalog_download_finalizer = new Timer();
 
         #endregion
 
@@ -2387,6 +2390,8 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
 
                 LV_loaded_catalogs.Add(item_to_add);
             }
+
+            FbConnection.ClearAllPools();
         }
 
         // Wyświetlanie zawartości całego folderu.
@@ -2766,6 +2771,139 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             
             if(e.ClickedItem.Text.Equals("Sciągnij katalog obiegowy"))
             {
+                last_message_to_broadcast = "";
+                System.Net.IPAddress ipAddr = null;
+                String alias = null;
+
+                AliasOrAddressInputForm inputForm = new AliasOrAddressInputForm(ref ipAddr, ref alias);
+                inputForm.Owner = this;
+                inputForm.ShowDialog();
+                alias = inputForm.alias_result;
+                ipAddr = inputForm.address_result;
+
+                if(alias == null && ipAddr == null)
+                {
+                    MessageBox.Show("Nie podano ani adresu, ani aliasu.");
+                }
+                else
+                {
+                    String requested_filename = "EXTERNAL_CATALOG.FDB";
+                    String requested_filepath = "TO_DETERMINE";
+
+                    if (alias == null)
+                    {
+                        // Mamy tylko adres - łączymy z hostem i wysyłamy pytanie o katalog.
+                        DistributedNetworkUser targetUser = new DistributedNetworkUser(false, "UNKNOWN", ipAddr);
+
+                        DistributedNetworkFile distributedNetworkFile =
+                            new DistributedNetworkFile(requested_filename, requested_filepath, true, true);
+                        distributedNetwork.RequestFile(targetUser, distributedNetworkFile);
+                    }
+                    if (ipAddr == null)
+                    {
+                        // Mamy tylko alias - patrzymy czy jest w naszym konfigu:
+
+                        string grabbed_aliases = "";
+                        bool error_on_aliases_read = false;
+
+                        try
+                        {
+                            grabbed_aliases = ConfigManager.ReadString(ConfigManager.KNOWN_ALIASES);
+
+                            string[] alias_address_pairs = new string[0];
+
+                            if (!grabbed_aliases.Equals(""))
+                            {
+                                try
+                                {
+                                    alias_address_pairs = grabbed_aliases.Split('|');
+                                    string[] pair_split = new string[2] { "", "" };
+
+                                    List<string> aliases_list = new List<string>();
+                                    List<string> addresses_list = new List<string>();
+
+                                    foreach (string pair in alias_address_pairs)
+                                    {
+                                        try
+                                        {
+                                            pair_split = pair.Split('_');
+                                            aliases_list.Add(pair_split[0]);
+                                            addresses_list.Add(pair_split[1]);
+                                        }
+                                        catch
+                                        {
+                                            MessageBox.Show("Błąd dzielenia pary alias-adres na składowe!\n" +
+                                                            "Czyszczę zawartość znanych aliasów!");
+                                            ConfigManager.WriteValue(ConfigManager.KNOWN_ALIASES, "");
+                                            error_on_aliases_read = true;
+                                            break;
+                                        }
+                                    }
+
+                                    if (error_on_aliases_read == false)
+                                    {
+                                        string alias_to_find = alias;
+                                        int pair_index = aliases_list.IndexOf(alias_to_find.ToUpper());
+                                        if (pair_index != -1)
+                                        {
+                                            // Znaleźliśmy alias w liście - ustalamy ipAddr
+                                            try
+                                            {
+                                                ipAddr = System.Net.IPAddress.Parse(addresses_list[pair_index]);
+                                            }
+                                            catch
+                                            {
+                                                MessageBox.Show("Błąd przy parsowaniu adresu z znalezionej pary!");
+                                            }
+                                        }
+                                        else
+                                        {
+                                            // Nie znaleźliśmy aliasu w liście - zwracamy informację o błędzie i kończymy procedurę.
+                                            MessageBox.Show("Nie znaleziono w pliku konfiguracyjnym użytkownika o aliasie: " + alias);
+                                            return;
+                                        }
+                                    }
+                                }
+                                catch
+                                {
+                                    MessageBox.Show("Błąd dzielenia kontenera znanych aliasów na pary alias-adres!\n" +
+                                                    "Czyszczę zawartość znanych aliasów!");
+                                    ConfigManager.WriteValue(ConfigManager.KNOWN_ALIASES, "");
+                                    error_on_aliases_read = true;
+                                }
+                            }
+                            else
+                            {
+                                // Nasza lista aliasów jest pusta - zwracamy informację o błędzie i kończymy procedurę.
+                                MessageBox.Show("Połączenie po aliasie nie jest możliwe!\n" + 
+                                                "Dotychczas nie został zdefiniowany żadny alias.");
+                                return;
+                            }
+                        }
+                        catch
+                        {
+                            MessageBox.Show("Błąd odczytu znanych aliasów z pliku konfiguracyjnego!\n" +
+                                            "Resetuję miejsce przechowywania aliasów!");
+                            try
+                            {
+                                ConfigManager.WriteValue(ConfigManager.KNOWN_ALIASES, "");
+                            }
+                            catch
+                            {
+                                MessageBox.Show("Błąd resetowania miejsca przechowywania aliasów!\n" +
+                                                "Prawdopodobne uszkodzenie/błąd dostępu do pliku konfiguracyjnego!");
+                                return;
+                            }
+                            error_on_aliases_read = true;
+                        }
+
+                        DistributedNetworkUser targetUser = new DistributedNetworkUser(false, alias, ipAddr);
+
+                        DistributedNetworkFile distributedNetworkFile =
+                            new DistributedNetworkFile(requested_filename, requested_filepath, true, true);
+                        distributedNetwork.RequestFile(targetUser, distributedNetworkFile);
+                    }
+                }
                 
             }
 
@@ -3052,6 +3190,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             }
             if (e.ClickedItem.Text.Equals("Ściągnij"))
             {
+                last_message_to_broadcast = "";
                 Console.WriteLine("Ściągnij clicked!");
                 
                 total_selected = LV_catalog_display_item_selection.Count();
@@ -4084,7 +4223,13 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
 
         public void DisplayMessageBoxFromAnotherThread(String msg)
         {
-            MessageBox.Show(msg);
+            // Obejście na problem podwójnego generowania okna, pożera okna następujące po sobie...
+            // Brudny hack na wielokrotne wywoływanie informacji.
+            if (!msg.Equals(last_message_to_broadcast))
+            {
+                last_message_to_broadcast = msg;
+                MessageBox.Show(msg);
+            }
         }
 
         public void AddSuccessfulDownloadNameFromAnotherThread(String filename)
@@ -4117,6 +4262,137 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                                 "Liczba wszystkich plików do ściągnięcia: " + total_to_download + "\n" +
                                 "Liczba plików, które udało się ściągnąć: " + successful_downloads_count + "\n" +
                                 "Liczba niepowodzeń: " + failed_downloads_count + "\n");
+            }
+        }
+
+        public string GrabExternalCatalogPathFromOtherThread()
+        {
+            string filepath = "";
+
+            filepath = ConfigManager.ReadString(ConfigManager.EXTERNAL_DATABASES_LOCATION) +
+                       ConfigManager.ReadString(ConfigManager.USER_ALIAS).ToUpper() + "_CATALOG.FDB";
+
+            return filepath;
+        }
+
+        public void TerminateDBConnectionsFromOtherThread()
+        {
+            FbConnection.ClearAllPools();
+        }
+
+        public void AddAliasFromOtherThread(String alias, String address)
+        {
+            string grabbed_aliases = ConfigManager.ReadString(ConfigManager.KNOWN_ALIASES);
+            bool error_on_aliases_read = false, change_made = false;
+
+            string[] alias_address_pairs = new string[0];
+            string final_message = "";
+
+            try
+            {
+                alias_address_pairs = grabbed_aliases.Split('|');
+                string[] pair_split = new string[2] { "", "" };
+
+                List<string> aliases_list = new List<string>();
+                List<string> addresses_list = new List<string>();
+
+                foreach (string pair in alias_address_pairs)
+                {
+                    try
+                    {
+                        if(!pair.Equals(""))
+                        {
+                            pair_split = pair.Split('_');
+                            aliases_list.Add(pair_split[0]);
+                            addresses_list.Add(pair_split[1]);
+                        }
+                    }
+                    catch
+                    {
+                        MessageBox.Show("Błąd dzielenia pary alias-adres na składowe!\n" +
+                                        "Czyszczę zawartość znanych aliasów!");
+                        ConfigManager.WriteValue(ConfigManager.KNOWN_ALIASES, "");
+                        error_on_aliases_read = true;
+                        break;
+                    }
+                }
+
+                if (error_on_aliases_read == false)
+                {
+                    string alias_to_find = alias;
+                    int pair_index = aliases_list.IndexOf(alias_to_find.ToUpper());
+                    if (pair_index != -1)
+                    {
+                        // Znaleźliśmy alias w liście - jeżeli adresy się różnią, to zastąp teraźniejszym!
+                        if (addresses_list[pair_index] != address)
+                        {
+                            addresses_list[pair_index] = address;
+                            final_message = "Odświeżono adres IP użytkownika o aliasie " + aliases_list[pair_index];
+                            change_made = true;
+                        }
+                    }
+                    else
+                    {
+                        // Nie znaleźliśmy aliasu w liście - dodajemy kompletnie nowy
+                        aliases_list.Add(alias);
+                        addresses_list.Add(address);
+                        change_made = true;
+                        final_message = "Dodano użytkownika o aliasie " + alias;
+                    }
+                }
+
+                if (change_made == true)
+                {
+                    // Zmienialiśmy wartości w aliasach - stąd musimy przegenerować ich string i zapisać go do konfiga
+                    String substitution_string = "";
+
+                    for (int i = 0; i < aliases_list.Count; i++)
+                    {
+                        substitution_string += aliases_list[i] + '_';
+                        substitution_string += addresses_list[i] + '|';
+                    }
+
+                    substitution_string = substitution_string.TrimEnd('|');
+
+                    ConfigManager.WriteValue(ConfigManager.KNOWN_ALIASES, substitution_string);
+                    MessageBox.Show(final_message + '.');
+                }
+            }
+            catch
+            {
+                MessageBox.Show("Błąd dzielenia kontenera znanych aliasów na pary alias-adres!\n" +
+                                "Czyszczę zawartość znanych aliasów!");
+                ConfigManager.WriteValue(ConfigManager.KNOWN_ALIASES, "");
+                error_on_aliases_read = true;
+            }
+        }
+
+        public void AttemptToFinalizeFromOtherThread(String target_filename)
+        {
+            recieved_external_catalog_name = target_filename;
+
+            catalog_download_finalizer = new Timer();
+            catalog_download_finalizer.Interval = 3000;
+            catalog_download_finalizer.Tick += Catalog_download_finalizer_Tick;
+
+            catalog_download_finalizer.Start();
+        }
+
+        private void Catalog_download_finalizer_Tick(object sender, EventArgs e)
+        {
+            try
+            {
+                if(new FileInfo(database_externals_path + "TO_DETERMINE").Exists)
+                {
+                    File.Move(database_externals_path + "TO_DETERMINE", recieved_external_catalog_name);
+                    catalog_download_finalizer.Stop();
+                    MessageBox.Show("Pobranie katalogu zakonczone sukcesem!");
+                    LV_catalog_display_visible_changed(this, new EventArgs());
+                }
+            }
+            catch
+            {
+
             }
         }
 
