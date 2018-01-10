@@ -27,6 +27,8 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             if (data_passed == null) data_passed = new DataTable();
 
             InitializeComponent();
+
+            TP_extracted_text.Enabled = false;
         }
 
         #endregion
@@ -54,11 +56,34 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                 string temp = (data_passed.Rows[0].ItemArray[i]).ToString();
                 if (names_passed[i] == "EXTRACTED_TEXT")
                 {
-                    temp = temp.Replace('\r', ' ');
-                }
-                row.SubItems.Add(temp);
+                    TP_extracted_text.Enabled = true;
 
-                LV_metadata_advanced.Items.Add(row);
+                    string[] extracted_text_getter = temp.Split('\r');
+                    foreach(string extracted_text_substring in extracted_text_getter)
+                    {
+                        if (temp.Equals(""))
+                        {
+                            ListViewItem empty_info_to_add = new ListViewItem();
+                            empty_info_to_add.Name = "Pusty";
+                            empty_info_to_add.Text = "Brak tekstu do wyświetlenia";
+                            LV_extracted_text_container.Items.Add(empty_info_to_add);
+                            return;
+                        }
+                        else
+                        {
+                            ListViewItem text_substring_to_add = new ListViewItem();
+                            text_substring_to_add.Name = extracted_text_substring;
+                            text_substring_to_add.Text = extracted_text_substring;
+                            LV_extracted_text_container.Items.Add(text_substring_to_add);
+                        }
+                    }
+                }
+                else
+                {
+                    row.SubItems.Add(temp);
+
+                    LV_metadata_advanced.Items.Add(row);
+                }
             }
         }
 
@@ -75,5 +100,10 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
         }
 
         #endregion
+
+        private void TC_properties_container_Selecting(object sender, TabControlCancelEventArgs e)
+        {
+            e.Cancel = !e.TabPage.Enabled;
+        }
     }
 }

@@ -293,28 +293,31 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
 
                     if (file_path_container.Rows.Count == 1)
                     {
-                        // Kod legacy dla części Karola i Janka
-                        if (index < 2)
+                        if(new System.IO.FileInfo((string)file_path_container.Rows[0].ItemArray[1]).Exists)
                         {
-                            result_legacy.Add(new Tuple<int, string>((int)file_path_container.Rows[0].ItemArray[0],
-                                                                     (string)file_path_container.Rows[0].ItemArray[1]));
-                        }
-                        // Kod dla części Kuby - P-hash.
-                        if (index == 2)
-                        {
-                            result_image.Add(new Tuple<int, string, long>((int)file_path_container.Rows[0].ItemArray[0],
-                                                                          (string)file_path_container.Rows[0].ItemArray[1],
-                                                                          (Int64)file_path_container.Rows[0].ItemArray[4]));
-                        }
-                        // Kod dla częśći Kuby - przeszukiwanie katalogu.
-                        if(index == 3)
-                        {
-                            result_search.Add(new Tuple<int, string>(0,
-                                                                     (string)file_path_container.Rows[0].ItemArray[2] + (string)file_path_container.Rows[0].ItemArray[3]));
-                        }
+                            // Kod legacy dla części Karola i Janka
+                            if (index < 2)
+                            {
+                                result_legacy.Add(new Tuple<int, string>((int)file_path_container.Rows[0].ItemArray[0],
+                                                                         (string)file_path_container.Rows[0].ItemArray[1]));
+                            }
+                            // Kod dla części Kuby - P-hash.
+                            if (index == 2)
+                            {
+                                result_image.Add(new Tuple<int, string, long>((int)file_path_container.Rows[0].ItemArray[0],
+                                                                              (string)file_path_container.Rows[0].ItemArray[1],
+                                                                              (Int64)file_path_container.Rows[0].ItemArray[4]));
+                            }
+                            // Kod dla częśći Kuby - przeszukiwanie katalogu.
+                            if (index == 3)
+                            {
+                                result_search.Add(new Tuple<int, string>(0,
+                                                                         (string)file_path_container.Rows[0].ItemArray[2] + (string)file_path_container.Rows[0].ItemArray[3]));
+                            }
 
-                        names.Add((string)file_path_container.Rows[0].ItemArray[2] +
-                                  (string)file_path_container.Rows[0].ItemArray[3]);
+                            names.Add((string)file_path_container.Rows[0].ItemArray[2] +
+                                      (string)file_path_container.Rows[0].ItemArray[3]);
+                        }
                     }
                 }
                 file_list.Remove(current);
@@ -430,35 +433,38 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
 
                     for (int j = 0; j < database_folder_content.Rows.Count; j++)
                     {
-                        // Kod legacy dla części Karola i Janka
-                        if (index < 2)
+                        if(new System.IO.FileInfo((string)database_folder_content.Rows[j].ItemArray[1]).Exists)
                         {
-                            result_legacy.Add(new Tuple<int, string>((int)database_folder_content.Rows[j].ItemArray[0],
-                                                                     (string)database_folder_content.Rows[j].ItemArray[1]));
-                        }
-                        // Kod dla części Kuby - P-hash.
-                        if (index == 2)
-                        {
-                            result_image.Add(new Tuple<int, string, long>((int)database_folder_content.Rows[j].ItemArray[0],
-                                                                          (string)database_folder_content.Rows[j].ItemArray[1],
-                                                                          (Int64)database_folder_content.Rows[j].ItemArray[4]));
-                        }
-                        // Kod dla częśći Kuby - przeszukiwanie katalogu.
-                        if (index == 3)
-                        {
-                            result_search.Add(new Tuple<int, string>(0,
-                                                                     (string)database_folder_content.Rows[j].ItemArray[2] + (string)database_folder_content.Rows[j].ItemArray[3]));
-                        }
+                            // Kod legacy dla części Karola i Janka
+                            if (index < 2)
+                            {
+                                result_legacy.Add(new Tuple<int, string>((int)database_folder_content.Rows[j].ItemArray[0],
+                                                                         (string)database_folder_content.Rows[j].ItemArray[1]));
+                            }
+                            // Kod dla części Kuby - P-hash.
+                            if (index == 2)
+                            {
+                                result_image.Add(new Tuple<int, string, long>((int)database_folder_content.Rows[j].ItemArray[0],
+                                                                              (string)database_folder_content.Rows[j].ItemArray[1],
+                                                                              (Int64)database_folder_content.Rows[j].ItemArray[4]));
+                            }
+                            // Kod dla częśći Kuby - przeszukiwanie katalogu.
+                            if (index == 3)
+                            {
+                                result_search.Add(new Tuple<int, string>(0,
+                                                                         (string)database_folder_content.Rows[j].ItemArray[2] + (string)database_folder_content.Rows[j].ItemArray[3]));
+                            }
 
-                        names.Add((string)database_folder_content.Rows[j].ItemArray[2] +
-                                  (string)database_folder_content.Rows[j].ItemArray[3]);
-                        /*
-                        result.Add(new Tuple<int, string>((int)database_folder_content.Rows[j].ItemArray[0],
-                                                          (string)database_folder_content.Rows[j].ItemArray[1]));
-                        
-                        names.Add((string)database_folder_content.Rows[j].ItemArray[3] +
-                                  (string)database_folder_content.Rows[j].ItemArray[2]);
-                        */
+                            names.Add((string)database_folder_content.Rows[j].ItemArray[2] +
+                                      (string)database_folder_content.Rows[j].ItemArray[3]);
+                            /*
+                            result.Add(new Tuple<int, string>((int)database_folder_content.Rows[j].ItemArray[0],
+                                                              (string)database_folder_content.Rows[j].ItemArray[1]));
+
+                            names.Add((string)database_folder_content.Rows[j].ItemArray[3] +
+                                      (string)database_folder_content.Rows[j].ItemArray[2]);
+                            */
+                        }
                     }
                 }
                 // Po wyłuskaniu zawartości usuwamy folder z listy do przeszukiwania.
@@ -586,13 +592,17 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
         // Blokuje kontrolker okna, true powoduje zablokowanie, false odblokowanie.
         public void Controls_set_lock(bool lock_status)
         {
-            Enabled = !lock_status;
-            BT_compare_audio_files.Enabled = !lock_status;
-            BT_extract_from_images.Enabled = !lock_status;
-            BT_process_image.Enabled = !lock_status;
-            BT_search_catalog.Enabled = !lock_status;
-            if (lock_status == true) Hide();
-            else Show();
+            // Funkcja ma działać tylko gdy nie przeglądamy katalogu obiegowego
+            if (mode == 1)
+            {
+                Enabled = !lock_status;
+                BT_compare_audio_files.Enabled = !lock_status;
+                BT_extract_from_images.Enabled = !lock_status;
+                BT_process_image.Enabled = !lock_status;
+                BT_search_catalog.Enabled = !lock_status;
+                if (lock_status == true) Hide();
+                else Show();
+            }
         }
 
         // Przy zamykaniu okna przywołuje na pulpit okno macierzyste.

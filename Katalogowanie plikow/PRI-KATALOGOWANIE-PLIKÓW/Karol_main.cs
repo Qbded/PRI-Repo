@@ -25,6 +25,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
         public string program_path;
         BackgroundWorker bgwFileProcessor;
 
+        private string engineLocation = ConfigManager.ReadString(ConfigManager.PROGRAM_LOCATION) + "tessdata";
         private event EventHandler OnAllDone;
         private event EventHandler OnPartDone;
         private int current_file = 0;
@@ -169,7 +170,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             HashSet<string> tags = new HashSet<string>();
             try
             {
-                using (var engine = new TesseractEngine(@"../../tessdata", "pol", EngineMode.Default))
+                using (var engine = new TesseractEngine(engineLocation, "pol", EngineMode.Default))
                 {
                     using (var img = Pix.LoadFromFile(filePath))
                     {

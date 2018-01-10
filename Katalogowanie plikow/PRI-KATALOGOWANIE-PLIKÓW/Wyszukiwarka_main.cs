@@ -193,7 +193,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             Tuple<int, int, string[], int[], string[]> integer_values = new Tuple<int, int, string[], int[], string[]>(
             0,
             7,
-            new string[7] { "CB_NOT_EMPTY", "CB_GREATER", "TB_GREATER", "CB_SMALLER", "TB_SMALLER", "CB_EQUAL", "TB_EQUAL" },
+            new string[7] { "CB_NOT_EMPTY", "CB_GREATER", "TB_GREATER", "CB_EQUAL", "TB_EQUAL", "CB_SMALLER", "TB_SMALLER" },
             new int[7] { 0, 0, 1, 0, 1, 0, 1 },
             new string[7] { "Nie dopuszczaj wartości pustej", "Ma być większa od", "" , "Ma być równa", "",  "Ma być mniejsza od", "" }
             );
