@@ -1,0 +1,2 @@
+Autorzy udostępiają kod na licencji GNU Public License (GPL) w wersji trzeciej (https://www.gnu.org/licenses/gpl-3.0.en.html), z wyjątkiem bibliotek zewnętrznych, z których korzysta program.
+W ich przypadku postanowienia licencyjne pozostają takie, jak życzyli sobie ich autorzy (wymienione są one w dokumentacji).

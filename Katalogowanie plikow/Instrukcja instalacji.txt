@@ -1,0 +1,7 @@
+Program do poprawnego działania wymaga, aby w systemie operacyjnym były zainstalowane następujące elementy:
+1. Microsoft .NET Framework, w wersji co najmniej 4.6.1
+2. Microsoft System CLR Types for SQL Server 2014
+3. Microsoft SQL Server 2014 Management Objects, wersja x64.
+Oprócz tego, instalacja sporwadza się zasadniczo tylko do przekopiowania folderu bin i tessdata z repozytorium na dysk twardy.
+Użytkownik powinien mieć pełne prawa do folderu, w którym rezydować ma program.
+Celem poprawnego działania funkcjonalności przesyłania plików przez Internet strony połączenia muszą mieć otwarty na nasłuch i obiór port 8080.
