@@ -170,6 +170,8 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
 
             if(grabbed_alias.Length == 0 || grabbed_IP_address_string.Length == 0 || grabbed_alias == null || grabbed_IP_address_string == null)
             {
+                // Gdy coś poszło nie tak (adres albo alias użytkownika był niezdefiniowany)
+
                 DialogResult dialogResult = DialogResult.Yes;
                 if (inital_check)
                 {
@@ -203,19 +205,30 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                             alias_determined = true;
                         }
                     }
+                    else
+                    {
+                        alias_determined = true;
+                    }
 
                     // Jeżeli niezdefiniowany jest adres IP - poproś o nowy. Zakładamy sukces poprzedniego sprawdzenia
                     if ((grabbed_IP_address_string.Length == 0 || grabbed_IP_address_string == null) && alias_determined == true)
                     {
+                        // Zmienić tutaj wywołanie z podstawowego podawania adresu na nowy form!
                         MessageBox.Show("Prosimy podać adres IP, pod którym widoczny ma być program.");
+                        
                         System.Net.IPAddress localUserIPAddress = null;
-                        IPAddressInputForm ipAddressInputForm = new IPAddressInputForm(ref localUserIPAddress);
-                        ipAddressInputForm.Owner = this;
-                        ipAddressInputForm.ShowDialog();
-                        localUserIPAddress = ipAddressInputForm.resultRef;
+                        UserDetermineAddressForm userDetermineAddressForm = new UserDetermineAddressForm(ref localUserIPAddress);
+                        userDetermineAddressForm.Owner = this;
+                        userDetermineAddressForm.ShowDialog();
+                        localUserIPAddress = userDetermineAddressForm.resultRef;
+
                         if (localUserIPAddress == null)
                         {
-                            MessageBox.Show("Format podanego adresu IP nie może zostać uznany za poprawny!");
+                            MessageBox.Show("Pobieranie adresu IP zakonczyło się niepowodzeniem!");
+                            ConfigManager.WriteValue(ConfigManager.USER_ALIAS,
+                                "");
+                            final_alias = "";
+                            alias_determined = false;
                             address_determined = false;
                         }
                         else
@@ -231,11 +244,13 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                         local_user = new DistributedNetworkUser(false, final_alias, final_IP_address);
                         networking_lock = false;
                         distributedNetwork = new DistributedNetwork(this);
+                        MessageBox.Show("Definicja nowego użytkownika zakończyła się sukcesem!");
                         return true;
                     }
                     else
                     {
                         local_user = new DistributedNetworkUser(false, final_alias, final_IP_address);
+                        MessageBox.Show("Próba zdefiniowania nowego użytkownika zakończyła się niepowodzeniem!");
                         networking_lock = true;
                         return false;
                     }
@@ -619,56 +634,6 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
 
             LV_loaded_catalogs.Add(local_catalog);
         }
-
-        /* LEGACY - sprawdzanie czy adres IP jest zdefiniowany i poprawny. Teraz jest już w kodzie DetermineLocalUser
-        bool DetermineLocalAddress()
-        {
-            try
-            {
-                String ipAddressString = ConfigManager.ReadString(ConfigManager.TCP_COMM_IP_ADDRESS);
-                if (ipAddressString.Length == 0 || ipAddressString == null)
-                {
-                    MessageBox.Show("Prosimy podać adres IP, pod którym widoczny ma być program.");
-                    System.Net.IPAddress localUserIPAddress = null;
-                    IPAddressInputForm ipAddressInputForm = new IPAddressInputForm(ref localUserIPAddress);
-                    ipAddressInputForm.Owner = this;
-                    ipAddressInputForm.ShowDialog();
-                    localUserIPAddress = ipAddressInputForm.resultRef;
-                    if (localUserIPAddress == null)
-                    {
-                        MessageBox.Show("Format podanego adresu IP nie może zostać uznany za poprawny!");
-                        return false;
-                    }
-                    else
-                    {
-                        ConfigManager.WriteValue(ConfigManager.TCP_COMM_IP_ADDRESS,
-                            localUserIPAddress.ToString());
-                        return true;
-                    }
-                }
-                else
-                {
-                    System.Net.IPAddress ipAddress = null;
-                    try
-                    {
-                        ipAddress = System.Net.IPAddress.Parse(ipAddressString);
-                        return true;
-                    }
-                    catch
-                    {
-                        MessageBox.Show("Pobrany z pliku konfiguracyjnego adres nie może być uznany za poprawny!\nPrzywracam wartość domyślną.");
-                        ConfigManager.WriteValue(ConfigManager.TCP_COMM_IP_ADDRESS, "");
-                        return false;
-                    }
-                }
-            }
-            catch
-            {
-                MessageBox.Show("Błąd podczas pobierania pola przechowującego adres IP z pliku konfiguracyjnego!");
-                return false;
-            }
-        }
-        */
 
         // Obsługa logiki wymaganej przez WPF i resizing okna.
         public Main_form()
@@ -3743,7 +3708,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
         // Obsługuje zdarzenie podwójnego kliknięcia.
         private void LV_catalog_display_double_click (object sender, MouseEventArgs e)
         {
-            if(e.Button == MouseButtons.Left)
+            if (e.Button == MouseButtons.Left)
             {
                 ListView parent = (ListView)sender;
                 ListViewItem target = parent.HitTest(e.Location).Item;

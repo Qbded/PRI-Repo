@@ -99,11 +99,14 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             }
         }
 
-        #endregion
-
         private void TC_properties_container_Selecting(object sender, TabControlCancelEventArgs e)
         {
-            e.Cancel = !e.TabPage.Enabled;
+            if (e.TabPage.Enabled == false)
+            {
+                e.Cancel = !e.TabPage.Enabled;
+            }
         }
+
+        #endregion
     }
 }

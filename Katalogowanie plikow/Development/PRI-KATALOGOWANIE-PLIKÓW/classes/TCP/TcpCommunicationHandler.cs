@@ -304,6 +304,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
                 //    PORT);
                 //tcpClient = new TcpClient(AddressFamily.InterNetwork);
                 tcpClient = new TcpClient(AddressFamily.InterNetwork);
+                tcpClient.ReceiveTimeout = ConfigManager.ReadInt(ConfigManager.TCP_SECONDS_TO_TIMEOUT);
                 // Console.WriteLine("Attempting connection to " + targetUser.IPAddress.ToString() + ":" + PORT);
                 tcpClient.Connect(targetUser.IPAddress, PORT);
                 // Console.WriteLine("TcpClient initialized successfully.");
@@ -311,7 +312,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
             }
             catch(Exception ex)
             {
-                if(!surpress_errors) DisplayMessageBoxInMainForm(mainForm, "Exception while attempting connection: " + ex.Message);
+                DisplayMessageBoxInMainForm(mainForm, ex.Message);
             }
             if (tcpClient == null || networkStream == null) return;
 
@@ -321,11 +322,12 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
                 requestToServer, TcpRequestCodebook.SEND_FILE))
             {
                 // Console.WriteLine("Running client requesting file");
+                int sendFileResult = 0;
                 List<object> requestArgs = args.ElementAt(3) as List<object>;
                 DistributedNetworkFile dnFile = requestArgs.ElementAt(0) as DistributedNetworkFile;
                 String localDownloadPath = requestArgs.ElementAt(1) as String;
 
-                SendFileRequest(networkStream, dnFile, localDownloadPath, mainForm);
+                sendFileResult = SendFileRequest(networkStream, dnFile, localDownloadPath, mainForm);
             }
         }
 
@@ -509,13 +511,13 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
 
                     string[] deserializedDataChunks = deserializedData.Split('|');
 
-                    DisplayMessageBoxInMainForm(mainForm, "Użytkownik o aliasie " + deserializedDataChunks[0] + " nie wygenerował katalogu obiegowego!");
                     AddAliasInMainForm(mainForm, deserializedDataChunks[0], deserializedDataChunks[1]);
                     return RETURN_CANCEL;
                 }
                 else
                 {
                     IncrementFailedDownloadCountInMainForm(mainForm);
+                    DisplayMessageBoxInMainForm(mainForm, "Błąd przesyłania pliku: " + dnFile.realFileName);
                     AddFailedDownloadNameInMainForm(mainForm, Path.GetFileName(dnFile.realFilePath));
                     CheckIfDoneInMainForm(mainForm);
                     return RETURN_BAD_REQUEST;

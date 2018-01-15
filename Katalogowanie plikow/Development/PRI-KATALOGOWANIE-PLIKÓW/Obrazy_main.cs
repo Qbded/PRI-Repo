@@ -62,7 +62,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
 
         private void Obrazy_main_Load(object sender, EventArgs e)
         {
-            for(int i = 0; i < names.Count; i++)
+            for (int i = 0; i < names.Count; i++)
             {
                 LB_images.Items.Add(names[i]);
             }
@@ -85,8 +85,15 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             // Jeżeli nie ma w nim tego, czego szukam - ładuję obraz z odpowiedniej ścieżki w data i dodaje go do cache.
             if (image_to_draw == null)
             {
+                try
+                {
                     image_to_draw = Image.FromFile(data[index].Item2);
                     PB_image_cache.Add(new Tuple<int, Image>(index, image_to_draw));
+                }
+                catch
+                {
+                    MessageBox.Show("ERROR");
+                }
             }
             PB_image_preview.Image = image_to_draw;
         }

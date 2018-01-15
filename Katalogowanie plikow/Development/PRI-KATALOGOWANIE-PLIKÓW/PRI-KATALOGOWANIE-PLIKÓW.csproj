@@ -259,6 +259,12 @@
     <Compile Include="popup forms\IPAddressInputForm.Designer.cs">
       <DependentUpon>IPAddressInputForm.cs</DependentUpon>
     </Compile>
+    <Compile Include="popup forms\UserDetermineAddressForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="popup forms\UserDetermineAddressForm.Designer.cs">
+      <DependentUpon>UserDetermineAddressForm.cs</DependentUpon>
+    </Compile>
     <Compile Include="Wyszukiwarka_main.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -359,6 +365,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="popup forms\IPAddressInputForm.resx">
       <DependentUpon>IPAddressInputForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="popup forms\UserDetermineAddressForm.resx">
+      <DependentUpon>UserDetermineAddressForm.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>

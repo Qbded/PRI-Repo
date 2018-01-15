@@ -167,8 +167,6 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
         // Konstruktor standardowy dla Special_function_window
         public Special_function_window()
         {
-            names = new List<string>();
-
             InitializeComponent();
         }
 
@@ -209,6 +207,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
     // Obsługa ładowania danych dla wybranej opcji, w zależności od wartości zm. index zmienia typ zwracanych danych.
         private object prepare_data(List<string> extensions, int index)
         {
+            names = new List<string>();
             object result = null;
 
             // Tutaj przechowujemy kolejno części SELECT, FROM i WHERE dla naszego zapytania SQL wyłuskującego właściwości plików w bazie.

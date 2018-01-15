@@ -29,10 +29,10 @@
         private void InitializeComponent()
         {
             this.TLP_main_layout = new System.Windows.Forms.TableLayoutPanel();
-            this.RB_address = new System.Windows.Forms.RadioButton();
+            this.TB_alias_input = new System.Windows.Forms.TextBox();
             this.RB_alias = new System.Windows.Forms.RadioButton();
             this.MTB_address_input = new System.Windows.Forms.MaskedTextBox();
-            this.TB_alias_input = new System.Windows.Forms.TextBox();
+            this.RB_address = new System.Windows.Forms.RadioButton();
             this.LB_text = new System.Windows.Forms.Label();
             this.BT_ok = new System.Windows.Forms.Button();
             this.TLP_main_layout.SuspendLayout();
@@ -62,18 +62,15 @@
             this.TLP_main_layout.Size = new System.Drawing.Size(284, 199);
             this.TLP_main_layout.TabIndex = 0;
             // 
-            // RB_address
+            // TB_alias_input
             // 
-            this.RB_address.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right)));
-            this.RB_address.AutoSize = true;
-            this.RB_address.Location = new System.Drawing.Point(3, 39);
-            this.RB_address.Name = "RB_address";
-            this.RB_address.Size = new System.Drawing.Size(278, 17);
-            this.RB_address.TabIndex = 0;
-            this.RB_address.TabStop = true;
-            this.RB_address.Text = "Adres IP";
-            this.RB_address.UseVisualStyleBackColor = true;
-            this.RB_address.CheckedChanged += new System.EventHandler(this.RB_address_CheckedChanged);
+            this.TB_alias_input.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right)));
+            this.TB_alias_input.Enabled = false;
+            this.TB_alias_input.Location = new System.Drawing.Point(3, 134);
+            this.TB_alias_input.Name = "TB_alias_input";
+            this.TB_alias_input.Size = new System.Drawing.Size(278, 20);
+            this.TB_alias_input.TabIndex = 3;
+            this.TB_alias_input.TextAlign = System.Windows.Forms.HorizontalAlignment.Center;
             // 
             // RB_alias
             // 
@@ -98,15 +95,18 @@
             this.MTB_address_input.TabIndex = 2;
             this.MTB_address_input.TextAlign = System.Windows.Forms.HorizontalAlignment.Center;
             // 
-            // TB_alias_input
+            // RB_address
             // 
-            this.TB_alias_input.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right)));
-            this.TB_alias_input.Enabled = false;
-            this.TB_alias_input.Location = new System.Drawing.Point(3, 134);
-            this.TB_alias_input.Name = "TB_alias_input";
-            this.TB_alias_input.Size = new System.Drawing.Size(278, 20);
-            this.TB_alias_input.TabIndex = 3;
-            this.TB_alias_input.TextAlign = System.Windows.Forms.HorizontalAlignment.Center;
+            this.RB_address.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right)));
+            this.RB_address.AutoSize = true;
+            this.RB_address.Location = new System.Drawing.Point(3, 39);
+            this.RB_address.Name = "RB_address";
+            this.RB_address.Size = new System.Drawing.Size(278, 17);
+            this.RB_address.TabIndex = 0;
+            this.RB_address.TabStop = true;
+            this.RB_address.Text = "Adres IP";
+            this.RB_address.UseVisualStyleBackColor = true;
+            this.RB_address.CheckedChanged += new System.EventHandler(this.RB_address_CheckedChanged);
             // 
             // LB_text
             // 
@@ -132,6 +132,7 @@
             // 
             // AliasOrAddressInputForm
             // 
+            this.AcceptButton = this.BT_ok;
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(284, 199);

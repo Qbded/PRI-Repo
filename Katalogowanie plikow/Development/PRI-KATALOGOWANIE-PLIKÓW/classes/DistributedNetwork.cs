@@ -45,9 +45,11 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes
                 downloadDir = ConfigManager.ReadString(ConfigManager.EXTERNAL_DATABASES_LOCATION);
                 fileName = file.realFilePath;
                 
+                /*
                 tcpCom.RequestFile(file,
                     downloadDir + "/" + fileName,
                     user);
+                */
             }
             else
             {
@@ -62,6 +64,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes
             tcpCom.RequestFile(file,
                 downloadDir + "/" + fileName,
                 user);
+            
         }
     }
 }
