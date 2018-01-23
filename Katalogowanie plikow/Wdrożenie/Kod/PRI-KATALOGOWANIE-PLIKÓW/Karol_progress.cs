@@ -66,6 +66,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             this.languageComboBox.SelectedIndex = 0;
 
             setThumbnail();
+            videoDurationDisplay.Text = inputFile.Metadata.Duration.ToString();
             getFramesToAnalyzeCount(this, new EventArgs());
         }
 
