@@ -167,10 +167,10 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             // Definicja dla przeszukiwania obrazów - można je wykonać tylko dla obrazów.
             Tuple<int, int, string[], int[], string[]> image_construction = new Tuple<int, int, string[], int[], string[]>(
             4,
-            3,
-            new string[3] { "COMMENT", "WIDTH", "HEIGHT" },
-            new int[3] { 1, 0, 0 },
-            new string[3] { "Komentarz w obrazie", "Szerokość", "Wysokość" }
+            4,
+            new string[4] { "COMMENT", "WIDTH", "HEIGHT", "PHASH" },
+            new int[4] { 1, 0, 0, 0 },
+            new string[4] { "Komentarz w obrazie", "Szerokość", "Wysokość", "Wartość PHash" }
             );
             parameter_group_templates.Add(image_construction);
 

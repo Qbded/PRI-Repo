@@ -292,7 +292,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
 
                     if (file_path_container.Rows.Count == 1)
                     {
-                        if(new System.IO.FileInfo((string)file_path_container.Rows[0].ItemArray[1]).Exists)
+                        if(new System.IO.FileInfo((string)file_path_container.Rows[0].ItemArray[1]).Exists || mode != 1)
                         {
                             // Kod legacy dla części Karola i Janka
                             if (index < 2)
@@ -303,9 +303,16 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                             // Kod dla części Kuby - P-hash.
                             if (index == 2)
                             {
-                                result_image.Add(new Tuple<int, string, long>((int)file_path_container.Rows[0].ItemArray[0],
-                                                                              (string)file_path_container.Rows[0].ItemArray[1],
-                                                                              (Int64)file_path_container.Rows[0].ItemArray[4]));
+                                try
+                                {
+                                    result_image.Add(new Tuple<int, string, long>((int)file_path_container.Rows[0].ItemArray[0],
+                                                                                  (string)file_path_container.Rows[0].ItemArray[1],
+                                                                                  (Int64)file_path_container.Rows[0].ItemArray[4]));
+                                }
+                                catch
+                                {
+
+                                }
                             }
                             // Kod dla częśći Kuby - przeszukiwanie katalogu.
                             if (index == 3)
@@ -432,7 +439,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
 
                     for (int j = 0; j < database_folder_content.Rows.Count; j++)
                     {
-                        if(new System.IO.FileInfo((string)database_folder_content.Rows[j].ItemArray[1]).Exists)
+                        if(new System.IO.FileInfo((string)database_folder_content.Rows[j].ItemArray[1]).Exists || mode != 1)
                         {
                             // Kod legacy dla części Karola i Janka
                             if (index < 2)
@@ -443,9 +450,20 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                             // Kod dla części Kuby - P-hash.
                             if (index == 2)
                             {
-                                result_image.Add(new Tuple<int, string, long>((int)database_folder_content.Rows[j].ItemArray[0],
+                                try
+                                {
+                                    result_image.Add(new Tuple<int, string, long>((int)database_folder_content.Rows[j].ItemArray[0],
                                                                               (string)database_folder_content.Rows[j].ItemArray[1],
                                                                               (Int64)database_folder_content.Rows[j].ItemArray[4]));
+                                }
+                                catch
+                                {
+                                    /* Jeżeli próbujemy przekazać wartość z nullem w PHash - nie dajemy jej dalej!
+                                    result_image.Add(new Tuple<int, string, long>((int)database_folder_content.Rows[j].ItemArray[0],
+                                                                              (string)database_folder_content.Rows[j].ItemArray[1],
+                                                                              0));
+                                    */
+                                }
                             }
                             // Kod dla częśći Kuby - przeszukiwanie katalogu.
                             if (index == 3)

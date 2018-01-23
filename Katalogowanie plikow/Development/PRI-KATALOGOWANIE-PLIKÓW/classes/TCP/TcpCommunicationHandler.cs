@@ -298,21 +298,19 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
             NetworkStream networkStream = null;
             try
             {
-                // Console.WriteLine("Attempting connection to " + targetUser.IPAddress.ToString());
-                //tcpClient = new TcpClient(
-                //    targetUser.IPAddress.ToString(),
-                //    PORT);
-                //tcpClient = new TcpClient(AddressFamily.InterNetwork);
                 tcpClient = new TcpClient(AddressFamily.InterNetwork);
-                tcpClient.ReceiveTimeout = ConfigManager.ReadInt(ConfigManager.TCP_SECONDS_TO_TIMEOUT);
-                // Console.WriteLine("Attempting connection to " + targetUser.IPAddress.ToString() + ":" + PORT);
+
+                // Żeby czas był w sekundach mnożymy wartość z konfiga o 1000.
+                // Podana wartośc zawsze brana jest ~ *2, zakładam że robi retry połącznia za pierwszym failem...
+                tcpClient.ReceiveTimeout = ConfigManager.ReadInt(ConfigManager.TCP_SECONDS_TO_TIMEOUT) * 1000;
+                
                 tcpClient.Connect(targetUser.IPAddress, PORT);
-                // Console.WriteLine("TcpClient initialized successfully.");
                 networkStream = tcpClient.GetStream();
             }
             catch(Exception ex)
             {
-                DisplayMessageBoxInMainForm(mainForm, ex.Message);
+                DisplayMessageBoxInMainForm(mainForm, "Błąd podczas nawiązywania połączenia z użytkownikiem o aliasie: "+ targetUser.Alias +'\n'
+                                                    + "Szczegóły:\n" + ex.Message);
             }
             if (tcpClient == null || networkStream == null) return;
 

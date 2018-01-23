@@ -30,7 +30,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
 
         //Wybrany spośród wszystkich obraz, do którego będziemy przyrównywali inne
         private string image_selected;
-        private int image_selected_index_in_data;
+        private int image_selected_index_in_data = -1;
 
         #endregion
 
@@ -102,7 +102,6 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
         {
             image_selected = (string)LB_images.Items[LB_images.SelectedIndex];
             image_selected_index_in_data = LB_images.SelectedIndex;
-            LB_image_selected_name.Text = image_selected;
             PB_image_draw(LB_images.SelectedIndex);
         }
 
@@ -123,7 +122,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
 
         private void BT_execute_Click(object sender, EventArgs e)
         {
-            if (LB_image_selected_name.Text != "")
+            if (image_selected_index_in_data != -1)
             {
                 int[] counters = new int[4];
                 int total_count = 0;
