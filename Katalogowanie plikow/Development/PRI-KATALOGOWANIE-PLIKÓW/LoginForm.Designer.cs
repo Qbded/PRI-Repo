@@ -36,9 +36,9 @@
             // 
             this.passwordInput.Location = new System.Drawing.Point(66, 55);
             this.passwordInput.Name = "passwordInput";
-            this.passwordInput.PasswordChar = '•';
             this.passwordInput.Size = new System.Drawing.Size(100, 20);
             this.passwordInput.TabIndex = 0;
+            this.passwordInput.UseSystemPasswordChar = true;
             // 
             // logInButton
             // 
@@ -57,6 +57,7 @@
             this.ClientSize = new System.Drawing.Size(230, 177);
             this.Controls.Add(this.logInButton);
             this.Controls.Add(this.passwordInput);
+            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle;
             this.Name = "LoginForm";
             this.Text = "Logowanie";
             this.TopMost = true;
