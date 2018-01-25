@@ -24,7 +24,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
         /// <summary>
         /// Maximum byte count of data sent in a single data packet
         /// </summary>
-        private static readonly int MAX_DATA_PACKET_SIZE = 4096;
+        private static readonly int MAX_DATA_PACKET_SIZE = 4 * 1024;
         /// <summary>
         /// Length of data packets is stored in int variables, whitch
         /// take 4 bytes each. Therefore, 4 consecutive bytes from
@@ -928,7 +928,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
             while (remainingFileBytes > 0)
             {
                 long fileFragmentSize =
-                    Math.Min(fileInfo.Length, MAX_DATA_PACKET_SIZE);
+                    Math.Min(remainingFileBytes, MAX_DATA_PACKET_SIZE);
                 byte[] fileFragment = new byte[fileFragmentSize];
                 int bytesRead = 0;
                 try
