@@ -630,6 +630,8 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
             }
             // Console.WriteLine("SendFileRequest: sent request: Continue sending file");
 
+
+            if(!dnFile.realFileName.Equals("EXTERNAL_CATALOG.FDB")) SpawnProgressWindowInMainForm(mainForm, Path.GetFileName(dnFile.realFilePath), (int)dnFile.fileSize);
             while (true)
             {
                 initByte = AwaitNonNegativeByte(networkStream, mainForm);
@@ -661,7 +663,6 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
                         requestByte, TcpRequestCodebook.DONE_SENDING_FILE))
                     {
                         // Pobieramy wartość przesłanego nam stringa.
-
                         byte[] sizeBytes = AwaitPacketSize(networkStream, mainForm);
                         if (sizeBytes.Length == 0)
                         {
@@ -689,7 +690,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
                         AddSuccessfulDownloadNameInMainForm(mainForm, dnFile.realFileName);
                         IncrementSuccessfulDownloadCountInMainForm(mainForm);
                         CheckIfDoneInMainForm(mainForm);
-                        
+                        KillProgressWindowInMainForm(mainForm);
                     }
                     break;
                 }
@@ -725,6 +726,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
                     try
                     {
                         fileStream.Write(fileFragmentPacket, 0, fileFragmentPacket.Length);
+                        UpdateProgressWindowInMainForm(mainForm);
                         fileStream.Flush();
                     }
                     catch (Exception ex)
@@ -808,11 +810,13 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
             
             String filePath = deserializedPacketPayload.Remove(deserializedPacketPayload.Length-1);
             String fileName = "";
+            long fileSize = 0;
 
             if (!filePath.Equals("TO_DETERMINE"))
             {
                 // Standardowa logika przesyłania.
                 fileName = Path.GetFileName(filePath);
+                fileSize = new FileInfo(filePath).Length;
             }
             else
             {
@@ -825,12 +829,15 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
                 //filePath = GrabExternalCatalogPathInMainForm(mainForm);
                 filePath = ConfigManager.ReadString(ConfigManager.EXTERNAL_DATABASES_LOCATION) +
                            ConfigManager.ReadString(ConfigManager.USER_ALIAS).ToUpper() + "_CATALOG.FDB";
+
                 fileName = Path.GetFileName(filePath);
+                fileSize = new FileInfo(filePath).Length;
+                //fileSize = 
             }
 
             // Console.WriteLine("SendFileRequestCallback: Received request for file " + filePath);
 
-            DistributedNetworkFile distributedNetworkFile = new DistributedNetworkFile(fileName,filePath, true, unpromptedDistribution);
+            DistributedNetworkFile distributedNetworkFile = new DistributedNetworkFile(fileName,filePath,fileSize, true, unpromptedDistribution);
 
             if(!sendsExternalCatalog)
             {
@@ -1165,11 +1172,35 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
             });
         }
 
+        private void SpawnProgressWindowInMainForm(Main_form mainFormRef, string fileName, int fileSize)
+        {
+            mainFormRef.Invoke((Action)delegate ()
+            {
+                mainFormRef.SpawnProgressWindowFromAnotherThread(fileName,fileSize);
+            });
+        }
+
+        private void UpdateProgressWindowInMainForm(Main_form mainFormRef)
+        {
+            mainFormRef.Invoke((Action)delegate ()
+            {
+                mainFormRef.UpdateProgressWindowFromAnotherThread();
+            });
+        }
+
+        private void KillProgressWindowInMainForm(Main_form mainFormRef)
+        {
+            mainFormRef.Invoke((Action)delegate ()
+            {
+                mainFormRef.KillProgressWindowFromAnotherThread();
+            });
+        }
+
         private void CheckIfDoneInMainForm(Main_form mainFormRef)
         {
             mainFormRef.Invoke((Action)delegate ()
             {
-                mainFormRef.CheckIfDoneFromOtherThread();
+                mainFormRef.CheckIfDoneFromAnotherThread();
             });
         }
 
@@ -1179,7 +1210,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
         {
             mainFormRef.Invoke((Action)delegate ()
             {
-                mainFormRef.AddAliasFromOtherThread(alias,address);
+                mainFormRef.AddAliasFromAnotherThread(alias,address);
             });
         }
 
@@ -1189,7 +1220,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
 
             mainFormRef.Invoke((Action)delegate ()
             {
-                result_from_main = mainFormRef.GrabExternalCatalogPathFromOtherThread();
+                result_from_main = mainFormRef.GrabExternalCatalogPathFromAnotherThread();
             });
 
             return result_from_main;
@@ -1199,7 +1230,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
         {
             mainFormRef.Invoke((Action)delegate ()
             {
-                mainFormRef.TerminateDBConnectionsFromOtherThread();
+                mainFormRef.TerminateDBConnectionsFromAnotherThread();
             });
         }
 
@@ -1207,7 +1238,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
         {
             mainFormRef.Invoke((Action)delegate ()
             {
-                mainFormRef.AttemptToFinalizeFromOtherThread(target_filename);
+                mainFormRef.AttemptToFinalizeFromAnotherThread(target_filename);
             });
         }
 
