@@ -82,13 +82,13 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
         }
 
 
-        public void RequestFile(DistributedNetworkFile dnFile, String localDownloadPath,
+        public void RequestFile(List<DistributedNetworkFile> dnFileList, String localDownloadPath,
             DistributedNetworkUser targetUser)
         {
             // Console.WriteLine("TcpCommunicationHandler:RequestFile");
             List<object> args = new List<object>()
             {
-                dnFile,
+                dnFileList,
                 localDownloadPath
             };
             StartClient(targetUser, TcpRequestCodebook.SEND_FILE, args);
@@ -330,13 +330,20 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
                 requestToServer, TcpRequestCodebook.SEND_FILE))
             {
                 // Console.WriteLine("Running client requesting file");
-                int sendFileResult = 0;
+                List<int> sendFileResult = new List<int>;
                 List<object> requestArgs = args.ElementAt(3) as List<object>;
-                DistributedNetworkFile dnFile = requestArgs.ElementAt(0) as DistributedNetworkFile;
+                List<DistributedNetworkFile> dnFileList = requestArgs.ElementAt(0) as List<DistributedNetworkFile>;
                 String localDownloadPath = requestArgs.ElementAt(1) as String;
 
-                sendFileResult = SendFileRequest(networkStream, dnFile, localDownloadPath, mainForm);
+                foreach (DistributedNetworkFile dnFile in dnFileList)
+                {
+                    int result = SendFileRequest(networkStream, dnFile, localDownloadPath, mainForm);
+                    sendFileResult.Add(result);
+                }
             }
+
+            if (networkStream != null) networkStream.Close();
+            if (tcpClient != null) tcpClient.Close();
         }
 
         private void StopClient(BackgroundWorker client)
