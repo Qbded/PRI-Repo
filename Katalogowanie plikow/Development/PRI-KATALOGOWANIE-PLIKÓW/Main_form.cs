@@ -4402,9 +4402,9 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
 
                     AddAliasFromOtherThread(used_alias, used_IP_address_string);
                 }
-                if (new FileInfo(database_externals_path + "TO_DETERMINE").Exists)
+                if (new FileInfo(database_externals_path + "EXTERNAL_CATALOG.FDB").Exists)
                 {
-                    File.Move(database_externals_path + "TO_DETERMINE", recieved_external_catalog_name);
+                    File.Move(database_externals_path + "EXTERNAL_CATALOG.FDB", recieved_external_catalog_name);
                     catalog_download_finalizer.Stop();
                     MessageBox.Show("Pobranie katalogu zakonczone sukcesem!");
 

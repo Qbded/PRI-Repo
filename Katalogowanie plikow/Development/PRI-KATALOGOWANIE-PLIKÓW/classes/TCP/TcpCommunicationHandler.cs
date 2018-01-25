@@ -304,26 +304,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
             DistributedNetworkUser targetUser =
                 args.ElementAt(4) as DistributedNetworkUser;
 
-            TcpClient tcpClient = null;
-            NetworkStream networkStream = null;
-            try
-            {
-                tcpClient = new TcpClient(new IPEndPoint(IPAddress.Parse(ConfigManager.ReadString(ConfigManager.TCP_COMM_IP_ADDRESS)),PORT));
-
-                // Żeby czas był w sekundach mnożymy wartość z konfiga o 1000.
-                // Podana wartośc zawsze brana jest ~ *2, zakładam że robi retry połącznia za pierwszym failem...
-                tcpClient.ReceiveTimeout = ConfigManager.ReadInt(ConfigManager.TCP_SECONDS_TO_TIMEOUT) * 1000;
-                
-                tcpClient.Connect(targetUser.IPAddress, PORT);
-                networkStream = tcpClient.GetStream();
-            }
-            catch(Exception ex)
-            {
-                DisplayMessageBoxInMainForm(mainForm, "Błąd podczas nawiązywania połączenia z użytkownikiem o aliasie: "+ targetUser.Alias +'\n'
-                                                    + "Szczegóły:\n" + ex.Message);
-            }
-            if (tcpClient == null || networkStream == null) return;
-
+            
             // Console.WriteLine("Attempted connection to " + targetUser.IPAddress.ToString());
 
             if(TcpRequestCodebook.IsRequest(
@@ -337,13 +318,40 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
 
                 foreach (DistributedNetworkFile dnFile in dnFileList)
                 {
-                    int result = SendFileRequest(networkStream, dnFile, localDownloadDir + dnFile.realFileName, mainForm);
-                    sendFileResult.Add(result);
+                    TcpClient tcpClient = null;
+                    NetworkStream networkStream = null;
+                    try
+                    {
+                        tcpClient = new TcpClient(new IPEndPoint(IPAddress.Parse(ConfigManager.ReadString(ConfigManager.TCP_COMM_IP_ADDRESS)), PORT));
+
+                        // Żeby czas był w sekundach mnożymy wartość z konfiga o 1000.
+                        // Podana wartośc zawsze brana jest ~ *2, zakładam że robi retry połącznia za pierwszym failem...
+                        tcpClient.ReceiveTimeout = ConfigManager.ReadInt(ConfigManager.TCP_SECONDS_TO_TIMEOUT) * 1000;
+
+                        tcpClient.Connect(targetUser.IPAddress, PORT);
+                        networkStream = tcpClient.GetStream();
+                    }
+                    catch (Exception ex)
+                    {
+                        DisplayMessageBoxInMainForm(mainForm, "Błąd podczas nawiązywania połączenia z użytkownikiem o aliasie: " + targetUser.Alias + '\n'
+                                                            + "Szczegóły:\n" + ex.Message);
+                    }
+                    if (tcpClient == null || networkStream == null)
+                    {
+                        // Coś poszło nie tak z robieniem gniazd.
+                        Console.WriteLine("Coś poszło nie tak z robieniem gniazd i/lub streamów");
+                    }
+                    else
+                    {
+                        int result = SendFileRequest(networkStream, dnFile, localDownloadDir + dnFile.realFileName, mainForm);
+                        sendFileResult.Add(result);
+                    }
+
+                    if (networkStream != null) networkStream.Close();
+                    if (tcpClient != null) tcpClient.Close();
                 }
             }
 
-            if (networkStream != null) networkStream.Close();
-            if (tcpClient != null) tcpClient.Close();
         }
 
         private void StopClient(BackgroundWorker client)
@@ -469,6 +477,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
         public int SendFileRequest(NetworkStream networkStream,
             DistributedNetworkFile dnFile, String localDownloadPath, Main_form mainForm)
         {
+            Console.WriteLine("Wszedłem do ściągania pliku " + dnFile.realFileName + " o czasie " + DateTime.Now.ToString());
             String realFilePath = dnFile.realFilePath;
             byte[] serializedFilePath;
             if (dnFile.allowUnpromptedDistribution)
