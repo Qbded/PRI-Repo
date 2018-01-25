@@ -502,6 +502,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
             {
                 IncrementFailedDownloadCountInMainForm(mainForm);
                 AddFailedDownloadNameInMainForm(mainForm, Path.GetFileName(dnFile.realFilePath));
+                KillProgressWindowInMainForm(mainForm);
                 CheckIfDoneInMainForm(mainForm);
                 return RETURN_TIMEOUT;
             }
@@ -510,6 +511,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
             {
                 IncrementFailedDownloadCountInMainForm(mainForm);
                 AddFailedDownloadNameInMainForm(mainForm, Path.GetFileName(dnFile.realFilePath));
+                KillProgressWindowInMainForm(mainForm);
                 CheckIfDoneInMainForm(mainForm);
                 return RETURN_TIMEOUT;
             }
@@ -543,6 +545,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
                     IncrementFailedDownloadCountInMainForm(mainForm);
                     DisplayMessageBoxInMainForm(mainForm, "Błąd przesyłania pliku: " + dnFile.realFileName);
                     AddFailedDownloadNameInMainForm(mainForm, Path.GetFileName(dnFile.realFilePath));
+                    KillProgressWindowInMainForm(mainForm);
                     CheckIfDoneInMainForm(mainForm);
                     return RETURN_BAD_REQUEST;
                 }
@@ -555,6 +558,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
             {
                 IncrementFailedDownloadCountInMainForm(mainForm);
                 AddFailedDownloadNameInMainForm(mainForm, Path.GetFileName(dnFile.realFilePath));
+                KillProgressWindowInMainForm(mainForm);
                 CheckIfDoneInMainForm(mainForm);
                 return RETURN_TIMEOUT;
             }
@@ -566,6 +570,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
             {
                 IncrementFailedDownloadCountInMainForm(mainForm);
                 AddFailedDownloadNameInMainForm(mainForm, Path.GetFileName(dnFile.realFilePath));
+                KillProgressWindowInMainForm(mainForm);
                 CheckIfDoneInMainForm(mainForm);
                 return RETURN_TIMEOUT;
             }
@@ -589,6 +594,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
                                                                             localDownloadPath + "\n" + ex.Message);
                 IncrementFailedDownloadCountInMainForm(mainForm);
                 AddFailedDownloadNameInMainForm(mainForm, Path.GetFileName(dnFile.realFilePath));
+                KillProgressWindowInMainForm(mainForm);
                 CheckIfDoneInMainForm(mainForm);
                 return RETURN_CANCEL;
             }
@@ -605,6 +611,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
                     localDownloadPath + "\n" + ex.Message);
                 IncrementFailedDownloadCountInMainForm(mainForm);
                 AddFailedDownloadNameInMainForm(mainForm, Path.GetFileName(dnFile.realFilePath));
+                KillProgressWindowInMainForm(mainForm);
                 CheckIfDoneInMainForm(mainForm);
                 return RETURN_CANCEL;
             }
@@ -625,6 +632,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
                     "File download stopped, unable to write to network stream.\n" + ex.Message);
                 IncrementFailedDownloadCountInMainForm(mainForm);
                 AddFailedDownloadNameInMainForm(mainForm, Path.GetFileName(dnFile.realFilePath));
+                KillProgressWindowInMainForm(mainForm);
                 CheckIfDoneInMainForm(mainForm);
                 return RETURN_CANCEL;
             }
@@ -641,6 +649,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
                     fileStream.Close();
                     IncrementFailedDownloadCountInMainForm(mainForm);
                     AddFailedDownloadNameInMainForm(mainForm, Path.GetFileName(dnFile.realFilePath));
+                    KillProgressWindowInMainForm(mainForm);
                     CheckIfDoneInMainForm(mainForm);
                     return RETURN_TIMEOUT;
                 }
@@ -651,6 +660,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
                     fileStream.Close();
                     IncrementFailedDownloadCountInMainForm(mainForm);
                     AddFailedDownloadNameInMainForm(mainForm, Path.GetFileName(dnFile.realFilePath));
+                    KillProgressWindowInMainForm(mainForm);
                     CheckIfDoneInMainForm(mainForm);
                     return RETURN_TIMEOUT;
                 }
@@ -704,6 +714,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
                         fileStream.Close();
                         IncrementFailedDownloadCountInMainForm(mainForm);
                         AddFailedDownloadNameInMainForm(mainForm, Path.GetFileName(dnFile.realFilePath));
+                        KillProgressWindowInMainForm(mainForm);
                         CheckIfDoneInMainForm(mainForm);
                         return RETURN_TIMEOUT;
                     }
@@ -717,6 +728,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
                         fileStream.Close();
                         IncrementFailedDownloadCountInMainForm(mainForm);
                         AddFailedDownloadNameInMainForm(mainForm, Path.GetFileName(dnFile.realFilePath));
+                        KillProgressWindowInMainForm(mainForm);
                         CheckIfDoneInMainForm(mainForm);
                         return RETURN_TIMEOUT;
                     }
@@ -737,6 +749,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
                             localDownloadPath + "\n" + ex.Message);
                         IncrementFailedDownloadCountInMainForm(mainForm);
                         AddFailedDownloadNameInMainForm(mainForm, Path.GetFileName(dnFile.realFilePath));
+                        KillProgressWindowInMainForm(mainForm);
                         CheckIfDoneInMainForm(mainForm);
                         return RETURN_CANCEL;
                     }
@@ -759,6 +772,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
                             localDownloadPath + "\n" + ex.Message);
                         IncrementFailedDownloadCountInMainForm(mainForm);
                         AddFailedDownloadNameInMainForm(mainForm, Path.GetFileName(dnFile.realFilePath));
+                        KillProgressWindowInMainForm(mainForm);
                         CheckIfDoneInMainForm(mainForm);
                         return RETURN_CANCEL;
                     }
