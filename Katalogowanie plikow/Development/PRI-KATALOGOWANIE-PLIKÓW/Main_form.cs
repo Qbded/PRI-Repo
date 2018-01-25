@@ -2732,6 +2732,11 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
 
             if (e.ClickedItem.Text.Equals("Ściągnij katalog obiegowy"))
             {
+                if (new FileInfo(database_externals_path + "TO_DETERMINE").Exists)
+                {
+                    File.Delete(database_externals_path + "TO_DETERMINE");
+                }
+
                 last_message_to_broadcast = "";
                 used_alias = "";
                 System.Net.IPAddress ipAddr = null;
@@ -2912,7 +2917,11 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
 
                     DistributedNetworkFile distributedNetworkFile =
                         new DistributedNetworkFile(requested_filename, requested_filepath, true, true);
-                    distributedNetwork.RequestFile(targetUser, distributedNetworkFile);
+
+                    List<DistributedNetworkFile> distributedNetworkFiles = new List<DistributedNetworkFile>();
+                    distributedNetworkFiles.Add(distributedNetworkFile);
+
+                    distributedNetwork.RequestFile(targetUser, distributedNetworkFiles);
                 }
             }
 
@@ -3200,7 +3209,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             if (e.ClickedItem.Text.Equals("Ściągnij"))
             {
                 last_message_to_broadcast = "";
-                Console.WriteLine("Ściągnij clicked!");
+                //Console.WriteLine("Ściągnij clicked!");
                 
                 total_selected = LV_catalog_display_item_selection.Count();
                 bool folders_in_selection = false;
@@ -3212,6 +3221,8 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                 failed_downloads = new List<string>();
                 failed_downloads_count = 0;
 
+                List<DistributedNetworkFile> distributedNetworkFiles = new List<DistributedNetworkFile>();
+                DistributedNetworkUser targetUser = null;
                 System.Net.IPAddress ipAddr = null;
 
                 // Przeszukiwanie przechowywanych par alias adres:
@@ -3390,15 +3401,16 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                             */
 
                             // Tutaj wywołujemy przesyłanie plików:
-                            DistributedNetworkUser targetUser = new DistributedNetworkUser(false, requested_alias, ipAddr);
+                            targetUser = new DistributedNetworkUser(false, requested_alias, ipAddr);
 
                             DistributedNetworkFile distributedNetworkFile =
                                 new DistributedNetworkFile(requested_filename, requested_filepath, true, requested_downloads_without_question);
-                            distributedNetwork.RequestFile(targetUser, distributedNetworkFile);
+                            distributedNetworkFiles.Add(distributedNetworkFile);
                         }
                     }
                 }
-                if(folders_in_selection == true)
+                distributedNetwork.RequestFile(targetUser, distributedNetworkFiles);
+                if (folders_in_selection == true)
                 {
                     MessageBox.Show("W wybranych plikach znalazł się folder. Program obsługuje tylko przesyłanie plików.");
                 }
@@ -4395,13 +4407,6 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                     File.Move(database_externals_path + "TO_DETERMINE", recieved_external_catalog_name);
                     catalog_download_finalizer.Stop();
                     MessageBox.Show("Pobranie katalogu zakonczone sukcesem!");
-
-                    
-
-                    if(new FileInfo(database_externals_path + "TO_DETERMINE").Exists)
-                    {
-                        File.Delete(database_externals_path + "TO_DETERMINE");
-                    }
 
                     LV_catalog_display_visible_changed(this, new EventArgs());
                 }
