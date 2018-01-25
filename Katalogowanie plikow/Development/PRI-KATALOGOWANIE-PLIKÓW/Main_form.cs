@@ -4186,13 +4186,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
 
         public void DisplayMessageBoxFromAnotherThread(String msg)
         {
-            // Obejście na problem podwójnego generowania okna, pożera okna następujące po sobie...
-            // Brudny hack na wielokrotne wywoływanie informacji.
-            if (!msg.Equals(last_message_to_broadcast))
-            {
-                last_message_to_broadcast = msg;
                 MessageBox.Show(msg);
-            }
         }
 
         public void AddSuccessfulDownloadNameFromAnotherThread(String filename)
@@ -4373,6 +4367,8 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
         {
             recieved_external_catalog_name = target_filename;
 
+            //Catalog_download_finalizer_Tick(this, new EventArgs());
+
             catalog_download_finalizer = new Timer();
             catalog_download_finalizer.Interval = 3000;
             catalog_download_finalizer.Tick += Catalog_download_finalizer_Tick;
@@ -4399,6 +4395,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                     File.Move(database_externals_path + "TO_DETERMINE", recieved_external_catalog_name);
                     catalog_download_finalizer.Stop();
                     MessageBox.Show("Pobranie katalogu zakonczone sukcesem!");
+
                     
 
                     if(new FileInfo(database_externals_path + "TO_DETERMINE").Exists)

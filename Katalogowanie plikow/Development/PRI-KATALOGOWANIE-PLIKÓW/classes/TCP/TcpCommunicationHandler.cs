@@ -54,7 +54,17 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
         {
             this.uiForm = mainForm;
 
-            serverListener = new TcpListener(IPAddress.Any, PORT);
+            IPAddress listen_address;
+            try
+            {
+                listen_address = IPAddress.Parse(ConfigManager.ReadString(ConfigManager.TCP_COMM_IP_ADDRESS));
+            }
+            catch
+            {
+                listen_address = IPAddress.Any;
+            }
+
+            serverListener = new TcpListener(listen_address, PORT);
             clientBGWorkers = new List<BackgroundWorker>();
             _clientThreadLocks = new List<object>();
             //tcpListener
@@ -298,7 +308,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
             NetworkStream networkStream = null;
             try
             {
-                tcpClient = new TcpClient(AddressFamily.InterNetwork);
+                tcpClient = new TcpClient(new IPEndPoint(IPAddress.Parse(ConfigManager.ReadString(ConfigManager.TCP_COMM_IP_ADDRESS)),PORT));
 
                 // Żeby czas był w sekundach mnożymy wartość z konfiga o 1000.
                 // Podana wartośc zawsze brana jest ~ *2, zakładam że robi retry połącznia za pierwszym failem...
