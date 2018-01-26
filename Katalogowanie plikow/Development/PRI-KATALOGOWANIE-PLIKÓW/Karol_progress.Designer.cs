@@ -50,6 +50,8 @@
             this.Od = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.Do = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.wrongTimeFromatTooltip = new System.Windows.Forms.ToolTip(this.components);
+            this.videoDurationLabel = new System.Windows.Forms.Label();
+            this.videoDurationDisplay = new System.Windows.Forms.TextBox();
             ((System.ComponentModel.ISupportInitialize)(this.samplingFrequencyInput)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.videoThumbnail)).BeginInit();
             this.SuspendLayout();
@@ -265,11 +267,30 @@
             this.Do.Text = "Do";
             this.Do.Width = 96;
             // 
-            // Form2
+            // videoDurationLabel
+            // 
+            this.videoDurationLabel.AutoSize = true;
+            this.videoDurationLabel.Location = new System.Drawing.Point(482, 113);
+            this.videoDurationLabel.Name = "videoDurationLabel";
+            this.videoDurationLabel.Size = new System.Drawing.Size(94, 13);
+            this.videoDurationLabel.TabIndex = 113;
+            this.videoDurationLabel.Text = "Czas trwania filmu:";
+            // 
+            // videoDurationDisplay
+            // 
+            this.videoDurationDisplay.Location = new System.Drawing.Point(485, 129);
+            this.videoDurationDisplay.Name = "videoDurationDisplay";
+            this.videoDurationDisplay.ReadOnly = true;
+            this.videoDurationDisplay.Size = new System.Drawing.Size(209, 20);
+            this.videoDurationDisplay.TabIndex = 114;
+            // 
+            // Karol_progress
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(716, 230);
+            this.Controls.Add(this.videoDurationDisplay);
+            this.Controls.Add(this.videoDurationLabel);
             this.Controls.Add(this.timeRangeListview);
             this.Controls.Add(this.removeTimeRangeButton);
             this.Controls.Add(this.label3);
@@ -321,5 +342,7 @@
         private System.Windows.Forms.ColumnHeader Od;
         private System.Windows.Forms.ColumnHeader Do;
         private System.Windows.Forms.ToolTip wrongTimeFromatTooltip;
+        private System.Windows.Forms.Label videoDurationLabel;
+        private System.Windows.Forms.TextBox videoDurationDisplay;
     }
 }
