@@ -29,7 +29,7 @@
         private void InitializeComponent()
         {
             this.TL_layout_main = new System.Windows.Forms.TableLayoutPanel();
-            this.LB_image_selected_name = new System.Windows.Forms.Label();
+            this.LB_image_select_prompt = new System.Windows.Forms.Label();
             this.TL_secondary = new System.Windows.Forms.TableLayoutPanel();
             this.PB_image_preview = new System.Windows.Forms.PictureBox();
             this.LB_images = new System.Windows.Forms.ListBox();
@@ -43,7 +43,7 @@
             // 
             this.TL_layout_main.ColumnCount = 1;
             this.TL_layout_main.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
-            this.TL_layout_main.Controls.Add(this.LB_image_selected_name, 0, 0);
+            this.TL_layout_main.Controls.Add(this.LB_image_select_prompt, 0, 0);
             this.TL_layout_main.Controls.Add(this.TL_secondary, 0, 1);
             this.TL_layout_main.Controls.Add(this.BT_execute, 0, 2);
             this.TL_layout_main.Dock = System.Windows.Forms.DockStyle.Fill;
@@ -56,14 +56,15 @@
             this.TL_layout_main.Size = new System.Drawing.Size(284, 262);
             this.TL_layout_main.TabIndex = 0;
             // 
-            // LB_image_selected_name
+            // LB_image_select_prompt
             // 
-            this.LB_image_selected_name.AutoSize = true;
-            this.LB_image_selected_name.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.LB_image_selected_name.Location = new System.Drawing.Point(3, 0);
-            this.LB_image_selected_name.Name = "LB_image_selected_name";
-            this.LB_image_selected_name.Size = new System.Drawing.Size(278, 22);
-            this.LB_image_selected_name.TabIndex = 0;
+            this.LB_image_select_prompt.AutoSize = true;
+            this.LB_image_select_prompt.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.LB_image_select_prompt.Location = new System.Drawing.Point(3, 0);
+            this.LB_image_select_prompt.Name = "LB_image_select_prompt";
+            this.LB_image_select_prompt.Size = new System.Drawing.Size(278, 22);
+            this.LB_image_select_prompt.TabIndex = 0;
+            this.LB_image_select_prompt.Text = "Prosimy wybrać obraz do porównania podobieństwa";
             // 
             // TL_secondary
             // 
@@ -109,7 +110,7 @@
             this.BT_execute.Name = "BT_execute";
             this.BT_execute.Size = new System.Drawing.Size(278, 26);
             this.BT_execute.TabIndex = 2;
-            this.BT_execute.Text = "Porównaj do pozostałych";
+            this.BT_execute.Text = "Porównaj wybrany obraz do pozostałych";
             this.BT_execute.UseVisualStyleBackColor = true;
             this.BT_execute.Click += new System.EventHandler(this.BT_execute_Click);
             // 
@@ -135,7 +136,7 @@
         #endregion
 
         private System.Windows.Forms.TableLayoutPanel TL_layout_main;
-        private System.Windows.Forms.Label LB_image_selected_name;
+        private System.Windows.Forms.Label LB_image_select_prompt;
         private System.Windows.Forms.TableLayoutPanel TL_secondary;
         private System.Windows.Forms.PictureBox PB_image_preview;
         private System.Windows.Forms.ListBox LB_images;

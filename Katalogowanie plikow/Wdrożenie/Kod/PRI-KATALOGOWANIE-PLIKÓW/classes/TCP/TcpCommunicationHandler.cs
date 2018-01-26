@@ -24,7 +24,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
         /// <summary>
         /// Maximum byte count of data sent in a single data packet
         /// </summary>
-        private static readonly int MAX_DATA_PACKET_SIZE = 4096;
+        private static readonly int MAX_DATA_PACKET_SIZE = 4 * 1024;
         /// <summary>
         /// Length of data packets is stored in int variables, whitch
         /// take 4 bytes each. Therefore, 4 consecutive bytes from
@@ -54,7 +54,17 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
         {
             this.uiForm = mainForm;
 
-            serverListener = new TcpListener(IPAddress.Any, PORT);
+            IPAddress listen_address;
+            try
+            {
+                listen_address = IPAddress.Parse(ConfigManager.ReadString(ConfigManager.TCP_COMM_IP_ADDRESS));
+            }
+            catch
+            {
+                listen_address = IPAddress.Any;
+            }
+
+            serverListener = new TcpListener(listen_address, PORT);
             clientBGWorkers = new List<BackgroundWorker>();
             _clientThreadLocks = new List<object>();
             //tcpListener
@@ -72,14 +82,14 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
         }
 
 
-        public void RequestFile(DistributedNetworkFile dnFile, String localDownloadPath,
+        public void RequestFile(List<DistributedNetworkFile> dnFileList, String localDownloadDir,
             DistributedNetworkUser targetUser)
         {
             // Console.WriteLine("TcpCommunicationHandler:RequestFile");
             List<object> args = new List<object>()
             {
-                dnFile,
-                localDownloadPath
+                dnFileList,
+                localDownloadDir
             };
             StartClient(targetUser, TcpRequestCodebook.SEND_FILE, args);
         }
@@ -294,39 +304,54 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
             DistributedNetworkUser targetUser =
                 args.ElementAt(4) as DistributedNetworkUser;
 
-            TcpClient tcpClient = null;
-            NetworkStream networkStream = null;
-            try
-            {
-                // Console.WriteLine("Attempting connection to " + targetUser.IPAddress.ToString());
-                //tcpClient = new TcpClient(
-                //    targetUser.IPAddress.ToString(),
-                //    PORT);
-                //tcpClient = new TcpClient(AddressFamily.InterNetwork);
-                tcpClient = new TcpClient(AddressFamily.InterNetwork);
-                // Console.WriteLine("Attempting connection to " + targetUser.IPAddress.ToString() + ":" + PORT);
-                tcpClient.Connect(targetUser.IPAddress, PORT);
-                // Console.WriteLine("TcpClient initialized successfully.");
-                networkStream = tcpClient.GetStream();
-            }
-            catch(Exception ex)
-            {
-                if(!surpress_errors) DisplayMessageBoxInMainForm(mainForm, "Exception while attempting connection: " + ex.Message);
-            }
-            if (tcpClient == null || networkStream == null) return;
-
+            
             // Console.WriteLine("Attempted connection to " + targetUser.IPAddress.ToString());
 
             if(TcpRequestCodebook.IsRequest(
                 requestToServer, TcpRequestCodebook.SEND_FILE))
             {
                 // Console.WriteLine("Running client requesting file");
+                List<int> sendFileResult = new List<int>();
                 List<object> requestArgs = args.ElementAt(3) as List<object>;
-                DistributedNetworkFile dnFile = requestArgs.ElementAt(0) as DistributedNetworkFile;
-                String localDownloadPath = requestArgs.ElementAt(1) as String;
+                List<DistributedNetworkFile> dnFileList = requestArgs.ElementAt(0) as List<DistributedNetworkFile>;
+                String localDownloadDir = requestArgs.ElementAt(1) as String;
 
-                SendFileRequest(networkStream, dnFile, localDownloadPath, mainForm);
+                foreach (DistributedNetworkFile dnFile in dnFileList)
+                {
+                    TcpClient tcpClient = null;
+                    NetworkStream networkStream = null;
+                    try
+                    {
+                        tcpClient = new TcpClient(new IPEndPoint(IPAddress.Parse(ConfigManager.ReadString(ConfigManager.TCP_COMM_IP_ADDRESS)), PORT));
+
+                        // Żeby czas był w sekundach mnożymy wartość z konfiga o 1000.
+                        // Podana wartośc zawsze brana jest ~ *2, zakładam że robi retry połącznia za pierwszym failem...
+                        tcpClient.ReceiveTimeout = ConfigManager.ReadInt(ConfigManager.TCP_SECONDS_TO_TIMEOUT) * 1000;
+
+                        tcpClient.Connect(targetUser.IPAddress, PORT);
+                        networkStream = tcpClient.GetStream();
+                    }
+                    catch (Exception ex)
+                    {
+                        DisplayMessageBoxInMainForm(mainForm, "Błąd podczas nawiązywania połączenia z użytkownikiem o aliasie: " + targetUser.Alias + '\n'
+                                                            + "Szczegóły:\n" + ex.Message);
+                    }
+                    if (tcpClient == null || networkStream == null)
+                    {
+                        // Coś poszło nie tak z robieniem gniazd.
+                        Console.WriteLine("Coś poszło nie tak z robieniem gniazd i/lub streamów");
+                    }
+                    else
+                    {
+                        int result = SendFileRequest(networkStream, dnFile, localDownloadDir + dnFile.realFileName, mainForm);
+                        sendFileResult.Add(result);
+                    }
+
+                    if (networkStream != null) networkStream.Close();
+                    if (tcpClient != null) tcpClient.Close();
+                }
             }
+
         }
 
         private void StopClient(BackgroundWorker client)
@@ -452,6 +477,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
         public int SendFileRequest(NetworkStream networkStream,
             DistributedNetworkFile dnFile, String localDownloadPath, Main_form mainForm)
         {
+            Console.WriteLine("Wszedłem do ściągania pliku " + dnFile.realFileName + " o czasie " + DateTime.Now.ToString());
             String realFilePath = dnFile.realFilePath;
             byte[] serializedFilePath;
             if (dnFile.allowUnpromptedDistribution)
@@ -476,6 +502,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
             {
                 IncrementFailedDownloadCountInMainForm(mainForm);
                 AddFailedDownloadNameInMainForm(mainForm, Path.GetFileName(dnFile.realFilePath));
+                KillProgressWindowInMainForm(mainForm);
                 CheckIfDoneInMainForm(mainForm);
                 return RETURN_TIMEOUT;
             }
@@ -484,6 +511,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
             {
                 IncrementFailedDownloadCountInMainForm(mainForm);
                 AddFailedDownloadNameInMainForm(mainForm, Path.GetFileName(dnFile.realFilePath));
+                KillProgressWindowInMainForm(mainForm);
                 CheckIfDoneInMainForm(mainForm);
                 return RETURN_TIMEOUT;
             }
@@ -509,14 +537,20 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
 
                     string[] deserializedDataChunks = deserializedData.Split('|');
 
-                    DisplayMessageBoxInMainForm(mainForm, "Użytkownik o aliasie " + deserializedDataChunks[0] + " nie wygenerował katalogu obiegowego!");
+
                     AddAliasInMainForm(mainForm, deserializedDataChunks[0], deserializedDataChunks[1]);
+                    DisplayMessageBoxInMainForm(mainForm, "Podany użytkownik nie wygenerował katalogu obiegowego!");
+                    AddFailedDownloadNameInMainForm(mainForm, Path.GetFileName(dnFile.realFilePath));
+                    KillProgressWindowInMainForm(mainForm);
+                    CheckIfDoneInMainForm(mainForm);
                     return RETURN_CANCEL;
                 }
                 else
                 {
                     IncrementFailedDownloadCountInMainForm(mainForm);
+                    DisplayMessageBoxInMainForm(mainForm, "Błąd przesyłania pliku: " + dnFile.realFileName);
                     AddFailedDownloadNameInMainForm(mainForm, Path.GetFileName(dnFile.realFilePath));
+                    KillProgressWindowInMainForm(mainForm);
                     CheckIfDoneInMainForm(mainForm);
                     return RETURN_BAD_REQUEST;
                 }
@@ -529,6 +563,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
             {
                 IncrementFailedDownloadCountInMainForm(mainForm);
                 AddFailedDownloadNameInMainForm(mainForm, Path.GetFileName(dnFile.realFilePath));
+                KillProgressWindowInMainForm(mainForm);
                 CheckIfDoneInMainForm(mainForm);
                 return RETURN_TIMEOUT;
             }
@@ -540,6 +575,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
             {
                 IncrementFailedDownloadCountInMainForm(mainForm);
                 AddFailedDownloadNameInMainForm(mainForm, Path.GetFileName(dnFile.realFilePath));
+                KillProgressWindowInMainForm(mainForm);
                 CheckIfDoneInMainForm(mainForm);
                 return RETURN_TIMEOUT;
             }
@@ -563,6 +599,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
                                                                             localDownloadPath + "\n" + ex.Message);
                 IncrementFailedDownloadCountInMainForm(mainForm);
                 AddFailedDownloadNameInMainForm(mainForm, Path.GetFileName(dnFile.realFilePath));
+                KillProgressWindowInMainForm(mainForm);
                 CheckIfDoneInMainForm(mainForm);
                 return RETURN_CANCEL;
             }
@@ -579,6 +616,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
                     localDownloadPath + "\n" + ex.Message);
                 IncrementFailedDownloadCountInMainForm(mainForm);
                 AddFailedDownloadNameInMainForm(mainForm, Path.GetFileName(dnFile.realFilePath));
+                KillProgressWindowInMainForm(mainForm);
                 CheckIfDoneInMainForm(mainForm);
                 return RETURN_CANCEL;
             }
@@ -599,11 +637,14 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
                     "File download stopped, unable to write to network stream.\n" + ex.Message);
                 IncrementFailedDownloadCountInMainForm(mainForm);
                 AddFailedDownloadNameInMainForm(mainForm, Path.GetFileName(dnFile.realFilePath));
+                KillProgressWindowInMainForm(mainForm);
                 CheckIfDoneInMainForm(mainForm);
                 return RETURN_CANCEL;
             }
             // Console.WriteLine("SendFileRequest: sent request: Continue sending file");
 
+
+            if(!dnFile.realFileName.Equals("EXTERNAL_CATALOG.FDB")) SpawnProgressWindowInMainForm(mainForm, Path.GetFileName(dnFile.realFilePath), (int)dnFile.fileSize);
             while (true)
             {
                 initByte = AwaitNonNegativeByte(networkStream, mainForm);
@@ -613,6 +654,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
                     fileStream.Close();
                     IncrementFailedDownloadCountInMainForm(mainForm);
                     AddFailedDownloadNameInMainForm(mainForm, Path.GetFileName(dnFile.realFilePath));
+                    KillProgressWindowInMainForm(mainForm);
                     CheckIfDoneInMainForm(mainForm);
                     return RETURN_TIMEOUT;
                 }
@@ -623,6 +665,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
                     fileStream.Close();
                     IncrementFailedDownloadCountInMainForm(mainForm);
                     AddFailedDownloadNameInMainForm(mainForm, Path.GetFileName(dnFile.realFilePath));
+                    KillProgressWindowInMainForm(mainForm);
                     CheckIfDoneInMainForm(mainForm);
                     return RETURN_TIMEOUT;
                 }
@@ -635,7 +678,6 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
                         requestByte, TcpRequestCodebook.DONE_SENDING_FILE))
                     {
                         // Pobieramy wartość przesłanego nam stringa.
-
                         byte[] sizeBytes = AwaitPacketSize(networkStream, mainForm);
                         if (sizeBytes.Length == 0)
                         {
@@ -663,7 +705,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
                         AddSuccessfulDownloadNameInMainForm(mainForm, dnFile.realFileName);
                         IncrementSuccessfulDownloadCountInMainForm(mainForm);
                         CheckIfDoneInMainForm(mainForm);
-                        
+                        KillProgressWindowInMainForm(mainForm);
                     }
                     break;
                 }
@@ -677,6 +719,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
                         fileStream.Close();
                         IncrementFailedDownloadCountInMainForm(mainForm);
                         AddFailedDownloadNameInMainForm(mainForm, Path.GetFileName(dnFile.realFilePath));
+                        KillProgressWindowInMainForm(mainForm);
                         CheckIfDoneInMainForm(mainForm);
                         return RETURN_TIMEOUT;
                     }
@@ -690,6 +733,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
                         fileStream.Close();
                         IncrementFailedDownloadCountInMainForm(mainForm);
                         AddFailedDownloadNameInMainForm(mainForm, Path.GetFileName(dnFile.realFilePath));
+                        KillProgressWindowInMainForm(mainForm);
                         CheckIfDoneInMainForm(mainForm);
                         return RETURN_TIMEOUT;
                     }
@@ -699,6 +743,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
                     try
                     {
                         fileStream.Write(fileFragmentPacket, 0, fileFragmentPacket.Length);
+                        UpdateProgressWindowInMainForm(mainForm);
                         fileStream.Flush();
                     }
                     catch (Exception ex)
@@ -709,6 +754,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
                             localDownloadPath + "\n" + ex.Message);
                         IncrementFailedDownloadCountInMainForm(mainForm);
                         AddFailedDownloadNameInMainForm(mainForm, Path.GetFileName(dnFile.realFilePath));
+                        KillProgressWindowInMainForm(mainForm);
                         CheckIfDoneInMainForm(mainForm);
                         return RETURN_CANCEL;
                     }
@@ -731,6 +777,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
                             localDownloadPath + "\n" + ex.Message);
                         IncrementFailedDownloadCountInMainForm(mainForm);
                         AddFailedDownloadNameInMainForm(mainForm, Path.GetFileName(dnFile.realFilePath));
+                        KillProgressWindowInMainForm(mainForm);
                         CheckIfDoneInMainForm(mainForm);
                         return RETURN_CANCEL;
                     }
@@ -782,29 +829,39 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
             
             String filePath = deserializedPacketPayload.Remove(deserializedPacketPayload.Length-1);
             String fileName = "";
+            long fileSize = 0;
 
             if (!filePath.Equals("TO_DETERMINE"))
             {
                 // Standardowa logika przesyłania.
                 fileName = Path.GetFileName(filePath);
+                fileSize = new FileInfo(filePath).Length;
             }
             else
             {
+                filePath = ConfigManager.ReadString(ConfigManager.EXTERNAL_DATABASES_LOCATION) +
+                           ConfigManager.ReadString(ConfigManager.USER_ALIAS).ToUpper() + "_CATALOG.FDB";
+
                 // Logika pobierania katalogu
                 sendsExternalCatalog = true;
                 // Najpierw rozkazujemy mainformowi zerwać wszystkie połączenia z bazą
                 TerminateDBConnectionsInMainForm(mainForm);
 
-                // Pobieramy dane z konfiga.
-                //filePath = GrabExternalCatalogPathInMainForm(mainForm);
-                filePath = ConfigManager.ReadString(ConfigManager.EXTERNAL_DATABASES_LOCATION) +
-                           ConfigManager.ReadString(ConfigManager.USER_ALIAS).ToUpper() + "_CATALOG.FDB";
                 fileName = Path.GetFileName(filePath);
+
+                if (new FileInfo(filePath).Exists)
+                {
+                    fileSize = new FileInfo(filePath).Length;
+                }
+                else
+                {
+                    fileSize = 0;
+                }
             }
 
             // Console.WriteLine("SendFileRequestCallback: Received request for file " + filePath);
 
-            DistributedNetworkFile distributedNetworkFile = new DistributedNetworkFile(fileName,filePath, true, unpromptedDistribution);
+            DistributedNetworkFile distributedNetworkFile = new DistributedNetworkFile(fileName,filePath,fileSize, true, unpromptedDistribution);
 
             if(!sendsExternalCatalog)
             {
@@ -928,7 +985,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
             while (remainingFileBytes > 0)
             {
                 long fileFragmentSize =
-                    Math.Min(fileInfo.Length, MAX_DATA_PACKET_SIZE);
+                    Math.Min(remainingFileBytes, MAX_DATA_PACKET_SIZE);
                 byte[] fileFragment = new byte[fileFragmentSize];
                 int bytesRead = 0;
                 try
@@ -1139,11 +1196,35 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
             });
         }
 
+        private void SpawnProgressWindowInMainForm(Main_form mainFormRef, string fileName, int fileSize)
+        {
+            mainFormRef.Invoke((Action)delegate ()
+            {
+                mainFormRef.SpawnProgressWindowFromAnotherThread(fileName,fileSize);
+            });
+        }
+
+        private void UpdateProgressWindowInMainForm(Main_form mainFormRef)
+        {
+            mainFormRef.Invoke((Action)delegate ()
+            {
+                mainFormRef.UpdateProgressWindowFromAnotherThread();
+            });
+        }
+
+        private void KillProgressWindowInMainForm(Main_form mainFormRef)
+        {
+            mainFormRef.Invoke((Action)delegate ()
+            {
+                mainFormRef.KillProgressWindowFromAnotherThread();
+            });
+        }
+
         private void CheckIfDoneInMainForm(Main_form mainFormRef)
         {
             mainFormRef.Invoke((Action)delegate ()
             {
-                mainFormRef.CheckIfDoneFromOtherThread();
+                mainFormRef.CheckIfDoneFromAnotherThread();
             });
         }
 
@@ -1153,7 +1234,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
         {
             mainFormRef.Invoke((Action)delegate ()
             {
-                mainFormRef.AddAliasFromOtherThread(alias,address);
+                mainFormRef.AddAliasFromAnotherThread(alias,address);
             });
         }
 
@@ -1163,7 +1244,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
 
             mainFormRef.Invoke((Action)delegate ()
             {
-                result_from_main = mainFormRef.GrabExternalCatalogPathFromOtherThread();
+                result_from_main = mainFormRef.GrabExternalCatalogPathFromAnotherThread();
             });
 
             return result_from_main;
@@ -1173,7 +1254,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
         {
             mainFormRef.Invoke((Action)delegate ()
             {
-                mainFormRef.TerminateDBConnectionsFromOtherThread();
+                mainFormRef.TerminateDBConnectionsFromAnotherThread();
             });
         }
 
@@ -1181,7 +1262,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
         {
             mainFormRef.Invoke((Action)delegate ()
             {
-                mainFormRef.AttemptToFinalizeFromOtherThread(target_filename);
+                mainFormRef.AttemptToFinalizeFromAnotherThread(target_filename);
             });
         }
 

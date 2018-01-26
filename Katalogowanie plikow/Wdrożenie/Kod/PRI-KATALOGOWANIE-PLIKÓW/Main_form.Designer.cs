@@ -269,7 +269,7 @@
             this.BT_test_database.Name = "BT_test_database";
             this.BT_test_database.Size = new System.Drawing.Size(437, 30);
             this.BT_test_database.TabIndex = 1;
-            this.BT_test_database.Text = "Test bazy";
+            this.BT_test_database.Text = "Test katalogu lub jego utworzenie";
             this.BT_test_database.UseVisualStyleBackColor = true;
             this.BT_test_database.Click += new System.EventHandler(this.BT_test_database_click);
             // 
@@ -281,7 +281,7 @@
             this.BT_extract_metadata.Name = "BT_extract_metadata";
             this.BT_extract_metadata.Size = new System.Drawing.Size(437, 30);
             this.BT_extract_metadata.TabIndex = 6;
-            this.BT_extract_metadata.Text = "Kataloguj";
+            this.BT_extract_metadata.Text = "Ekstrakahuj metadane z wskazanego foldera";
             this.BT_extract_metadata.UseVisualStyleBackColor = true;
             this.BT_extract_metadata.Click += new System.EventHandler(this.BT_extract_metadata_click);
             // 
@@ -292,7 +292,7 @@
             this.BT_define_user.Name = "BT_define_user";
             this.BT_define_user.Size = new System.Drawing.Size(437, 30);
             this.BT_define_user.TabIndex = 7;
-            this.BT_define_user.Text = "Zdefiniuj użytkownika";
+            this.BT_define_user.Text = "Zdefiniuj użytkownika sieciowego";
             this.BT_define_user.UseVisualStyleBackColor = true;
             this.BT_define_user.Click += new System.EventHandler(this.BT_define_user_Click);
             // 

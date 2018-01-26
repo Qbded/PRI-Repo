@@ -33,34 +33,43 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes
         }
 
         public void RequestFile(DistributedNetworkUser user,
-            DistributedNetworkFile file)
+            List<DistributedNetworkFile> files)
         {
             Console.WriteLine("DistributedNetwork:RequestFile()");
 
             String downloadDir;
-            String fileName;
 
-            if (file.realFileName.Equals("EXTERNAL_CATALOG.FDB") && file.realFilePath.Equals("TO_DETERMINE"))
+            if (files.Count == 1)
             {
-                downloadDir = ConfigManager.ReadString(ConfigManager.EXTERNAL_DATABASES_LOCATION);
-                fileName = file.realFilePath;
-                
-                tcpCom.RequestFile(file,
-                    downloadDir + "/" + fileName,
-                    user);
+                // Mamy tylko jeden plik, sprawdzamy czy mamy do czynienia z przesyłaniem katalogu.
+                if (files[0].realFileName.Equals("EXTERNAL_CATALOG.FDB") && files[0].realFilePath.Equals("TO_DETERMINE"))
+                {
+                    // Tak
+                    downloadDir = ConfigManager.ReadString(ConfigManager.EXTERNAL_DATABASES_LOCATION);
+                }
+                else
+                {
+                    // Nie
+                    downloadDir = ConfigManager.ReadString(ConfigManager.DOWNLOAD_LOCATION);
+                    files[0].realFileName = Path.GetFileName(files[0].realFilePath);
+                    if (!Directory.Exists(downloadDir))
+                    {
+                        Directory.CreateDirectory(downloadDir);
+                    }
+                }
             }
             else
             {
-                downloadDir =  ConfigManager.ReadString(ConfigManager.DOWNLOAD_LOCATION);
-                fileName = Path.GetFileName(file.realFilePath);
-                if (!Directory.Exists(downloadDir))
+                // Standardowe wysyłanie plików
+                downloadDir = ConfigManager.ReadString(ConfigManager.DOWNLOAD_LOCATION);
+                foreach (DistributedNetworkFile dnFile in files)
                 {
-                    Directory.CreateDirectory(downloadDir);
+                    dnFile.realFileName = Path.GetFileName(dnFile.realFilePath);
                 }
             }
-            
-            tcpCom.RequestFile(file,
-                downloadDir + "/" + fileName,
+
+            tcpCom.RequestFile(files,
+                downloadDir + "/",
                 user);
         }
     }

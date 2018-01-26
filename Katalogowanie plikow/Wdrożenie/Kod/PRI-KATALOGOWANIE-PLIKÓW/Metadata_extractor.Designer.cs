@@ -131,6 +131,7 @@
             this.Controls.Add(this.PB_extraction_progress);
             this.Name = "Metadata_extractor";
             this.Text = "Ekstakcja metadanych";
+            this.Load += new System.EventHandler(this.Metadata_extractor_Load);
             this.ResumeLayout(false);
             this.PerformLayout();
 

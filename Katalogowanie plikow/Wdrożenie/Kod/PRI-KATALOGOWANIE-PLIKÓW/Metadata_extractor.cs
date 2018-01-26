@@ -17,6 +17,9 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
         #region Deklaracja zmiennych
 
         public event EventHandler OnDataAvalible;
+
+        private FileInfo[] files;
+
         public List<Tuple<int,string>> extends { get; set; }
         public DirectoryInfo target_directory { get; set; }
         public List<string[]> metadata_extracted { get; set; }
@@ -46,16 +49,34 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             image_ordering_set = new List<Tuple<int, int, string>>();
             multimedia_ordering_set = new List<Tuple<int, int, string>>();
             load_ordering_sets();
-            // \Debug
 
             BGW_metadata_extractor.WorkerReportsProgress = true;
             BGW_metadata_extractor.WorkerSupportsCancellation = true;
+            files = new FileInfo[0];
             file_total_count = 0;
             file_supported_count = 0;
             current_file = 0;
             percent_done = 0;
             percent_value = 0.0f;
-            BGW_metadata_extractor.RunWorkerAsync();
+        }
+
+        #endregion
+
+        #region Logika okna
+
+        // Logika do wykonania podczas ładowania do wyświetlenia okna ekstrakcji metadanych - dopiero po przekazaniu danych itp.
+        private void Metadata_extractor_Load(object sender, EventArgs e)
+        {
+            try
+            {
+                files = target_directory.GetFiles("*", SearchOption.AllDirectories);
+                BGW_metadata_extractor.RunWorkerAsync();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message);
+                files = null;
+            }
         }
 
         #endregion
@@ -91,18 +112,9 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
         private void BGW_extract_metadata(object sender, DoWorkEventArgs e)
         {
             {
-                FileInfo[] files;
                 List<string[]> result = new List<string[]>();
                 int file_total_count = 0, file_supported_count = 0, current_file = 0;
-                try
-                {
-                    files = target_directory.GetFiles("*", SearchOption.AllDirectories);
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show(ex.Message);
-                    files = null;
-                }
+
                 if (files != null)
                 {
                     file_total_count = files.Count();
@@ -198,6 +210,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                                 if (destination_table.Equals("metadata_image")) 
                                 {
                                     FileStream Hashstream = new FileStream(file.FullName, FileMode.Open);
+                                    // Liczymy wartość PHash.
                                     ulong PHash = 0;
                                     try
                                     {
@@ -205,10 +218,28 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                                     }
                                     catch
                                     {
-                                        //DEBUG: Jeżeli obraz wygeneruje błąd - wyświetlamy o tym informację w oknie.
-                                        MessageBox.Show("Błąd przy liczeniu p-hash dla pliku " + file.Name);
+                                        // Generuje błąd gdy plik jest otwarty gdzie indziej lub gdy Hashstream się biesi...
+                                        // MessageBox.Show("Błąd przy liczeniu p-hash dla pliku " + file.Name);
                                     }
-                                    extracted_metadata_string_container[extracted_metadata_container.Count + 1] = PHash.ToString(); // Dodajemy PHash na koniec.
+
+                                    // Konwertujemy wartość PHash na signed Int64 - tylko taki można przechować w bazie!
+                                    long PHash_passed = 0;
+                                    try
+                                    {
+                                        PHash_passed = (long)PHash;
+                                    }
+                                    catch
+                                    {
+                                        MessageBox.Show("Błąd przy konwersji p-hash do long'a dla pliku: " + file.Name);
+                                    }
+
+                                    // Przekazujemy wartości PHash dalej, w poprawnej formie (lub null jeżeli liczenie nie powidło się)
+                                    if(PHash_passed == 0) extracted_metadata_string_container[extracted_metadata_container.Count + 1] = "NULL";
+                                    else extracted_metadata_string_container[extracted_metadata_container.Count + 1] = PHash_passed.ToString();
+
+                                    // Czyscimy używany strumień
+                                    Hashstream.Close();
+                                    Hashstream.Dispose();
                                 }
 
                                 result.Add(extracted_metadata_string_container);

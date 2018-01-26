@@ -133,13 +133,13 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
         // Zmienne przesyłacza do opcji specialnych:
         private Special_function_window special_option_selector;
         private List<ListViewItem> sent_items;
-        
+
         // Zmienne związane z funkcjonowaniem opcji sieciowych:
+        private DownloadProgressWindow progress_window = null;
         private DistributedNetworkUser local_user = null;
         private DistributedNetwork distributedNetwork = null;
         private List<string> successful_downloads = new List<string>();
         private List<string> failed_downloads = new List<string>();
-        private string last_message_to_broadcast = "";
         private int total_selected = 0;
         private int total_to_download = 0;
         private int successful_downloads_count = 0;
@@ -170,6 +170,8 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
 
             if(grabbed_alias.Length == 0 || grabbed_IP_address_string.Length == 0 || grabbed_alias == null || grabbed_IP_address_string == null)
             {
+                // Gdy coś poszło nie tak (adres albo alias użytkownika był niezdefiniowany)
+
                 DialogResult dialogResult = DialogResult.Yes;
                 if (inital_check)
                 {
@@ -203,19 +205,30 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                             alias_determined = true;
                         }
                     }
+                    else
+                    {
+                        alias_determined = true;
+                    }
 
                     // Jeżeli niezdefiniowany jest adres IP - poproś o nowy. Zakładamy sukces poprzedniego sprawdzenia
                     if ((grabbed_IP_address_string.Length == 0 || grabbed_IP_address_string == null) && alias_determined == true)
                     {
+                        // Zmienić tutaj wywołanie z podstawowego podawania adresu na nowy form!
                         MessageBox.Show("Prosimy podać adres IP, pod którym widoczny ma być program.");
+                        
                         System.Net.IPAddress localUserIPAddress = null;
-                        IPAddressInputForm ipAddressInputForm = new IPAddressInputForm(ref localUserIPAddress);
-                        ipAddressInputForm.Owner = this;
-                        ipAddressInputForm.ShowDialog();
-                        localUserIPAddress = ipAddressInputForm.resultRef;
+                        UserDetermineAddressForm userDetermineAddressForm = new UserDetermineAddressForm(ref localUserIPAddress);
+                        userDetermineAddressForm.Owner = this;
+                        userDetermineAddressForm.ShowDialog();
+                        localUserIPAddress = userDetermineAddressForm.resultRef;
+
                         if (localUserIPAddress == null)
                         {
-                            MessageBox.Show("Format podanego adresu IP nie może zostać uznany za poprawny!");
+                            MessageBox.Show("Pobieranie adresu IP zakonczyło się niepowodzeniem!");
+                            ConfigManager.WriteValue(ConfigManager.USER_ALIAS,
+                                "");
+                            final_alias = "";
+                            alias_determined = false;
                             address_determined = false;
                         }
                         else
@@ -231,11 +244,13 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                         local_user = new DistributedNetworkUser(false, final_alias, final_IP_address);
                         networking_lock = false;
                         distributedNetwork = new DistributedNetwork(this);
+                        MessageBox.Show("Definicja nowego użytkownika zakończyła się sukcesem!");
                         return true;
                     }
                     else
                     {
                         local_user = new DistributedNetworkUser(false, final_alias, final_IP_address);
+                        MessageBox.Show("Próba zdefiniowania nowego użytkownika zakończyła się niepowodzeniem!");
                         networking_lock = true;
                         return false;
                     }
@@ -620,56 +635,6 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             LV_loaded_catalogs.Add(local_catalog);
         }
 
-        /* LEGACY - sprawdzanie czy adres IP jest zdefiniowany i poprawny. Teraz jest już w kodzie DetermineLocalUser
-        bool DetermineLocalAddress()
-        {
-            try
-            {
-                String ipAddressString = ConfigManager.ReadString(ConfigManager.TCP_COMM_IP_ADDRESS);
-                if (ipAddressString.Length == 0 || ipAddressString == null)
-                {
-                    MessageBox.Show("Prosimy podać adres IP, pod którym widoczny ma być program.");
-                    System.Net.IPAddress localUserIPAddress = null;
-                    IPAddressInputForm ipAddressInputForm = new IPAddressInputForm(ref localUserIPAddress);
-                    ipAddressInputForm.Owner = this;
-                    ipAddressInputForm.ShowDialog();
-                    localUserIPAddress = ipAddressInputForm.resultRef;
-                    if (localUserIPAddress == null)
-                    {
-                        MessageBox.Show("Format podanego adresu IP nie może zostać uznany za poprawny!");
-                        return false;
-                    }
-                    else
-                    {
-                        ConfigManager.WriteValue(ConfigManager.TCP_COMM_IP_ADDRESS,
-                            localUserIPAddress.ToString());
-                        return true;
-                    }
-                }
-                else
-                {
-                    System.Net.IPAddress ipAddress = null;
-                    try
-                    {
-                        ipAddress = System.Net.IPAddress.Parse(ipAddressString);
-                        return true;
-                    }
-                    catch
-                    {
-                        MessageBox.Show("Pobrany z pliku konfiguracyjnego adres nie może być uznany za poprawny!\nPrzywracam wartość domyślną.");
-                        ConfigManager.WriteValue(ConfigManager.TCP_COMM_IP_ADDRESS, "");
-                        return false;
-                    }
-                }
-            }
-            catch
-            {
-                MessageBox.Show("Błąd podczas pobierania pola przechowującego adres IP z pliku konfiguracyjnego!");
-                return false;
-            }
-        }
-        */
-
         // Obsługa logiki wymaganej przez WPF i resizing okna.
         public Main_form()
         {
@@ -934,7 +899,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                                                                                       "FROM " + database_tables[i].Item2 + ";"
                                                                                       ,
                                                                                       new FbConnection(database_connection_string_builder.ConnectionString));
-
+                        
                         switch (i)
                         {
                             case 1:
@@ -1574,18 +1539,6 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                                                         add_data.Parameters.AddWithValue("@" + values_passed[l], id_tracker_list[i].Item5.ToString());
                                                         break;
                                                     }
-                                                /* Ukrywanie ścieżki i dodatkowych ścieżek, bezpieczniejsze, ale wymaga dużych zmian w kodzie sieciowym...
-                                                case "PATH":
-                                                    {
-                                                        add_data.Parameters.AddWithValue("@" + values_passed[l], "");
-                                                        break;
-                                                    }
-                                                case "ALTERNATE_PATHS":
-                                                    {
-                                                        add_data.Parameters.AddWithValue("@" + values_passed[l], null);
-                                                        break;
-                                                    }
-                                                */
                                                 default:
                                                     {
                                                         add_data.Parameters.AddWithValue("@" + values_passed[l], source_content_container.Rows[k].ItemArray[l + 1]);
@@ -2246,23 +2199,6 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             }
         }
 
-        /* Nieużywane
-        // Wstawianie pojedynczej tabeli do bazy danych - jeżeli wykryjemy jej brak!
-        private void database_table_insert(string database_connection_string, int missing_table_index)
-        {
-            FbConnection database_connection = new FbConnection(database_connection_string);
-            string script_used = String.Empty;
-
-            script_used = creation_scripts[missing_table_index];
-            database_connection.Open();
-            
-            FbCommand table_adder = new FbCommand(script_used, database_connection);
-            table_adder.ExecuteNonQuery();
-            
-            database_connection.Close();
-        }
-        */
-
         /* Walidacja struktury bazy
          * 
          * Tutaj trzeba należy sprawdzić istniejący plik bazy danych pod kątem zawartości poprawnych tabel, same tabele sprawdzić pod kątem posiadania
@@ -2367,31 +2303,39 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                 // Tutaj zakładam, że rozszyfrowaliśmy plik i jest on bazą danych w formacie .fdb
                 // Dodatkowo ma on nazwę w formacie [alias użytkownika, który wygenerował bazę]_catalog.fdb
                 FileInfo grabbed_file = new FileInfo(filepath);
-                FbConnectionStringBuilder connection_string_builder = new FbConnectionStringBuilder();
-                if (grabbed_file.Extension.Equals(".fdb") || grabbed_file.Extension.Equals(".FDB"))
+                if(grabbed_file.Name.Equals(ConfigManager.ReadString(ConfigManager.USER_ALIAS)+"_CATALOG.FDB") ||
+                   grabbed_file.Name.Equals("EXTERNAL_CATALOG.FDB"))
                 {
-                    // Walidujemy czy katalogi obiegowe są skonstruowane odpowiednio z szablonem bazy.
-                    int[] validation_result = new int[database_columns.Count];
-
-                    connection_string_builder.ServerType = FbServerType.Embedded;
-                    connection_string_builder.UserID = "SYSDBA"; // Defaultowy uzytkownik z najwyzszymi uprawnieniami do systemu bazodanowego.
-                    connection_string_builder.Password = ""; // Haslo nie jest sprawdzane w wersji embedded, można dać tu cokolwiek.
-                    connection_string_builder.Database = filepath;
-                    connection_string_builder.ClientLibrary = database_engine_path;
-                    connection_string_builder.Charset = "UTF8";
-
-                    try
+                    Console.WriteLine("Próba załadowania niedozwolonego katalogu " + grabbed_file.Name);
+                }
+                else
+                {
+                    FbConnectionStringBuilder connection_string_builder = new FbConnectionStringBuilder();
+                    if (grabbed_file.Extension.Equals(".fdb") || grabbed_file.Extension.Equals(".FDB"))
                     {
-                        validation_result = database_validate(connection_string_builder.ConnectionString);
-                        if (validation_result.All(x => x.Equals(2)) == true)
+                        // Walidujemy czy katalogi obiegowe są skonstruowane odpowiednio z szablonem bazy.
+                        int[] validation_result = new int[database_columns.Count];
+
+                        connection_string_builder.ServerType = FbServerType.Embedded;
+                        connection_string_builder.UserID = "SYSDBA"; // Defaultowy uzytkownik z najwyzszymi uprawnieniami do systemu bazodanowego.
+                        connection_string_builder.Password = ""; // Haslo nie jest sprawdzane w wersji embedded, można dać tu cokolwiek.
+                        connection_string_builder.Database = filepath;
+                        connection_string_builder.ClientLibrary = database_engine_path;
+                        connection_string_builder.Charset = "UTF8";
+
+                        try
                         {
-                            external_catalogs_names.Add(grabbed_file.Name.Split('_')[0]);
-                            external_catalogs_connection_strings.Add(connection_string_builder.ConnectionString);
+                            validation_result = database_validate(connection_string_builder.ConnectionString);
+                            if (validation_result.All(x => x.Equals(2)) == true)
+                            {
+                                external_catalogs_names.Add(grabbed_file.Name.Split('_')[0]);
+                                external_catalogs_connection_strings.Add(connection_string_builder.ConnectionString);
+                            }
                         }
-                    }
-                    catch
-                    {
-                        Console.WriteLine("Połączenie z katalogiem " + grabbed_file.Name + " nie powidło się.");
+                        catch
+                        {
+                            Console.WriteLine("Połączenie z katalogiem " + grabbed_file.Name + " nie powidło się.");
+                        }
                     }
                 }
             }
@@ -2796,7 +2740,11 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
 
             if (e.ClickedItem.Text.Equals("Ściągnij katalog obiegowy"))
             {
-                last_message_to_broadcast = "";
+                if (new FileInfo(database_externals_path + "EXTERNAL_CATALOG.FDB").Exists)
+                {
+                    File.Delete(database_externals_path + "EXTERNAL_CATALOG.FDB");
+                }
+
                 used_alias = "";
                 System.Net.IPAddress ipAddr = null;
                 String alias = null;
@@ -2975,8 +2923,12 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                     DistributedNetworkUser targetUser = new DistributedNetworkUser(false, provided_alias, System.Net.IPAddress.Parse(provided_address_string));
 
                     DistributedNetworkFile distributedNetworkFile =
-                        new DistributedNetworkFile(requested_filename, requested_filepath, true, true);
-                    distributedNetwork.RequestFile(targetUser, distributedNetworkFile);
+                        new DistributedNetworkFile(requested_filename, requested_filepath, 0, true, true);
+
+                    List<DistributedNetworkFile> distributedNetworkFiles = new List<DistributedNetworkFile>();
+                    distributedNetworkFiles.Add(distributedNetworkFile);
+
+                    distributedNetwork.RequestFile(targetUser, distributedNetworkFiles);
                 }
             }
 
@@ -3263,8 +3215,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             }
             if (e.ClickedItem.Text.Equals("Ściągnij"))
             {
-                last_message_to_broadcast = "";
-                Console.WriteLine("Ściągnij clicked!");
+                //Console.WriteLine("Ściągnij clicked!");
                 
                 total_selected = LV_catalog_display_item_selection.Count();
                 bool folders_in_selection = false;
@@ -3276,6 +3227,8 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                 failed_downloads = new List<string>();
                 failed_downloads_count = 0;
 
+                List<DistributedNetworkFile> distributedNetworkFiles = new List<DistributedNetworkFile>();
+                DistributedNetworkUser targetUser = null;
                 System.Net.IPAddress ipAddr = null;
 
                 // Przeszukiwanie przechowywanych par alias adres:
@@ -3424,6 +3377,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
 
                             // Bierzemy ścieżkę do pliku z bazy danych:
                             string requested_filepath = "", requested_filename = "", requested_alias = "";
+                            long requested_filesize = 0;
 
                             DataTable filepath_container = new DataTable();
                             FbDataAdapter filepath_grabber = new FbDataAdapter("SELECT ORIGINAL_NAME,PATH " +
@@ -3446,6 +3400,23 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                             // Bierzemy alias użytkownika, którego katalogo obiegowy czytamy:
                             requested_alias = LV_catalog_display_current_catalog_alias;
 
+                            // Bierzemy rozmiar pliku, który chcemy ściągnąć:
+                            try
+                            {
+                                requested_filesize = long.Parse(selected_item.SubItems[4].Text);
+                            }
+                            catch
+                            {
+                                requested_filesize = 0;
+                            }
+                            FileInfo file_already_downloaded = new FileInfo(ConfigManager.ReadString(ConfigManager.DOWNLOAD_LOCATION) + Path.GetFileName(requested_filepath));
+                            // Sprawdzamy czy plik, który chcemy sciągnąć nie jest już w folderze zapisu
+                            if (file_already_downloaded.Exists)
+                            {
+                                // Jest - usuwamy go bo zakładamy że jest stary!
+                                File.Delete(ConfigManager.ReadString(ConfigManager.DOWNLOAD_LOCATION) + Path.GetFileName(requested_filepath));
+                            }
+
                             /* Takim sposobem mamy:
                              * Ścieżkę do pobieranego pliku - w zm. requested_filepath.
                              * Alias użytkownika, od którego pobieramy - w zm. requested_alias.
@@ -3454,15 +3425,16 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                             */
 
                             // Tutaj wywołujemy przesyłanie plików:
-                            DistributedNetworkUser targetUser = new DistributedNetworkUser(false, requested_alias, ipAddr);
+                            targetUser = new DistributedNetworkUser(false, requested_alias, ipAddr);
 
                             DistributedNetworkFile distributedNetworkFile =
-                                new DistributedNetworkFile(requested_filename, requested_filepath, true, requested_downloads_without_question);
-                            distributedNetwork.RequestFile(targetUser, distributedNetworkFile);
+                                new DistributedNetworkFile(requested_filename, requested_filepath, requested_filesize, true, requested_downloads_without_question);
+                            distributedNetworkFiles.Add(distributedNetworkFile);
                         }
                     }
                 }
-                if(folders_in_selection == true)
+                distributedNetwork.RequestFile(targetUser, distributedNetworkFiles);
+                if (folders_in_selection == true)
                 {
                     MessageBox.Show("W wybranych plikach znalazł się folder. Program obsługuje tylko przesyłanie plików.");
                 }
@@ -3644,6 +3616,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                     if(LV_catalog_display_status == 2)
                     {
                         folder_context_menu_strip.Items.Add("Otwórz");
+                        folder_context_menu_strip.Items.Add("Usuń");
                         folder_context_menu_strip.Items.Add("Opcje specjalne");
                     }
                     folder_context_menu_strip.ItemClicked += element_context_menu_item_select;
@@ -3743,7 +3716,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
         // Obsługuje zdarzenie podwójnego kliknięcia.
         private void LV_catalog_display_double_click (object sender, MouseEventArgs e)
         {
-            if(e.Button == MouseButtons.Left)
+            if (e.Button == MouseButtons.Left)
             {
                 ListView parent = (ListView)sender;
                 ListViewItem target = parent.HitTest(e.Location).Item;
@@ -3932,23 +3905,6 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                             database_record_manipulator.Connection.Open();
                             database_record_manipulator.ExecuteNonQuery();
                             database_record_manipulator.Connection.Close();
-
-                            /* DEBUG
-                            DataTable newly_added_text_container = new DataTable();
-                            FbDataAdapter newly_added_text_grabber = new FbDataAdapter("SELECT EXTRACTED_TEXT " +
-                                                                                       "FROM metadata_multimedia " +
-                                                                                       "WHERE ID = @Id;"
-                                                                                       ,
-                                                                                       new FbConnection(database_connection_string_builder.ConnectionString));
-
-                            newly_added_text_grabber.SelectCommand.Parameters.AddWithValue("@Id", extractor_texts_to_add[i].Item1);
-
-                            newly_added_text_grabber.Fill(newly_added_text_container);
-                            if (newly_added_text_container.Rows.Count == 1)
-                            {
-                                MessageBox.Show((string)newly_added_text_container.Rows[0].ItemArray[0]);
-                            }
-                            */
                         }
                     }
                     if(texts_added == 0)
@@ -4267,13 +4223,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
 
         public void DisplayMessageBoxFromAnotherThread(String msg)
         {
-            // Obejście na problem podwójnego generowania okna, pożera okna następujące po sobie...
-            // Brudny hack na wielokrotne wywoływanie informacji.
-            if (!msg.Equals(last_message_to_broadcast))
-            {
-                last_message_to_broadcast = msg;
                 MessageBox.Show(msg);
-            }
         }
 
         public void AddSuccessfulDownloadNameFromAnotherThread(String filename)
@@ -4296,7 +4246,29 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             this.failed_downloads_count++;
         }
 
-        public void CheckIfDoneFromOtherThread()
+        public void SpawnProgressWindowFromAnotherThread(String filename, int file_size)
+        {
+            progress_window = new DownloadProgressWindow(filename, file_size);
+            progress_window.Show();
+        }
+
+        public void UpdateProgressWindowFromAnotherThread()
+        {
+            if(progress_window != null)
+            {
+                progress_window.DownloadProgressWindow_UpdateValue();
+            }
+        }
+
+        public void KillProgressWindowFromAnotherThread()
+        {
+            if (progress_window != null)
+            {
+                progress_window.DownloadProgressWindow_Kill();
+            }
+        }
+
+        public void CheckIfDoneFromAnotherThread()
         {
             if(failed_downloads_count + successful_downloads_count == total_to_download)
             {
@@ -4348,7 +4320,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             }
         }
 
-        public string GrabExternalCatalogPathFromOtherThread()
+        public string GrabExternalCatalogPathFromAnotherThread()
         {
             string filepath = "";
 
@@ -4358,12 +4330,12 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             return filepath;
         }
 
-        public void TerminateDBConnectionsFromOtherThread()
+        public void TerminateDBConnectionsFromAnotherThread()
         {
             FbConnection.ClearAllPools();
         }
 
-        public void AddAliasFromOtherThread(String alias, String address)
+        public void AddAliasFromAnotherThread(String alias, String address)
         {
             string grabbed_aliases = ConfigManager.ReadString(ConfigManager.KNOWN_ALIASES);
             bool error_on_aliases_read = false, change_made = false;
@@ -4450,12 +4422,14 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             }
         }
 
-        public void AttemptToFinalizeFromOtherThread(String target_filename)
+        public void AttemptToFinalizeFromAnotherThread(String target_filename)
         {
             recieved_external_catalog_name = target_filename;
 
+            //Catalog_download_finalizer_Tick(this, new EventArgs());
+
             catalog_download_finalizer = new Timer();
-            catalog_download_finalizer.Interval = 3000;
+            catalog_download_finalizer.Interval = 1000;
             catalog_download_finalizer.Tick += Catalog_download_finalizer_Tick;
 
             catalog_download_finalizer.Start();
@@ -4473,19 +4447,13 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
 
                     used_alias = alias_grabber[0];
 
-                    AddAliasFromOtherThread(used_alias, used_IP_address_string);
+                    AddAliasFromAnotherThread(used_alias, used_IP_address_string);
                 }
-                if (new FileInfo(database_externals_path + "TO_DETERMINE").Exists)
+                if (new FileInfo(database_externals_path + "EXTERNAL_CATALOG.FDB").Exists)
                 {
-                    File.Move(database_externals_path + "TO_DETERMINE", recieved_external_catalog_name);
+                    File.Move(database_externals_path + "EXTERNAL_CATALOG.FDB", recieved_external_catalog_name);
                     catalog_download_finalizer.Stop();
                     MessageBox.Show("Pobranie katalogu zakonczone sukcesem!");
-                    
-
-                    if(new FileInfo(database_externals_path + "TO_DETERMINE").Exists)
-                    {
-                        File.Delete(database_externals_path + "TO_DETERMINE");
-                    }
 
                     LV_catalog_display_visible_changed(this, new EventArgs());
                 }
@@ -4605,665 +4573,6 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                 }
             }
         }
-
-        #endregion
-
-        #region Kod legacy
-
-        /* Old - detale zmiany rozmiaru okna głównego
-         * 
-        *  Zakładam minimalny rozmiar okna na poziomie tego, co zrobił na początku Janek
-        *  
-        *  Gdy zmieniamy rozmiar okna głównego niektóre elementy powinny zmienić swój rozmiar lub pozycję, są to:
-        *  - tabpage tabPage1 (Kryteria katalogowania) - rozmiar
-        *  - groupbox groupBox1 (Użyj polecenie) - rozmiar
-        *       - textbox txtCommand (za Polecenie:) - rozmiar
-        *       - button BT_text_database (Test bazy) - pozycja
-        *       - button BT_extract_metadata (Kataloguj) - pozycja
-        *  - groupbox z metadanymi - rozmiar
-        *       - checkedlistbox chkMetadata - rozmiar 
-        *  
-        *  I tyle, reszta w kodzie.
-        *  
-        */
-
-        /* Old - logika resize'owania okna, teraz już zbędna.
-        private void Form1_Resize(object sender, EventArgs e)
-        {
-            // Ustawiamy rozdzielczosc minimalna na poziomie tego, co zrobił Janek
-            this.MinimumSize = new Size(471, 465);
-
-            // A jezeli jest wieksza, to reskalujemy
-            if (this.Size.Width >= 471 && this.Size.Height >= 465)
-            {
-                // Najpierw TabPage tabPage1:
-                tabPage1.Width = this.Size.Width - 24;
-                tabPage1.Height = this.Size.Height - 71;
-
-                // I to na tyle, jak bedzie przybywalo komponentów trzeba bedzie je tutaj dodawać
-                // Liczby do odejmowania obliczam biorąc za podstawę okno w rozmiarze minimalnym,
-                // odejmuje od rozmiaru kontenera macierzystego albo rozmiar jego subkomponentu
-                // (jezeli chcemy go skalowac) lub jego lokację (jeżeli chcemy zmienić pozycję)
-            }
-        }
-        */
-
-        /* Old - Resize wielkości textboxa z teraźniejszą ścieżką w katalogu wirtualnym, potrzebny bo nie robi tego automatycznie jego rodzic.
-        private void TB_catalog_path_current_resizer(object sender, EventArgs e)
-        {
-            TableLayoutPanel parent = (TableLayoutPanel)sender;
-            TextBox target = (TextBox)parent.Controls[1];
-            target.Width = parent.Size.Width - 150;
-        }
-        */
-
-        /* Old - wcześniejsza logika ustalania stringów z ścieżkami do odpowiednich folderów i plików
-                  Oduzależnienie programu od statycznych stringów - pobieranie lokacji programu
-             *    
-             *    Na początku tworzymy grabber dający nam obiekt DirectoryInfo zawiarajacy lokacje fizyczna programu na dysku twardym.
-             *    Potem sprawdzamy czy jest w katalogu Debug/Release (co swiadczy o tym ze dalej jest w konfiguracji testowej, a nie roboczej),
-             *    jezeli jest to musimy pobrać lokację dwóch katalogów w górę, jeżeli nie - tylko jeden
-             *    
-             *    Strutura programu na dzien dzisiejszy wygląda tak (i będzie tak wyglądała aż do zakonczenia prac z VS):
-             *    bin\Release - zawiera .exe'c zbudowany przez VS w wersji release i biblioteki .dll programu
-             *                *    bin\Debug - zawiera .exe'c zbudowany przez VS w wersji debug i biblioteki .dll programu
-             *    db\ - tutaj żyje nasz katalog, w pliku catalog.fdb
-             *    
-             *    Wynikowo struktura programu ma wygladac w ten desen:
-             *    bin\ - tutaj żyja nasze .dll'ki i .exe'c aplikacji
-             *    db\ - tutaj żyje nasz katalog, w pliku catalog.fdb
-             *    result\ - tutaj żyją wyniki tego co zwraca Karol swoją obrabiarką do pl. multimedialnych.
-             *    
-             *    Tutaj zakladam ze program jest schowany glebiej przez Visual Studio, stad potrzebne są nam dodatkowe skoki. Przepisanie tej procedury na czysto
-             *    nie jest problemem.
-             *    
-             *    UWAGA: Moze wygenerowac IOException jeżeli coś innego czyta nasze podfoldery!
-            
-            DirectoryInfo directory_grabber = new DirectoryInfo(Application.StartupPath);
-            string target_directory;
-
-            if (directory_grabber.Name == "Release" || directory_grabber.Name == "Debug")
-            {
-                MessageBox.Show("Program w wersji roboczej!");
-                target_directory = directory_grabber.Parent.Parent.FullName.ToString(); // przejście do folderu o dwa poziomy w górę
-            }
-            else
-            {
-                MessageBox.Show("Program w wersji ostatecznej!");
-                target_directory = directory_grabber.Parent.FullName.ToString(); // przejście do folderu o poziom w górę
-            }
-
-            this.program_path = target_directory;
-            this.output_path = target_directory + @"\output\";
-            if (!Directory.Exists(output_path)) Directory.CreateDirectory(output_path);
-
-            //this.xml_path = target_directory + @"\metadata.xml"; // XML'ka Janka,
-            //this.txt_path = target_directory + @"\$$$.txt"; // Plik testowy Janka,
-            this.database_file_path = target_directory + @"\db\catalog.fdb"; // Lokacja katalogu tworzonego przez program
-            this.database_externals_path = target_directory + @"\db\externals\";
-            if (!Directory.Exists(database_externals_path)) Directory.CreateDirectory(database_externals_path);
-            this.database_engine_path = target_directory + @"\bin\firebird_server\fbclient.dll"; // Lokacja silnika bazodanowego w wersji embedded
-            
-
-
-
-        public string[] extends = { ".txt", ".csv", ".doc", ".docx", ".odt", ".ods", ".odp", ".xls", ".xlsx", ".pdf", ".ppt", ".pptx", ".pps", ".fb2", ".htm", ".html", ".tsv", ".xml", ".jpg", ".jpeg", ".tiff", ".bmp", ".mp4", ".avi", ".mp3", ".wav"};
-        
-        private void Form1_KeyDown(object sender, KeyEventArgs e)
-        {
-
-        }
-
-       
-        private void ChkMetadata_LostFocus(object sender, EventArgs e)
-        {
-            var diff = metadata.Where(x => !excludedMetadata.Contains(x)).ToList();
-            this.AppendXML(diff);
-        }
-        
-
-        private void Form1_Load(object sender, EventArgs e)
-        {
-
-        }
-
-        private void TxtCommand_LostFocus(object sender, EventArgs e)
-        {
-
-            var notSupported = String.Empty;
-            try
-            {
-                var split = _group[_group.Count - 2].Split(new char[] { ' ', '*', '.' });
-                for (int i = 0; i < extends.Length; i++)
-                    foreach (var s in split)
-                        if (!extends.Contains(s))
-                            notSupported += " " + s;
-
-                MessageBox.Show("Nieobsługiwana grupa rozszerzeń: " + this.RemoveDuplicates(notSupported), "Grupa rozszerzeń", MessageBoxButtons.OK, MessageBoxIcon.Hand);
-            }
-            catch (Exception) { }
-        }
-
-        /// <summary>
-        /// Tłumaczy każde słowo tekstu podanego na wejściu
-        /// </summary>
-        /// <param name="normal">lista słów języka wejściowego tekstu</param>
-        /// <param name="create">lista słów "języka 'create'"</param>
-        /// <returns>Słownik słowo-tłumaczenie</returns>
-        private Dictionary<string, string> Groups(List<string> normal, List<string> create)
-        {
-            Dictionary<string, string> groups = new Dictionary<string, string>();
-            string[] filesGroup = { "files' group", "group of files" };
-            string[] forEach = { "each", "all", "every" };
-            Random rand = new Random();
-            int index = rand.Next(1, 2);
-            int i = rand.Next(0, forEach.Length - 1);
-            try
-            {
-                groups.Add(normal[0], create[0]);
-                groups.Add(normal[index], create[1]);
-                groups.Add("każdego", forEach[i]);
-                groups.Add("każdej", forEach[i]);
-                groups.Add("dla", "for");
-                groups.Add("grupy plików", filesGroup[index]);
-            }
-            catch { }
-
-            return groups;
-        }
-
-        /// <summary>
-        /// Grupuje tekst podany na wejściu względem wyrażenia regularnego
-        /// </summary>
-        /// <param name="rx">Wyrażenie regularne, do którego tekst wejściowy będzie dopasowywany</param>
-        /// <param name="match">Dopasowanie zawierające tekst podany na wejściu</param>
-        /// <returns>Dopasowane grupy tekstu podanego na wejściu</returns>
-        private List<string> GroupRegex(Regex rx, Match match)
-        {
-            List<string> groups = new List<string>();
-
-            while (match.Success)
-            {
-                for (int i = 1; i <= 50; i++)
-                {
-                    Group g = match.Groups[i];
-                    string gToString = g.ToString();
-                    if (!gToString.Equals("") && !gToString.Equals(" ") && gToString.Length != 1 && !gToString.Equals("o"))
-                        groups.Add(gToString);
-
-                }
-                match = match.NextMatch();
-            }
-            return groups;
-        }
-
-        private void txtCommand_TextChanged(object sender, EventArgs e)
-        {
-            
-        }
-
-        List<string> _group = new List<string>();
-        private void chkUseCreteRule_CheckedChanged(object sender, EventArgs e)
-        {
-            
-        }
-
-        private string RemoveDuplicates(string p)
-        {
-            var distinct = string.Join(" ",
-
-                Regex.Matches(p, @"([^\s]+)")
-                         .OfType<Match>()
-                     .Select(m => m.Groups[0].Value)
-                     .Distinct()
-
-            );
-
-            return distinct;
-
-        }
-
-        private void chkUseEquality_CheckedChanged(object sender, EventArgs e)
-        {
-
-        }
-
-        private void chooseMetadata_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
-        {
-            //MessageBox.Show(m.Key + " => " + m.Value);
-        }
-
-        private void PostXML(string v, string requestData)
-        {
-            throw new NotImplementedException();
-        }
-
-        /// <summary>
-        /// Tworzy plik XML na podst. metadanych oraz nazwy maszyny i jej użytkownika
-        /// </summary>
-        /// <param name="metadata">lista metadanych pozostałych po wykluczeniu tych niechcianych przez użytkownika</param>
-        private void AppendXML(List<string> metadata)
-        {
-            Random rand = new Random();
-            List<XmlNode> node = new List<XmlNode>();
-            char randChar = (char)rand.Next(65, 90);
-            XmlDocument xDoc = new XmlDocument();
-            xDoc.Load(xml_path);
-            XmlElement _metadata = xDoc.CreateElement("metadata");
-
-            string strMachineUserName = Environment.MachineName + "_" + Environment.UserName + "_" + DateTime.Now.ToString("yyyyMMddHHmmssffff");
-
-            string strMd5 = this.Encrypt(strMachineUserName, true);
-            string strMd5MachineUserName = this.Encrypt("machineUserName", true);
-
-            string key = randChar + strMd5MachineUserName.Substring(1).Replace("=", string.Empty).Replace("+", string.Empty).Replace("/", string.Empty);
-
-            _metadata.SetAttribute(key, strMd5);
-            File.SetAttributes(txt_path, FileAttributes.Normal);
-            File.AppendAllText(txt_path, key + "$" + strMd5MachineUserName + Environment.NewLine);
-
-
-            foreach (var m in metadata)
-                //if (m.Substring(0, m.IndexOf("=")).Equals("FilePath") || m.Substring(0, m.IndexOf("=")).Contains("Author") || m.Substring(0, m.IndexOf("=")).Contains("publisher") || m.Substring(0, m.IndexOf("=")).Contains("dc") || m.Substring(0, m.IndexOf("=")).Contains("author") || m.Substring(0, m.IndexOf("=")).Contains("version") || m.Substring(0, m.IndexOf("=")).Contains("date") || m.Substring(0, m.IndexOf("=")).Contains("Date") || m.Substring(0, m.IndexOf("=")).Contains("created") || m.Substring(0, m.IndexOf("=")).Contains("modified") || m.Substring(0, m.IndexOf("=")).Contains("Version") || m.Substring(0, m.IndexOf("=")).Contains("creator") || m.Substring(0, m.IndexOf("=")).Contains("Last"))
-                //    node.Add(xDoc.CreateElement(this.Encrypt(m.Substring(0, m.IndexOf("=")), true).Replace("=", string.Empty).Replace("+", string.Empty).Replace("/", string.Empty)));
-                //else
-                node.Add(xDoc.CreateElement(m.Substring(0, m.IndexOf("="))));
-
-            foreach (var m in metadata)
-                foreach (var n in node)
-                {
-                    var mEncrypt = this.Encrypt(m.Substring(m.IndexOf("=") + 1), true);
-                    n.InnerText = this.Encrypt(m.Substring(m.IndexOf("=") + 1), true).Replace("=", string.Empty).Replace("+", string.Empty).Replace("/", string.Empty);
-                    File.AppendAllText(txt_path, n.InnerText + "$" + mEncrypt + Environment.NewLine);
-                }
-
-
-            foreach (var n in node)
-                _metadata.AppendChild(n);
-
-            xDoc.DocumentElement.AppendChild(_metadata);
-            xDoc.Save(xml_path);
-
-            File.SetAttributes(txt_path, FileAttributes.ReadOnly | FileAttributes.Hidden);
-        }
-
-        private string Encrypt(string v, bool isHashUsed)
-        {
-            byte[] keyArray;
-            byte[] encrypted = UTF8Encoding.UTF8.GetBytes(v);
-
-            System.Configuration.AppSettingsReader appSettings = new System.Configuration.AppSettingsReader();
-
-            string key = appSettings.GetValue("SecurityKey", typeof(String)) as string;
-
-            if (isHashUsed)
-            {
-                MD5CryptoServiceProvider md5provider = new MD5CryptoServiceProvider();
-                keyArray = md5provider.ComputeHash(UTF8Encoding.UTF8.GetBytes(key));
-                md5provider.Clear();
-            }
-            else keyArray = UTF8Encoding.UTF8.GetBytes(key);
-
-            TripleDESCryptoServiceProvider tdes = new TripleDESCryptoServiceProvider();
-
-            tdes.Key = keyArray;
-            tdes.Mode = CipherMode.CFB;
-            tdes.Padding = PaddingMode.PKCS7;
-
-            ICryptoTransform cryptoTransform = tdes.CreateEncryptor();
-            byte[] resultArray = cryptoTransform.TransformFinalBlock(encrypted, 0, encrypted.Length);
-
-            tdes.Clear();
-
-            return Convert.ToBase64String(resultArray, 0, resultArray.Length);
-        }
-
-        private void chkMetadata_SelectedIndexChanged(object sender, EventArgs e)
-        {
-
-        }
-
-        private void bnCatalogue_Click(object sender, EventArgs e)
-        {
-            this.contextMenuStrip1.Visible = true;
-        }
-
-        private void tabControl1_SelectedIndexChanged(object sender, EventArgs e)
-        {
-
-        }
-
-        private void chkSelectAllListPositions_CheckedChanged(object sender, EventArgs e)
-        {
-            for (int i = 0; i < this.chkMetadata.Items.Count; i++)
-            {
-                this.chkMetadata.SetItemChecked(i, true);
-            }
-        }
-
-        private void chkMetadata_DoubleClick(object sender, EventArgs e)
-        {
-            this.excludedMetadata.Remove(this.chkMetadata.SelectedItem.ToString());
-        }
-
-        private void chkMetadata_ItemCheck(object sender, ItemCheckEventArgs e)
-        {
-            this.excludedMetadata.Add(this.chkMetadata.SelectedItem.ToString());
-        }
-
-        /*
-        private void button1_Click_1(object sender, EventArgs e)
-        {
-            //MessageBox.Show(this.Decrypt("vlnsYsM7p0Ay16aH5m3IkzmvWncbGmC/mbUTzUity0h7y92SW6GONLYsqLYnDNKW", true).Substring(8));
-            var extractor = new TikaOnDotNet.TextExtraction.TextExtractor().Extract(xml_path);
-            string xmlNoSpaces = Regex.Replace(extractor.Text, @"\s+", string.Empty);
-
-            Regex rx = new Regex("(<.*?>)", RegexOptions.IgnoreCase);
-            Regex rxQuery = new Regex("(<.*?>)(.+)(<.*?>)", RegexOptions.IgnoreCase);
-            Match mTxt = Regex.Match(extractor.Text, "(<.*?>)");
-            File.SetAttributes(txt_path, FileAttributes.Normal);
-            StreamReader reader = new StreamReader(txt_path);
-            StreamReader reader2 = new StreamReader(txt_path);
-            string line = String.Empty;
-            string subgroup = String.Empty;
-            string _subgroup = String.Empty;
-            var regex = @"([A-Za-z]+)(_[A-Za-z]+)(_[0-9]+)$";
-
-            foreach (var group in this.GroupRegex(rx, mTxt))
-                if (group.Length > 22)
-                {
-                    subgroup = group.Substring(group.IndexOf("=")+2);
-                    _subgroup = this.Decrypt(Regex.Replace(subgroup, @">$", string.Empty).TrimEnd('"'), true).Substring(8);
-                }
-
-            line = Regex.Replace(reader.ReadLine(), @"\$(.+)", String.Empty);
-            
-            XDocument xDoc = XDocument.Load(xml_path);
-            var query = xDoc.Descendants("Metadata")
-                            .Where(parent => parent.Elements("metadata")
-                            .Any(child => (string)child.Attribute(line).Value == Regex.Replace(subgroup, @">$", string.Empty).TrimEnd('"')));
-
-            bool realMachineUser = false;
-            foreach (var q in query)
-            {
-                foreach (var group in this.GroupRegex(rx, mTxt))
-                    if (group.Length > 22)
-                    {
-                        subgroup = group.Substring(group.IndexOf("=") + 2);
-                        _subgroup = this.Decrypt(Regex.Replace(subgroup, @">$", string.Empty).TrimEnd('"'), true).Substring(8);
-
-                        Regex rxMachineUser = new Regex(regex, RegexOptions.IgnoreCase);
-                        Match m = Regex.Match(_subgroup, regex);
-                        realMachineUser = Environment.MachineName.Contains(this.GroupRegex(rxMachineUser, m)[0]) && Environment.UserName.Equals(this.GroupRegex(rxMachineUser, m)[1].Replace("_", String.Empty));
-                    }
-            }
-            List<string> metadataKey = new List<string>();
-            if (realMachineUser)
-                foreach (var group in this.GroupRegex(rx, mTxt))
-                    if (group.Length <= 22 && !group.Contains("/") && !group.Equals("<Metadata>"))
-                        metadataKey.Add(Regex.Replace(group, "<|>", String.Empty));
-
-            var metadataKeyDist = metadataKey.Distinct();
-        }
-        
-
-        private string Decrypt(string v1, bool v2)
-        {
-            byte[] keyArray;
-            byte[] encrypted = Convert.FromBase64String(v1);
-
-            System.Configuration.AppSettingsReader appSettings = new System.Configuration.AppSettingsReader();
-
-            string key = appSettings.GetValue("SecurityKey", typeof(String)) as string;
-
-            if (v2)
-            {
-                MD5CryptoServiceProvider md5provider = new MD5CryptoServiceProvider();
-                keyArray = md5provider.ComputeHash(UTF8Encoding.UTF8.GetBytes(key));
-                md5provider.Clear();
-            }
-            else keyArray = UTF8Encoding.UTF8.GetBytes(key);
-
-            TripleDESCryptoServiceProvider tdes = new TripleDESCryptoServiceProvider();
-
-            tdes.Key = keyArray;
-            tdes.Mode = CipherMode.CFB;
-            tdes.Padding = PaddingMode.PKCS7;
-
-            ICryptoTransform cryptoTransform = tdes.CreateDecryptor();
-            byte[] resultArray = cryptoTransform.TransformFinalBlock(encrypted, 0, encrypted.Length);
-
-            tdes.Clear();
-
-            return UTF8Encoding.UTF8.GetString(resultArray);
-        }
-        */
-
-        /* Old - wyświetlanie zawartości zmiennej metadata.
-        private void chkExcludeMetadata_CheckedChanged(object sender, EventArgs e)
-        {
-            if (this.chkExcludeMetadata.Checked)
-            {
-                this.chkMetadata.Enabled = true;
-                for (int i = 0; i < metadata.Count(); i++)
-                {
-                    string display = String.Empty;
-                    for (int j = 0; j < metadata[i].Length; j++) display += " " + metadata[i].ElementAt(j) + " ";
-                    this.chkMetadata.Items.Add(display);
-                }
-                
-                //DEBUG - zapisujemy wyniki katalogowania do pliku $$$.txt
-                FileInfo txt_dump = new FileInfo(txt_path);
-                if (txt_dump.Exists)
-                {
-                    StreamWriter txt_dumper = new StreamWriter(txt_path);
-
-                    for (int i = 0; i < metadata.Count(); i++)
-                    {
-                        string display = String.Empty;
-                        for (int j = 0; j < metadata[i].Length; j++) display += " " + metadata[i].ElementAt(j) + " ";
-                        txt_dumper.WriteLine(display);
-                    }
-                    txt_dumper.Close();
-                }
-                
-            }
-            else
-            {
-                this.chkMetadata.Enabled = false;
-                this.chkMetadata.Items.Clear();
-            }
-        }
-        */
-
-        /* Old - zmiana uprawnień dla folderu (teraz robi to zmiana praw pliku!)
-        private Tuple<int, int> database_virtual_folder_modify_rights(int source_folder_id, string name, string right_to_modify, bool new_value)
-        {
-            Tuple<int,int> successful_changes = new Tuple<int,int>(0,0);
-            int successful = 0, failed = 0;
-
-            DataTable subfolders_to_modify = new DataTable();
-            FbDataAdapter subfolders_to_modify_grabber = new FbDataAdapter("SELECT ID,NAME,DIR_ID " +
-                                                                    "FROM " + database_tables[0].Item2 + " " +
-                                                                    "WHERE DIR_ID = @Target_directory_id;"
-                                                                    ,
-                                                                    new FbConnection(database_connection_string_builder.ConnectionString));
-
-            subfolders_to_modify_grabber.SelectCommand.Parameters.AddWithValue("@Target_directory_id", source_folder_id);
-
-            subfolders_to_modify_grabber.Fill(subfolders_to_modify);
-
-            // Pobieramy tutaj wszystkie podfoldery naszego wskazanego folderu
-            for (int i = 0; i < subfolders_to_modify.Rows.Count; i++)
-            {
-                if (!subfolders_to_modify.Rows[i].ItemArray[0].Equals(source_folder_id))
-                {
-                    Tuple<int,int> result = database_virtual_folder_modify_rights((int)subfolders_to_modify.Rows[i].ItemArray[0],
-                                                                                  (string)subfolders_to_modify.Rows[i].ItemArray[1],
-                                                                                  right_to_modify,
-                                                                                  new_value);
-
-                    successful_changes = new Tuple<int, int>(successful_changes.Item1 + result.Item1, 
-                                                             successful_changes.Item2 + result.Item2);
-                }
-                    
-            }
-
-            // Przetworzyliśmy uprawnienia dla podfolderów, teraz trzeba wziąść całą pozostałą zawartośc folderu źródłowego
-            for (int i = 1; i < database_tables.Count; i++)
-            {
-                DataTable folder_content_to_modify_container = new DataTable();
-                FbDataAdapter folder_content_to_modify_grabber = new FbDataAdapter("SELECT NAME,EXTENSION,VISIBLE_TO_OTHERS,REQUESTABLE_BY_OTHERS,COPIES_WITHOUT_CONFIRM " +
-                                                                        "FROM " + database_tables[i].Item2 + " " +
-                                                                        "WHERE DIR_ID = @Target_directory_id;"
-                                                                        ,
-                                                                        new FbConnection(database_connection_string_builder.ConnectionString));
-
-                folder_content_to_modify_grabber.SelectCommand.Parameters.AddWithValue("@Target_directory_id", source_folder_id);
-
-                folder_content_to_modify_grabber.Fill(folder_content_to_modify_container);
-                for (int j = 0; j < folder_content_to_modify_container.Rows.Count; j++)
-                {
-                    bool skip = false;
-                    // Czyszczenie wartości dla flag podrzędnych w przypadku wyłączenia flagi nadrzędnej
-                    if (right_to_modify.Equals("VISIBLE_TO_OTHERS") && new_value == false)
-                    {
-                        if ((bool)(folder_content_to_modify_container.Rows[j].ItemArray[3]) == true)
-                            database_virtual_file_modify_rights(source_folder_id,
-                                                                database_tables[i].Item2,
-                                                                (string)folder_content_to_modify_container.Rows[j].ItemArray[0],
-                                                                (string)folder_content_to_modify_container.Rows[j].ItemArray[1],
-                                                                "REQUESTABLE_BY_OTHERS",
-                                                                false);
-                        if ((bool)(folder_content_to_modify_container.Rows[j].ItemArray[4]) == true)
-                            database_virtual_file_modify_rights(source_folder_id,
-                                                                database_tables[i].Item2,
-                                                                (string)folder_content_to_modify_container.Rows[j].ItemArray[0],
-                                                                (string)folder_content_to_modify_container.Rows[j].ItemArray[1],
-                                                                "COPIES_WITHOUT_CONFIRM",
-                                                                false);
-                    }
-
-                    if (right_to_modify.Equals("REQUESTABLE_BY_OTHERS") && new_value == false)
-                    {
-                        if ((bool)(folder_content_to_modify_container.Rows[j].ItemArray[4]) == true)
-                            database_virtual_file_modify_rights(source_folder_id,
-                                                                database_tables[i].Item2,
-                                                                (string)folder_content_to_modify_container.Rows[j].ItemArray[0],
-                                                                (string)folder_content_to_modify_container.Rows[j].ItemArray[1],
-                                                                "COPIES_WITHOUT_CONFIRM",
-                                                                false);
-                    }
-
-                    // Sprawdzanie, czy flagi nadrzędne są ustawione na prawdę przy próbie zmiany wartości flagi podrzędnej
-                    if (!right_to_modify.Equals("VISIBLE_TO_OTHERS"))
-                    {
-                        if ((bool)(folder_content_to_modify_container.Rows[j].ItemArray[2]) == false) skip = true;
-                        if (right_to_modify.Equals("COPIES_WITHOUT_CONFIRM"))
-                        {
-                            if ((bool)(folder_content_to_modify_container.Rows[j].ItemArray[3]) == false) skip = true;
-                        }
-                        if (skip == true) failed++;
-                    }
-
-                    if (skip == false)
-                    {
-                        database_virtual_file_modify_rights(source_folder_id,
-                                                            database_tables[i].Item2,
-                                                            (string)folder_content_to_modify_container.Rows[j].ItemArray[0],
-                                                            (string)folder_content_to_modify_container.Rows[j].ItemArray[1],
-                                                            right_to_modify,
-                                                            new_value);
-                        successful++;
-                    }
-                }
-            }
-
-            successful_changes = new Tuple<int, int>(successful_changes.Item1 + successful, successful_changes.Item2 + failed);
-
-            if (successful_changes.Item2 == 0)
-            {
-                string modifications = "";
-
-                if (new_value == true) modifications = "SET " + right_to_modify + "=@" + right_to_modify + "_VALUE ";
-                else
-                {
-                    if (right_to_modify.Equals("VISIBLE_TO_OTHERS"))
-                    {
-                        modifications = "SET VISIBLE_TO_OTHERS = FALSE, REQUESTABLE_BY_OTHERS = FALSE, COPIES_WITHOUT_CONFIRM = FALSE ";
-                    }
-                    if (right_to_modify.Equals("REQUESTABLE_BY_OTHERS"))
-                    {
-                        modifications = "SET REQUESTABLE_BY_OTHERS = FALSE, COPIES_WITHOUT_CONFIRM = FALSE ";
-                    }
-                    if (right_to_modify.Equals("COPIES_WITHOUT_CONFIRM"))
-                    {
-                        modifications = "SET COPIES_WITHOUT_CONFIRM = FALSE ";
-                    }
-                }
-
-                FbCommand file_rights_modifier = new FbCommand("UPDATE " + database_tables[0].Item2 + " " +
-                                                           modifications + 
-                                                           "WHERE NAME = @Name " +
-                                                           "AND ID = @Id "
-                                                           ,
-                                                           new FbConnection(database_connection_string_builder.ConnectionString));
-
-                file_rights_modifier.Parameters.AddWithValue("@Name", name);
-                file_rights_modifier.Parameters.AddWithValue("@Id", source_folder_id);
-                if(new_value == true) file_rights_modifier.Parameters.AddWithValue("@" + right_to_modify + "_VALUE", new_value);
-
-                file_rights_modifier.Connection.Open();
-                file_rights_modifier.ExecuteNonQuery();
-                file_rights_modifier.Connection.Close();
-            }
-            return successful_changes;
-        }
-
-        /*
-        public Tuple<bool,string> ExternalCatalogTransfer()
-        {
-            Tuple<bool, string> result;
-
-            // Zakładam tutaj, że Main_form jest świadomy jakim DistributedNetworkUser'em jest
-
-            // Sprawdzamy po kolei następujące rzeczy:
-            // 1. Czy jesteśmy wpięci do jakiejkolwiek sieci - czy local_user nie jest nullem. Jeżeli jest to zwracamy error, jeżeli nie to idziemy do pp.2 .
-            // 2. Czy istnieje katalog lokalny - jeżeli istnieje to skonstruuj poprawny result i go zwróć, jeżeli nie to sprawdź pp.3 .
-            // 3. Czy próba stworzenia katalogu lokalnego konczy się sukcesem (jeżeli nie, to ze względu na punkt 2. jedyna opcja to próba stworzenia pustego).
-
-            if(local_user != null)
-            {
-                // Istnieje, stąd sprawdzamy czy wygenerował już swój katalog obiegowy.
-                if (new FileInfo(database_externals_path + local_user.Alias + "_CATALOG.FDB").Exists)
-                {
-                    // Istnieje - tworzymy poprawny result i returnujemy go.
-                    result = new Tuple<bool, string>(false, database_externals_path + local_user.Alias + "_CATALOG.FDB");
-                }
-                else
-                {
-                    // Nie istnieje - sprawdzamy czy stworzenie nowego da pozytywny wynik:
-                    if (external_catalog_build(local_user.Alias))
-                    {
-                        // Zbudowany poprawnie - najwyraźniej nie został nigdy utworzony. Tworzymy poprawny result i returnujemy go
-                        result = new Tuple<bool, string>(false, database_externals_path + local_user.Alias + "_CATALOG.FDB");
-                    }
-                    else
-                    {
-                        // Próbowaliśmy stworzyć pusty katalog obiegowy - zwróć błędny result:
-                        result = new Tuple<bool, string>(true, "");
-                    }
-                }
-            }
-            else
-            {
-                // Pracujemy będąc niepodłączonymi do sieci - zwróć błędny result:
-                result = new Tuple<bool, string>(true, "");
-            }
-
-            return result;
-        }
-        */
 
         #endregion
     }

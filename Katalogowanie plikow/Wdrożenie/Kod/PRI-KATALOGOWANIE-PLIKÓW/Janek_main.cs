@@ -29,6 +29,9 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
         private string[] exampleCommandsCreate = { "create label <x$> for every file *.mp3", "create label <x$> for each file *.mp3", "create label <x$> for all file *.mp3", "create label <x$> for file *.mp3", "create label <x$><y$> for files' group *.mp3 *wav", "create label <x$><y$> for group of file *.mp3 *wav", };
         int randResult = 0;
         int randResultCreate = 0;
+        int second = 0, minute = 0, hour = 0;
+        string time = String.Empty;
+        List<string> _group = new List<string>();
         Dictionary<Tuple<string, string>, string> metadata;
         Dictionary<string, string> fileLabels;
         List<string> excludedMetadata;
@@ -55,7 +58,6 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
         {
             InitializeComponent();
 
-            this.Load += Form1_Load;
             this.KeyDown += Form1_KeyDown;
 
             text = "utwórz etykietę <x$> dla pliku *.mp3";
@@ -133,51 +135,6 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             }
         }
 
-        private void TabControl1_SelectedIndexChanged(object sender, EventArgs e)
-        {
-
-        }
-
-        private void ChkMetadata_LostFocus(object sender, EventArgs e)
-        {
-
-        }
-              
-        /// <summary>
-        /// Przypisuje flagę do pliku
-        /// </summary>
-        /// <param name="to">Plik, do którego chcemy utworzyć przypisanie</param>
-        /// <param name="flag">Flaga ustawiana podczas przypisania. Początkowo flaga jest ustawiona na NIEPRZYDZIELONY</param>
-        private string Assign(string to)
-        {
-            string assign = "NIEPRZYDZIELONY$";
-            return assign;
-            /*
-             * ToDo : Utworzyć przypisania dla poszczególnych typów plików
-             */
-        }
-
-        private void Form1_Load(object sender, EventArgs e)
-        {
-
-        }
-
-        private void TxtCommand_LostFocus(object sender, EventArgs e)
-        {
-            if (_index > 0)
-            {
-                foreach (var item in fileLabels)
-                    MessageBox.Show(item.Key + " => " + item.Value);
-            }
-
-            //}
-            //else
-            //{
-            //    _group.Clear();
-            //    Clipboard.SetText(this.txtCommand.Text);
-            //}
-        }
-
         /// <summary>
         /// Tłumaczy każde słowo tekstu podanego na wejściu
         /// </summary>
@@ -231,37 +188,6 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             return groups;
         }
 
-        private void txtCommand_TextChanged(object sender, EventArgs e)
-        {
-
-        }
-        List<string> _group = new List<string>();
-        private void chkUseCreteRule_CheckedChanged(object sender, EventArgs e)
-        {
-
-            Regex rx = new Regex(regex, RegexOptions.IgnoreCase);
-            Match m = Regex.Match(text, regex);
-
-            Regex rxCreate = new Regex(regexCreate, RegexOptions.IgnoreCase);
-            Match mCreate = Regex.Match("create label <x$> for every file *.mp3", regexCreate);
-            var groupRegex = GroupRegex(rx, m);
-            var groupRegexCreate = GroupRegex(rxCreate, mCreate);
-            var split = text.Split(' ');
-            equals = false;
-
-            if (text.Length != 0)
-                foreach (var group in this.Groups(groupRegex, groupRegexCreate))
-                    foreach (var s in split)
-                        if (s == group.Key)
-                            equals = true;
-
-            Match mtxtCommand = Regex.Match(text, regex);
-
-            foreach (var item in this.GroupRegex(rx, mtxtCommand))
-                _group.Add(item);
-
-        }
-
         private string RemoveDuplicates(string p)
         {
             var distinct = string.Join(" ",
@@ -274,11 +200,6 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             );
 
             return distinct;
-
-        }
-
-        private void chkUseEquality_CheckedChanged(object sender, EventArgs e)
-        {
 
         }
         
@@ -353,7 +274,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             {
                 Tuple<int, string> directory_to_create = new Tuple<int,string>(
                     i,
-                    "Różnica podobieństw = " + merged.ElementAt(i).Value
+                    "Podobieństwo = " + merged.ElementAt(i).Value
                     );
 
                 result_directories.Add(directory_to_create);
@@ -395,6 +316,13 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                 // Dajemy znać formowi wywołującemu (tutaj Special_function_window) że dane są gotowe do odbioru.
                 OnDataAvalible(this, EventArgs.Empty);
                 MessageBox.Show("Zakończono proces porównywania podobieństwa.");
+                this.Close();
+                this.Dispose();
+            } 
+            else
+            {
+                OnDataAvalible(this, EventArgs.Empty);
+                MessageBox.Show("Powrównywane pliki były takie same!");
                 this.Close();
                 this.Dispose();
             }
@@ -522,8 +450,14 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                 {
                     //var _files = Directory.GetFiles(name.Substring(0, name.LastIndexOf("\\") + 1), "*", SearchOption.TopDirectoryOnly);
                     // Zmiana w wywalaniu plików wav na których pracowaliśmy - wywalać tylko te, które zostały stworzone do celów analizy!
-                    if (System.IO.File.Exists(name.Item2.Replace(".mp3", ".wav"))) System.IO.File.Delete(name.Item2.Replace(".mp3", ".wav"));
-                    
+                    try
+                    {
+                        if (System.IO.File.Exists(name.Item2.Replace(".mp3", ".wav"))) System.IO.File.Delete(name.Item2.Replace(".mp3", ".wav"));
+                    }
+                    catch
+                    {
+
+                    }
                     /*
                     foreach (var file in _files)
                         if (file.EndsWith(".wav"))
@@ -536,11 +470,6 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             this.bnCatalogue.Enabled = true;
             this.bnPreview.Enabled = true;
             this.bnShare.Enabled = true;
-        }
-
-        private void backgroundWorker1_ProgressChanged(object sender, ProgressChangedEventArgs e)
-        {
-            //this.Text = e.UserState.ToString();
         }
 
         private void bnPreview_Click(object sender, EventArgs e)
@@ -570,25 +499,6 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
 
         private void bnChooseFolder_Click(object sender, EventArgs e)
         {
-            /* Nie używany w ostatecznej wersji.
-            if (names.Count == 0)
-            {
-                using (FolderBrowserDialog open = new FolderBrowserDialog())
-                {
-                    if (open.ShowDialog() == System.Windows.Forms.DialogResult.OK)
-                    {
-                        var files = Directory.GetFiles(open.SelectedPath, "*", SearchOption.AllDirectories);
-                        foreach (var file in files)
-                        {
-                            names.Add(file);
-                        }
-
-                        if (names.Count == 0) MessageBox.Show("Folder " + open.SelectedPath + " jest pusty", "Wybór plików", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
-                    }
-                }
-            }
-            */
-
             bnChooseFolder.Enabled = false;
 
             var extractors = new List<TikaOnDotNet.TextExtraction.TextExtractor>();
@@ -804,9 +714,6 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             this.TextChanged += Form1_TextChanged;
         }
 
-        int second = 0, minute = 0, hour = 0;
-
-        string time = String.Empty;
         private void timer1_Tick(object sender, EventArgs e)
         {
             if (second > 59)
