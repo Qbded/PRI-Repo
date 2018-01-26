@@ -4254,7 +4254,10 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
 
         public void UpdateProgressWindowFromAnotherThread()
         {
-            progress_window.DownloadProgressWindow_UpdateValue();
+            if(progress_window != null)
+            {
+                progress_window.DownloadProgressWindow_UpdateValue();
+            }
         }
 
         public void KillProgressWindowFromAnotherThread()
