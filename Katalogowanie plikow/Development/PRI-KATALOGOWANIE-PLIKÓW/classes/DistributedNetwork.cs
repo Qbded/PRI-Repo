@@ -51,6 +51,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes
                 {
                     // Nie
                     downloadDir = ConfigManager.ReadString(ConfigManager.DOWNLOAD_LOCATION);
+                    files[0].realFileName = Path.GetFileName(files[0].realFilePath);
                     if (!Directory.Exists(downloadDir))
                     {
                         Directory.CreateDirectory(downloadDir);
@@ -61,6 +62,10 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes
             {
                 // Standardowe wysyłanie plików
                 downloadDir = ConfigManager.ReadString(ConfigManager.DOWNLOAD_LOCATION);
+                foreach (DistributedNetworkFile dnFile in files)
+                {
+                    dnFile.realFileName = Path.GetFileName(dnFile.realFilePath);
+                }
             }
 
             tcpCom.RequestFile(files,

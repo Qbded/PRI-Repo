@@ -133,13 +133,13 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
         // Zmienne przesyłacza do opcji specialnych:
         private Special_function_window special_option_selector;
         private List<ListViewItem> sent_items;
-        
+
         // Zmienne związane z funkcjonowaniem opcji sieciowych:
+        private DownloadProgressWindow progress_window = null;
         private DistributedNetworkUser local_user = null;
         private DistributedNetwork distributedNetwork = null;
         private List<string> successful_downloads = new List<string>();
         private List<string> failed_downloads = new List<string>();
-        private string last_message_to_broadcast = "";
         private int total_selected = 0;
         private int total_to_download = 0;
         private int successful_downloads_count = 0;
@@ -2303,31 +2303,39 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                 // Tutaj zakładam, że rozszyfrowaliśmy plik i jest on bazą danych w formacie .fdb
                 // Dodatkowo ma on nazwę w formacie [alias użytkownika, który wygenerował bazę]_catalog.fdb
                 FileInfo grabbed_file = new FileInfo(filepath);
-                FbConnectionStringBuilder connection_string_builder = new FbConnectionStringBuilder();
-                if (grabbed_file.Extension.Equals(".fdb") || grabbed_file.Extension.Equals(".FDB"))
+                if(grabbed_file.Name.Equals(ConfigManager.ReadString(ConfigManager.USER_ALIAS)+"_CATALOG.FDB") ||
+                   grabbed_file.Name.Equals("EXTERNAL_CATALOG.FDB"))
                 {
-                    // Walidujemy czy katalogi obiegowe są skonstruowane odpowiednio z szablonem bazy.
-                    int[] validation_result = new int[database_columns.Count];
-
-                    connection_string_builder.ServerType = FbServerType.Embedded;
-                    connection_string_builder.UserID = "SYSDBA"; // Defaultowy uzytkownik z najwyzszymi uprawnieniami do systemu bazodanowego.
-                    connection_string_builder.Password = ""; // Haslo nie jest sprawdzane w wersji embedded, można dać tu cokolwiek.
-                    connection_string_builder.Database = filepath;
-                    connection_string_builder.ClientLibrary = database_engine_path;
-                    connection_string_builder.Charset = "UTF8";
-
-                    try
+                    Console.WriteLine("Próba załadowania niedozwolonego katalogu " + grabbed_file.Name);
+                }
+                else
+                {
+                    FbConnectionStringBuilder connection_string_builder = new FbConnectionStringBuilder();
+                    if (grabbed_file.Extension.Equals(".fdb") || grabbed_file.Extension.Equals(".FDB"))
                     {
-                        validation_result = database_validate(connection_string_builder.ConnectionString);
-                        if (validation_result.All(x => x.Equals(2)) == true)
+                        // Walidujemy czy katalogi obiegowe są skonstruowane odpowiednio z szablonem bazy.
+                        int[] validation_result = new int[database_columns.Count];
+
+                        connection_string_builder.ServerType = FbServerType.Embedded;
+                        connection_string_builder.UserID = "SYSDBA"; // Defaultowy uzytkownik z najwyzszymi uprawnieniami do systemu bazodanowego.
+                        connection_string_builder.Password = ""; // Haslo nie jest sprawdzane w wersji embedded, można dać tu cokolwiek.
+                        connection_string_builder.Database = filepath;
+                        connection_string_builder.ClientLibrary = database_engine_path;
+                        connection_string_builder.Charset = "UTF8";
+
+                        try
                         {
-                            external_catalogs_names.Add(grabbed_file.Name.Split('_')[0]);
-                            external_catalogs_connection_strings.Add(connection_string_builder.ConnectionString);
+                            validation_result = database_validate(connection_string_builder.ConnectionString);
+                            if (validation_result.All(x => x.Equals(2)) == true)
+                            {
+                                external_catalogs_names.Add(grabbed_file.Name.Split('_')[0]);
+                                external_catalogs_connection_strings.Add(connection_string_builder.ConnectionString);
+                            }
                         }
-                    }
-                    catch
-                    {
-                        Console.WriteLine("Połączenie z katalogiem " + grabbed_file.Name + " nie powidło się.");
+                        catch
+                        {
+                            Console.WriteLine("Połączenie z katalogiem " + grabbed_file.Name + " nie powidło się.");
+                        }
                     }
                 }
             }
@@ -2732,12 +2740,11 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
 
             if (e.ClickedItem.Text.Equals("Ściągnij katalog obiegowy"))
             {
-                if (new FileInfo(database_externals_path + "TO_DETERMINE").Exists)
+                if (new FileInfo(database_externals_path + "EXTERNAL_CATALOG.FDB").Exists)
                 {
-                    File.Delete(database_externals_path + "TO_DETERMINE");
+                    File.Delete(database_externals_path + "EXTERNAL_CATALOG.FDB");
                 }
 
-                last_message_to_broadcast = "";
                 used_alias = "";
                 System.Net.IPAddress ipAddr = null;
                 String alias = null;
@@ -2916,7 +2923,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                     DistributedNetworkUser targetUser = new DistributedNetworkUser(false, provided_alias, System.Net.IPAddress.Parse(provided_address_string));
 
                     DistributedNetworkFile distributedNetworkFile =
-                        new DistributedNetworkFile(requested_filename, requested_filepath, true, true);
+                        new DistributedNetworkFile(requested_filename, requested_filepath, 0, true, true);
 
                     List<DistributedNetworkFile> distributedNetworkFiles = new List<DistributedNetworkFile>();
                     distributedNetworkFiles.Add(distributedNetworkFile);
@@ -3208,7 +3215,6 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             }
             if (e.ClickedItem.Text.Equals("Ściągnij"))
             {
-                last_message_to_broadcast = "";
                 //Console.WriteLine("Ściągnij clicked!");
                 
                 total_selected = LV_catalog_display_item_selection.Count();
@@ -3371,6 +3377,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
 
                             // Bierzemy ścieżkę do pliku z bazy danych:
                             string requested_filepath = "", requested_filename = "", requested_alias = "";
+                            long requested_filesize = 0;
 
                             DataTable filepath_container = new DataTable();
                             FbDataAdapter filepath_grabber = new FbDataAdapter("SELECT ORIGINAL_NAME,PATH " +
@@ -3393,6 +3400,23 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                             // Bierzemy alias użytkownika, którego katalogo obiegowy czytamy:
                             requested_alias = LV_catalog_display_current_catalog_alias;
 
+                            // Bierzemy rozmiar pliku, który chcemy ściągnąć:
+                            try
+                            {
+                                requested_filesize = long.Parse(selected_item.SubItems[4].Text);
+                            }
+                            catch
+                            {
+                                requested_filesize = 0;
+                            }
+                            FileInfo file_already_downloaded = new FileInfo(ConfigManager.ReadString(ConfigManager.DOWNLOAD_LOCATION) + Path.GetFileName(requested_filepath));
+                            // Sprawdzamy czy plik, który chcemy sciągnąć nie jest już w folderze zapisu
+                            if (file_already_downloaded.Exists)
+                            {
+                                // Jest - usuwamy go bo zakładamy że jest stary!
+                                File.Delete(ConfigManager.ReadString(ConfigManager.DOWNLOAD_LOCATION) + Path.GetFileName(requested_filepath));
+                            }
+
                             /* Takim sposobem mamy:
                              * Ścieżkę do pobieranego pliku - w zm. requested_filepath.
                              * Alias użytkownika, od którego pobieramy - w zm. requested_alias.
@@ -3404,7 +3428,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                             targetUser = new DistributedNetworkUser(false, requested_alias, ipAddr);
 
                             DistributedNetworkFile distributedNetworkFile =
-                                new DistributedNetworkFile(requested_filename, requested_filepath, true, requested_downloads_without_question);
+                                new DistributedNetworkFile(requested_filename, requested_filepath, requested_filesize, true, requested_downloads_without_question);
                             distributedNetworkFiles.Add(distributedNetworkFile);
                         }
                     }
@@ -3592,6 +3616,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
                     if(LV_catalog_display_status == 2)
                     {
                         folder_context_menu_strip.Items.Add("Otwórz");
+                        folder_context_menu_strip.Items.Add("Usuń");
                         folder_context_menu_strip.Items.Add("Opcje specjalne");
                     }
                     folder_context_menu_strip.ItemClicked += element_context_menu_item_select;
@@ -4221,7 +4246,26 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             this.failed_downloads_count++;
         }
 
-        public void CheckIfDoneFromOtherThread()
+        public void SpawnProgressWindowFromAnotherThread(String filename, int file_size)
+        {
+            progress_window = new DownloadProgressWindow(filename, file_size);
+            progress_window.Show();
+        }
+
+        public void UpdateProgressWindowFromAnotherThread()
+        {
+            progress_window.DownloadProgressWindow_UpdateValue();
+        }
+
+        public void KillProgressWindowFromAnotherThread()
+        {
+            if (progress_window != null)
+            {
+                progress_window.DownloadProgressWindow_Kill();
+            }
+        }
+
+        public void CheckIfDoneFromAnotherThread()
         {
             if(failed_downloads_count + successful_downloads_count == total_to_download)
             {
@@ -4273,7 +4317,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             }
         }
 
-        public string GrabExternalCatalogPathFromOtherThread()
+        public string GrabExternalCatalogPathFromAnotherThread()
         {
             string filepath = "";
 
@@ -4283,12 +4327,12 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             return filepath;
         }
 
-        public void TerminateDBConnectionsFromOtherThread()
+        public void TerminateDBConnectionsFromAnotherThread()
         {
             FbConnection.ClearAllPools();
         }
 
-        public void AddAliasFromOtherThread(String alias, String address)
+        public void AddAliasFromAnotherThread(String alias, String address)
         {
             string grabbed_aliases = ConfigManager.ReadString(ConfigManager.KNOWN_ALIASES);
             bool error_on_aliases_read = false, change_made = false;
@@ -4375,14 +4419,14 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
             }
         }
 
-        public void AttemptToFinalizeFromOtherThread(String target_filename)
+        public void AttemptToFinalizeFromAnotherThread(String target_filename)
         {
             recieved_external_catalog_name = target_filename;
 
             //Catalog_download_finalizer_Tick(this, new EventArgs());
 
             catalog_download_finalizer = new Timer();
-            catalog_download_finalizer.Interval = 3000;
+            catalog_download_finalizer.Interval = 1000;
             catalog_download_finalizer.Tick += Catalog_download_finalizer_Tick;
 
             catalog_download_finalizer.Start();
@@ -4400,7 +4444,7 @@ namespace PRI_KATALOGOWANIE_PLIKÓW
 
                     used_alias = alias_grabber[0];
 
-                    AddAliasFromOtherThread(used_alias, used_IP_address_string);
+                    AddAliasFromAnotherThread(used_alias, used_IP_address_string);
                 }
                 if (new FileInfo(database_externals_path + "EXTERNAL_CATALOG.FDB").Exists)
                 {

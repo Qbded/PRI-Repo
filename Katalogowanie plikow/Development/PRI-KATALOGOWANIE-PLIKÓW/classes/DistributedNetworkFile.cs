@@ -12,31 +12,19 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes
         public bool allowDistribution;
         public bool allowUnpromptedDistribution;
 
-        //public String filePathInCatalogue;
         public String realFilePath;
         public String realFileName;
 
         public long fileSize;
 
-        public DistributedNetworkFile(String fileName, String filePath, bool allowDistribution, bool allowUnpromptedDistribution)
+        public DistributedNetworkFile(String fileName, String filePath, long fileSize, bool allowDistribution, bool allowUnpromptedDistribution)
         {
             this.realFileName = fileName;
             this.realFilePath = filePath;
+            this.fileSize = fileSize;
             this.allowDistribution = allowDistribution;
             this.allowUnpromptedDistribution = allowUnpromptedDistribution;
         }
-
-
-        //public static DistributedNetworkFile GetFileByFilePath(String filePath)
-        //{
-        //    // TODO grab file data based on file's path
-        //    // return distributedNetworkFile
-            
-        //    // Passthrough logic, it is completely invalid!
-        //    DistributedNetworkFile result = new DistributedNetworkFile();
-        //    return result;
-        //}
-
 
         public bool IsPresentInLocalCatalogue()
         {
