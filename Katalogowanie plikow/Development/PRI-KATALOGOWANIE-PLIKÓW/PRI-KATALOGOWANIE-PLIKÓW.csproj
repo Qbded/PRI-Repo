@@ -241,12 +241,6 @@
     <Compile Include="classes\TimeRange.cs" />
     <Compile Include="classes\VideoFile.cs" />
     <Compile Include="classes\Wave.cs" />
-    <Compile Include="DownloadProgressWindow.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="DownloadProgressWindow.Designer.cs">
-      <DependentUpon>DownloadProgressWindow.cs</DependentUpon>
-    </Compile>
     <Compile Include="popup forms\AliasInputForm.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -339,9 +333,6 @@
     </Compile>
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <EmbeddedResource Include="DownloadProgressWindow.resx">
-      <DependentUpon>DownloadProgressWindow.cs</DependentUpon>
-    </EmbeddedResource>
     <EmbeddedResource Include="Janek_main.resx">
       <DependentUpon>Janek_main.cs</DependentUpon>
     </EmbeddedResource>
