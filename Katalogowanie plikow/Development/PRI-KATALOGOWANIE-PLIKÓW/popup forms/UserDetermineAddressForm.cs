@@ -87,10 +87,13 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.popup_forms
             foreach(Tuple<string,IPAddress> pair in local_IP_addresses_container)
             {
                 ListViewItem item_to_add = new ListViewItem();
-                item_to_add.Text = pair.Item1;
-                item_to_add.SubItems.Add(pair.Item2.ToString());
-                //item
-                LV_detected_addresses.Items.Add(item_to_add);
+                if (pair.Item2 != null)
+                {
+                    item_to_add.Text = pair.Item1;
+                    item_to_add.SubItems.Add(pair.Item2.ToString());
+                    //item
+                    LV_detected_addresses.Items.Add(item_to_add);
+                }
             }
 
             ListViewItem global_to_add = new ListViewItem();

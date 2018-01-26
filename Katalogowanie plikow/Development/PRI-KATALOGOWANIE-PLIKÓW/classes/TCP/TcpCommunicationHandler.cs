@@ -537,7 +537,12 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
 
                     string[] deserializedDataChunks = deserializedData.Split('|');
 
+
                     AddAliasInMainForm(mainForm, deserializedDataChunks[0], deserializedDataChunks[1]);
+                    DisplayMessageBoxInMainForm(mainForm, "Podany użytkownik nie wygenerował katalogu obiegowego!");
+                    AddFailedDownloadNameInMainForm(mainForm, Path.GetFileName(dnFile.realFilePath));
+                    KillProgressWindowInMainForm(mainForm);
+                    CheckIfDoneInMainForm(mainForm);
                     return RETURN_CANCEL;
                 }
                 else
@@ -834,19 +839,24 @@ namespace PRI_KATALOGOWANIE_PLIKÓW.classes.TCP
             }
             else
             {
+                filePath = ConfigManager.ReadString(ConfigManager.EXTERNAL_DATABASES_LOCATION) +
+                           ConfigManager.ReadString(ConfigManager.USER_ALIAS).ToUpper() + "_CATALOG.FDB";
+
                 // Logika pobierania katalogu
                 sendsExternalCatalog = true;
                 // Najpierw rozkazujemy mainformowi zerwać wszystkie połączenia z bazą
                 TerminateDBConnectionsInMainForm(mainForm);
 
-                // Pobieramy dane z konfiga.
-                //filePath = GrabExternalCatalogPathInMainForm(mainForm);
-                filePath = ConfigManager.ReadString(ConfigManager.EXTERNAL_DATABASES_LOCATION) +
-                           ConfigManager.ReadString(ConfigManager.USER_ALIAS).ToUpper() + "_CATALOG.FDB";
-
                 fileName = Path.GetFileName(filePath);
-                fileSize = new FileInfo(filePath).Length;
-                //fileSize = 
+
+                if (new FileInfo(filePath).Exists)
+                {
+                    fileSize = new FileInfo(filePath).Length;
+                }
+                else
+                {
+                    fileSize = 0;
+                }
             }
 
             // Console.WriteLine("SendFileRequestCallback: Received request for file " + filePath);
